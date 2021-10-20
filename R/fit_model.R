@@ -58,23 +58,33 @@ mcmc_out <- nimble::nimbleMCMC(
   inits = inits(1),
   dimensions = list(psi = constant_list$ndata),
   nchains = 1,
-  niter = 200,
-  nburnin = 100,
+  niter = 100,
+  nburnin = 50,
   monitors = to_monitor 
 )
 
 model_configured <- nimble::configureMCMC(
   model,
-  print = TRUE
+  print = TRUE,
+  monitors = to_monitor
 )
 
+model_configured$addMonitors("b_species")
 model_mcmc <- nimble::buildMCMC(
   model_configured
 )
 
 model_compiled <- nimble::compileNimble(
-  model_mcmc
+  model_mcmc,
+  project = model
 )
+
+results <- nimble::runMCMC(
+  model_compiled,
+  niter = 50
+)
+
+
 m1 <- run.jags(
   "./nimble/msom.R",
   monitor = c("a_species", "b_species_city", "theta_psi",

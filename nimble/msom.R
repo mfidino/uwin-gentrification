@@ -23,8 +23,8 @@ model_code <- nimbleCode({
 #  predictions.
   for(fs in 1:nfirsts){
     logit(psi[fs]) <- inprod(
-      b_species_city[2, species_vec[fs], city_vec[fs]],
-      psicov[fs, 2]
+      b_species_city[1:npsi, species_vec[fs], city_vec[fs]],
+      psicov[fs, 1:npsi]
     ) + ssc_psi[combo_vec[fs]]
     z[fs] ~ dbern(
       psi[fs] * x[species_vec[fs], city_vec[fs]]
@@ -35,8 +35,8 @@ model_code <- nimbleCode({
 # first-order autologistic term.
   for(tr in (nfirsts + 1):ndata){
     logit(psi[tr]) <- inprod(
-      b_species_city[2, species_vec[tr], city_vec[tr]],
-      psicov[tr, 2]
+      b_species_city[1:npsi, species_vec[tr], city_vec[tr]],
+      psicov[tr, 1:npsi]
     ) + 
       ssc_psi[combo_vec[tr]] +
       theta_psi[species_vec[tr], city_vec[tr]] * z[last_sample_vec[tr]]
@@ -47,8 +47,8 @@ model_code <- nimbleCode({
   # data model. dp = data point
   for(dp in 1:ndata){
     logit(rho[dp]) <- inprod(
-      c_species_city[2, species_vec[dp], city_vec[dp]],
-      rhocov[dp, 2]
+      c_species_city[1:nrho, species_vec[dp], city_vec[dp]],
+      rhocov[dp, 1:nrho]
     ) + ssc_rho[combo_vec[dp]]
     y[dp] ~ dbin(
       rho[dp], 
@@ -125,19 +125,11 @@ model_code <- nimbleCode({
   for(m in 1:nseason_params){
     # species, season, and city seasonal variation. (ssc)
     ssc_psi[m] ~ dnorm(
-      b_species_city[
-        1,
-        combo_species_vec[m],
-        combo_city_vec[m]
-        ],
+      0,
       city_tau_psi[combo_city_vec[m]]
     )
     ssc_rho[m] ~ dnorm(
-      c_species_city[
-        1,
-        combo_species_vec[m],
-        combo_city_vec[m]
-        ],
+      0,
       city_tau_rho[combo_city_vec[m]]
     )
   }
