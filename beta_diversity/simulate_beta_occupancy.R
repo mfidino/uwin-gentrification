@@ -7,6 +7,7 @@ nsite <- 50
 nspecies <- 10
 nrep <- 4
 
+source("./beta_diversity/gdm_functions.R")
 
 
 # generate community averages
@@ -105,6 +106,7 @@ data_list <- list(
   siteB_id = design_matrix_beta$dmat_site_ids$siteB_id,
   # number of parameters for each model
   npar_psi = 2,
+  npar_rho = 2,
   npar_alpha = 2,
   npar_beta = 3,
   # the observed data
@@ -168,14 +170,14 @@ m1 <- run.jags(
     "beta_psi", "beta_rho",
     "beta_psi_mu", "beta_rho_mu",
     "beta_alpha", "beta_beta",
-    "sd_psi", "sd_rho", "b0"),
+    "sd_psi", "sd_rho", "b0", "z"),
   data = data_list,
   n.chains = 5,
   modules = "glm",
   method = "parallel",
   inits = my_inits,
   adapt = 1000,
-  burnin = 5000,
+  burnin = 10000,
   sample = 5000,
   thin = 1
 )
