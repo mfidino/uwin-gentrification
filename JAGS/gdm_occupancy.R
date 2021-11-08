@@ -28,52 +28,52 @@ model{
   #----------------------
   # Alpha diversity model
   #----------------------
-  for(site in 1:nsite){
-    # Derive species richness
-    rich[site] <- sum(z[site,])
-    # linear predictor
-    log(mu_alpha[site]) <- inprod(
-      beta_alpha,
-      design_matrix_alpha[site,]
-      )
-    # Poisson likelihood
-    alpha_lik[site] <- -mu_alpha[site] + 
-      rich[site]*log(mu_alpha[site]) - logfact(rich[site])
-    # rich is a Poisson random variable
-    alpha_ones[site] ~ dpois(exp(alpha_lik[site])/CONSTANT)
-  }
+  # for(site in 1:nsite){
+  #   # Derive species richness
+  #   rich[site] <- sum(z[site,])
+  #   # linear predictor
+  #   log(mu_alpha[site]) <- inprod(
+  #     beta_alpha,
+  #     design_matrix_alpha[site,]
+  #     )
+  #   # Poisson likelihood
+  #   alpha_lik[site] <- -mu_alpha[site] + 
+  #     rich[site]*log(mu_alpha[site]) - logfact(rich[site])
+  #   # rich is a Poisson random variable
+  #   alpha_ones[site] ~ dpois(exp(alpha_lik[site])/CONSTANT)
+  # }
   #---------------------
   # Beta diversity model
   #---------------------
-  for(i in 1:n){
-    # Get number of dissimilar species between site pairs
-    y1[i] <- sum(
-      (1 - z[siteA_id[i],]) *
-        z[siteB_id[i],]
-    )
-    # Get total richness between site pairs
-    y2[i] <- nspecies - sum(
-      (1 - z[siteA_id[i],]) *
-        (1 - z[siteB_id[i],])
-    )
-    # Linear predictor
-    logit(pi[i]) <- b0 + inprod(
-      beta_beta,
-      design_matrix_beta[i,]
-    )
-    # Turn Pr(pi[i]) to zero if no species present
-    pi2[i] <- pi[i] * step(y2[i]-1)
-    # code up binomial likelihood. JAGS does not have a binomial
-    # coefficient so it's a bit of a beast. First line
-    #  is literally just the binomial coefficient.
-    beta_lik[i] <- (logfact(y2[i]) - (logfact(y1[i]) + logfact(y2[i] - y1[i]))) + 
-      (y1[i] * log(pi2[i])) + ((y2[i] - y1[i]) * log(1 - pi2[i]))
-    
-    # y1 is a binomial process
-    beta_ones[i] ~ dbern( 
-      (exp(beta_lik[i])/CONSTANT) 
-    )
-  }
+  # for(i in 1:n){
+  #   # Get number of dissimilar species between site pairs
+  #   y1[i] <- sum(
+  #     (1 - z[siteA_id[i],]) *
+  #       z[siteB_id[i],]
+  #   )
+  #   # Get total richness between site pairs
+  #   y2[i] <- nspecies - sum(
+  #     (1 - z[siteA_id[i],]) *
+  #       (1 - z[siteB_id[i],])
+  #   )
+  #   # Linear predictor
+  #   logit(pi[i]) <- b0 + inprod(
+  #     beta_beta,
+  #     design_matrix_beta[i,]
+  #   )
+  #   # Turn Pr(pi[i]) to zero if no species present
+  #   pi2[i] <- pi[i] * step(y2[i]-1)
+  #   # code up binomial likelihood. JAGS does not have a binomial
+  #   # coefficient so it's a bit of a beast. First line
+  #   #  is literally just the binomial coefficient.
+  #   beta_lik[i] <- (logfact(y2[i]) - (logfact(y1[i]) + logfact(y2[i] - y1[i]))) + 
+  #     (y1[i] * log(pi2[i])) + ((y2[i] - y1[i]) * log(1 - pi2[i]))
+  #   
+  #   # y1 is a binomial process
+  #   beta_ones[i] ~ dbern( 
+  #     (exp(beta_lik[i])/CONSTANT) 
+  #   )
+  # }
   #-------
   # priors
   #-------

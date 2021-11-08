@@ -4,7 +4,7 @@ library(mvtnorm)
 library(runjags)
 
 nsite <- 50
-nspecies <- 10
+nspecies <- 30
 nrep <- 4
 
 source("./beta_diversity/gdm_functions.R")
@@ -169,8 +169,8 @@ m1 <- run.jags(
   monitor = c(
     "beta_psi", "beta_rho",
     "beta_psi_mu", "beta_rho_mu",
-    "beta_alpha", "beta_beta",
-    "sd_psi", "sd_rho", "b0", "z"),
+    #"beta_alpha", "beta_beta",
+    "sd_psi", "sd_rho", "b0","z"),
   data = data_list,
   n.chains = 5,
   modules = "glm",
@@ -183,14 +183,14 @@ m1 <- run.jags(
 )
 my_end <- Sys.time()
 
-saveRDS(m1, "tricked_bernoulli.rds")
-msum <- summary(
+saveRDS(m1, "msom_impute.rds")
+msum1 <- summary(
   m1,
   vars = c("beta_psi", "beta_rho",
            "beta_psi_mu", "beta_rho_mu",
-           "sd_psi", "sd_rho", "beta_alpha", "beta_beta")
+           "sd_psi", "sd_rho")#, "beta_alpha", "beta_beta")
 )
-
+round(msum1,2)
 msum2 <- summary(
   m1,
   vars = c( "beta_alpha", "beta_beta", "b0")
