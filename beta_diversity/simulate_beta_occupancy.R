@@ -2,6 +2,8 @@ set.seed(122)
 
 library(mvtnorm)
 library(runjags)
+library(nimble)
+library(doParallel)
 
 nsite <- 50
 nspecies <- 30
@@ -74,20 +76,10 @@ design_matrix_beta <- make_spline_matrix(ed, "site", "long", "lat")
 # get observed species
 
 data_list <- list(
-  # Number of sites
-  nsite = nsite,
-  nspecies = nspecies,
-  z = z,
-  design_matrix_psi = x,
-  design_matrix_alpha = x,
-  npar_psi = 2,
-  npar_alpha = 2,
-  ones = rep(1, nsite),
-  CONSTANT = 10000
+  y = y
 )
 
-
-data_list <- list(
+constant_list <-  list(
   # Number of sites
   nsite = nsite,
   # Number of repeat samples
@@ -98,72 +90,100 @@ data_list <- list(
   nspecies = nspecies,
   # design matrices for all models
   design_matrix_psi = x,
-  design_matrix_alpha = x,
   design_matrix_rho = x,
-  design_matrix_beta = design_matrix_beta$dmat[,4:6],
   # nested indexing for beta diversity model
-  siteA_id = design_matrix_beta$dmat_site_ids$siteA_id,
-  siteB_id = design_matrix_beta$dmat_site_ids$siteB_id,
+  #siteA_id = design_matrix_beta$dmat_site_ids$siteA_id,
+  #siteB_id = design_matrix_beta$dmat_site_ids$siteB_id,
   # number of parameters for each model
   npar_psi = 2,
-  npar_rho = 2,
-  npar_alpha = 2,
-  npar_beta = 3,
+  npar_rho = 2
+ # npar_alpha = 2,
+ # npar_beta = 3,
   # the observed data
-  y = y,
-  # ones trick for alpha
-  alpha_ones = rep(1, nsite),
-  # ones trick for beta
-  beta_ones = rep(1, nrow(design_matrix_beta$dmat)),
-  CONSTANT = 10000
 )
 
 # get starts for y1 and y2
 z_guess <- y
 z_guess[z_guess > 0] <- 1
-tmp_y <- zmat_long(z_guess, design_matrix_beta$dmat_site_ids)
 
-my_inits <- function(chain){
-  gen_list <- function(chain = chain){
+
+  my_inits <- function(){
     list(
-      z = z_guess,
+      z = matrix(
+        z_guess,
+        nrow = constant_list$nsite,
+        ncol = constant_list$nspecies
+      ),
       beta_psi = matrix(
-        rnorm(data_list$npar_psi * data_list$nspecies),
-        nrow  = data_list$nspecies,
-        ncol = data_list$npar_psi),
+        rnorm(constant_list$npar_psi * constant_list$nspecies),
+        nrow  = constant_list$nspecies,
+        ncol = constant_list$npar_psi),
       beta_rho = matrix(
-        rnorm(data_list$npar_psi * data_list$nspecies),
-        nrow  = data_list$nspecies,
-        ncol = data_list$npar_psi),
-      beta_alpha = rnorm(data_list$npar_alpha),
-      beta_log = rnorm(data_list$npar_beta),
-      b0 = rnorm(1),
-      .RNG.name = switch(chain,
-                         "1" = "base::Wichmann-Hill",
-                         "2" = "base::Wichmann-Hill",
-                         "3" = "base::Super-Duper",
-                         "4" = "base::Mersenne-Twister",
-                         "5" = "base::Wichmann-Hill",
-                         "6" = "base::Marsaglia-Multicarry",
-                         "7" = "base::Super-Duper",
-                         "8" = "base::Mersenne-Twister"),
-      .RNG.seed = sample(1:1e+06, 1)
+        rnorm(constant_list$npar_psi * constant_list$nspecies),
+        nrow  = constant_list$nspecies,
+        ncol = constant_list$npar_psi)
     )
   }
-  return(switch(chain,
-                "1" = gen_list(chain),
-                "2" = gen_list(chain),
-                "3" = gen_list(chain),
-                "4" = gen_list(chain),
-                "5" = gen_list(chain),
-                "6" = gen_list(chain),
-                "7" = gen_list(chain),
-                "8" = gen_list(chain)
-  )
-  )
-}
+
 
 my_start <- Sys.time()
+
+# source the model
+source("./nimble/testing_msom.R")
+
+my_cluster <- makeCluster(
+  3,
+  outfile = "C:/Users/mason/Documents/GitHub/uwin-gentrification/hmmm.txt"
+)
+chain_output <- parLapply(
+  my_cluster,
+  X = 1:3,
+  fun = msom_mcmc,
+  data_list = data_list,
+  constant_list = constant_list
+)
+stopCluster(my_cluster)
+
+longshot <- msom_mcmc(
+  2, data_list = data_list,
+  constant_list = constant_list
+)
+
+yo <- nimble::runMCMC(
+  msom_compiled,
+  nburnin = 3000,
+  nchains = 3,
+  inits = my_inits
+)
+
+yo1 <- lapply(
+  yo$samples,
+  coda::mcmc
+)
+
+gelman.diag(yo1)
+
+longshot <- as.mcmc.list(yo)
+
+hm <- coda::mcmc(longshot)
+
+windows(100,100)
+
+par(mfrow = c(12,12))
+for(i in 1:ncol(longshot)){
+  plot(longshot[,i])
+}
+
+longshot <- runMCMC(
+  msom_compiled,
+  niter = 10000,
+  nburnin = 8000,
+  thin2 = 2,
+  nchains = 3,
+  inits = my_inits(3)
+  
+)
+# configure the model
 m1 <- run.jags(
   model = "./JAGS/gdm_occupancy.R",
   monitor = c(
@@ -190,20 +210,63 @@ msum1 <- summary(
            "beta_psi_mu", "beta_rho_mu",
            "sd_psi", "sd_rho")#, "beta_alpha", "beta_beta")
 )
-round(msum1,2)
-msum2 <- summary(
-  m1,
-  vars = c( "beta_alpha", "beta_beta", "b0")
-)
 
 
-# Compare models, alpha diversity
+# Fit alpha and beta diversity models
 
-to_plot <- list(
-  bayes = NULL,
-  zx = NULL,
-  yx = NULL
-)
+# step 1. Get the z matrix
+zm <- do.call("rbind", m1$mcmc)
+zm <- zm[,grep("z", colnames(zm))]
+
+my_samp <- sample(1:nrow(zm), 1000)
+
+for(i in 1:length(my_samp)){
+  # grab the sample
+  ztmp <- zm[my_samp[i],]
+  ztmp <- matrix(
+    ztmp,
+    nrow= nsite,
+    ncol = nspecies
+  )
+  # get the data set up for the alpha diversity analysis
+  alphaz <- rowSums(ztmp)
+  # get the data set up for the beta diversity analysis
+  betaz <- zmat_long(ztmp, design_matrix_beta$dmat_site_ids)
+  # and get the data.list for the model
+  tmp_dl <- list(
+    # Number of sites
+    nsite = nsite,
+    # number of unique site pairs for beta diversity model
+    n = nrow(design_matrix_beta$dmat),
+    # number of species
+    nspecies = nspecies,
+    # design matrices for all models
+    design_matrix_alpha = x,
+    design_matrix_beta = design_matrix_beta$dmat[,4:6],
+    # number of parameters for each model
+    npar_alpha = 2,
+    npar_beta = 3,
+    # alpha diversity response variable
+    alphaz = alphaz,
+    # beta diversity response variable
+    betaz = betaz 
+  )
+
+  mtmp <- run.jags(
+    model = "./JAGS/impute_alpha_beta.R",
+    monitor = c(
+      "beta_alpha", "beta_beta", "b0", "beta_log"),
+    data = tmp_dl,
+    n.chains = 5,
+    modules = "glm",
+    method = "parallel",
+    inits = my_inits,
+    adapt = 1000,
+    burnin = 6000,
+    sample = 1000,
+    thin = 1
+  )
+}
 
 # bayesian estimate
 mcmc <- do.call("rbind", m1$mcmc)

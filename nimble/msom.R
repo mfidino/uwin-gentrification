@@ -1,8 +1,6 @@
 model_code <- nimbleCode({
 # The multi-species occupancy model
 # to add
-# 2. alpha diversity model
-# 3. beta diversity model
 # among-city regression (latent-state)
   for(j in 1:nspecies){
     for(k in 1:ncity){
