@@ -336,7 +336,11 @@ rhocov[,2] <- rnorm(nrow(tmp_reor))
 data_list <- list(
   # detection / non-detection data
   y = tmp_reor$Y,
-  J = tmp_reor$J
+  J = tmp_reor$J,
+  # design matrices
+  omegacov = omegacov,
+  psicov = psicov,
+  rhocov = rhocov
 )
 constant_list <- list(
   # nested indexing
@@ -347,10 +351,6 @@ constant_list <- list(
   combo_city_vec = combo$City_id,
   combo_vec = tmp_reor$Combo_id,
   last_sample_vec = tmp_reor$last_samplevec,
-  # design matrices
-  omegacov = omegacov,
-  psicov = psicov,
-  rhocov = rhocov,
   #constants,
   nfirsts = nfirsts,
   ndata = nrow(tmp_reor),
@@ -362,7 +362,7 @@ constant_list <- list(
   nseason_params = nrow(combo)
 )
 
-cli::cli_alert_success("object 'data_list' created and ready for modeling")
+cli::cli_alert_success("objects 'data_list' and 'constant_list' created and ready for modeling")
 
 rm(psicov, rhocov, omegacov, combo, nfirsts, tmp_reor)
 
