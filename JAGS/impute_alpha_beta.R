@@ -1,13 +1,10 @@
 model{
-  #------------------------------
-  # multi-species occupancy model
-  #------------------------------
   #----------------------
   # Alpha diversity model
   #----------------------
   for(site in 1:nsite){
     log(mu_alpha[site]) <- inprod(
-      beta_alpha,
+      beta_alpha[city_vec_alpha[site],],
       design_matrix_alpha[site,]
       )
     # Poisson likelihood
@@ -19,8 +16,8 @@ model{
   #---------------------
   for(i in 1:n){
     # Linear predictor
-    logit(pi[i]) <- b0 + inprod(
-      beta_beta,
+    logit(pi[i]) <- b0[city_vec_beta[i]] + inprod(
+      beta_beta[city_vec_beta[i],],
       design_matrix_beta[i,]
     )
     # Turn Pr(pi[i]) to zero if no species present
@@ -39,6 +36,10 @@ model{
   #-------
   # Alpha diversity
   for(alphai in 1:npar_alpha){
+    beta_alpha_mu
+    for(city in 1:ncity){
+      
+    }
     beta_alpha[alphai] ~ dnorm(0,0.01)
   }
   # beta diversity

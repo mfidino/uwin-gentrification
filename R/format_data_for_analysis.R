@@ -362,7 +362,34 @@ constant_list <- list(
   nseason_params = nrow(combo)
 )
 
-cli::cli_alert_success("objects 'data_list' and 'constant_list' created and ready for modeling")
+jags_list <- list(
+  # detection / non-detection data
+  y = tmp_reor$Y,
+  J = tmp_reor$J,
+  # design matrices
+  omegacov = omegacov,
+  psicov = psicov,
+  rhocov = rhocov,
+  # nested indexing
+  species_vec = tmp_reor$Species_id,
+  season_vec = tmp_reor$Season_id,
+  city_vec = tmp_reor$City_id,
+  combo_species_vec = combo$Species_id,
+  combo_city_vec = combo$City_id,
+  combo_vec = tmp_reor$Combo_id,
+  last_sample_vec = tmp_reor$last_samplevec,
+  #constants,
+  nfirsts = nfirsts,
+  ndata = nrow(tmp_reor),
+  nspecies = nrow(species_map),
+  ncity = nrow(city_map),
+  nomega = dim(omegacov)[3],
+  npsi = ncol(psicov),
+  nrho = ncol(rhocov),
+  nseason_params = nrow(combo)
+)
+
+cli::cli_alert_success("object 'jags_list' created and ready for modeling")
 
 rm(psicov, rhocov, omegacov, combo, nfirsts, tmp_reor)
 
