@@ -1,6 +1,4 @@
-# a function to generate initial values for the model
-
-inits <- function(chain){
+jags_inits <- function(chain){
   gen_list <- function(chain = chain){
     list( 
       z = rep(
@@ -20,7 +18,7 @@ inits <- function(chain){
         1,
         1
       ),
-      a_species = matrix(
+      a_species_re = matrix(
         rnorm(
           prod(
             unlist(
@@ -49,7 +47,7 @@ inits <- function(chain){
         0.5,
         2
       ),
-      b_species = matrix(
+      b_species_re = matrix(
         rnorm(
           prod(
             unlist(
@@ -73,7 +71,7 @@ inits <- function(chain){
         nrow = constant_list$npsi,
         ncol = constant_list$nspecies
       ),
-      b_species_city = array(
+      b_species_city_re = array(
         rnorm(
           prod(
             unlist(
@@ -103,7 +101,7 @@ inits <- function(chain){
         0.5,
         2
       ),
-      theta_species = rnorm(
+      theta_species_re = rnorm(
         constant_list$nspecies
       ),
       tau_species_theta = rgamma(
@@ -111,7 +109,7 @@ inits <- function(chain){
         1,
         1
       ),
-      theta_psi = matrix(
+      theta_psi_re = matrix(
         rnorm(
           prod(
             unlist(
@@ -140,7 +138,7 @@ inits <- function(chain){
         0.5,
         2
       ),
-      c_species = matrix(
+      c_species_re = matrix(
         rnorm(
           prod(
             unlist(
@@ -164,7 +162,7 @@ inits <- function(chain){
         nrow = constant_list$nrho,
         ncol = constant_list$nspecies
       ),
-      c_species_city = array(
+      c_species_city_re = array(
         rnorm(
           prod(
             unlist(
@@ -206,10 +204,10 @@ inits <- function(chain){
         1,
         1
       ),
-      ssc_psi = rnorm(
+      city_psi_re = rnorm(
         constant_list$nseason_params
       ),
-      ssc_rho = rnorm(
+      city_rho_re = rnorm(
         constant_list$nseason_params
       )
     )
