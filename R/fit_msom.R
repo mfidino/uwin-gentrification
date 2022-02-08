@@ -3,6 +3,8 @@ library(runjags)
 library(dplyr)
 library(cli)
 
+# the analysis
+analysis <- "msom"
 
 # the path to the data
 data_path <- "../uwin-dataset/data_2021-07-27/cleaned_data/full_capture_history.csv"
@@ -31,7 +33,7 @@ years <- c(
 test_autologistic <- FALSE
 
 # Prep data for the model
-source("./R/format_data_for_analysis.R")
+source("./R/format_data_for_msom.R")
 
 
 m1 <- run.jags(
