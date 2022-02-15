@@ -57,7 +57,7 @@ d2 <- split(d2, factor(d2$areaAbbr))
 library(sf)
 for(i in 1:length(d2)){
   tmp <- d2[[i]]
-  tmp$utmZone <- gsub("S|N| ", "", tmp$utmZone)
+  tmp$utmZone <- gsub("T|S|N| ", "", tmp$utmZone)
   tmp <- sf::st_as_sf(
     tmp,
     coords = c("utmEast", "utmNorth"),
