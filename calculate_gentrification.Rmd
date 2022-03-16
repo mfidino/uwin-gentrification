@@ -1,0 +1,195 @@
+---
+title: "Calculating a gentrification metric across UWIN sites"
+output: pdf_document
+author: Mason Fidino
+header-includes:
+   - \usepackage{bm}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(pander)
+library(dplyr)
+library(bbplot)
+library(plot3D)
+library(viridis)
+library(sf)
+source("./R/census_functions.R")
+
+```
+
+
+## The metric
+
+We are basing our gentrification metric based on Freeman (2005). The general 'rules' tied to this metric are that a census tract must:
+
+1. Have a median income less than the 40th percentile of the metropolitan area at the beginning of the intercentennial.
+
+2. Has a percentage of housing built over the past 20 years that is below the 40th per centile for the metropolitan area.
+
+3. Has a percentage increase in educational attainment that is greater than that of the metropolitan area.
+
+4. Housing prices increased during the decade.
+
+
+
+
+## The data
+
+The objective of this analysis is to determine how historical patterns of gentrification are associated to patterns of urban biodiversity. As such, we needed to compile census data from multiple years. To do so, I used the `tidycensus` package in `R` to query census data from the year 2000, 2010, 2015, and 2019. The 2000 data came from the 10-year decennial census whereas the remaining data come from the 5-year American Community Survey (ACS). The 10 year gap between 2000 and 2010 was because the 2005 5-year ACS data was not available. The 5-year ACS data was used because the 1-year ACS data did not contain estimates for smaller towns. 
+
+Across all of these years I compiled data on race, income, number of housing units educational attainment (Table 1) for all census tracts that fell within counties that were sampled. For a given city that is sampled, we are making the assumption that the metropoliation area is "the counties that are sampled."
+
+## Step 1. Median income at start of the 20 year period.
+
+```{r med_inc, echo = FALSE}
+med <- readRDS("./data/census_data/med_income/med_income_2000.RDS")
+
+counties <- sf::read_sf(
+  "D:/GIS/counties/cb_2020_us_county_500k"
+)
+
+# reproject
+counties <- sf::st_transform(
+  counties,
+  crs = sf::st_crs(med[[1]])
+)
+
+coords <- read.csv(
+    "./data/gentri_all_coordinates.csv"
+)
+
+# gentrification metrics data.frame
+gmets <- data.frame(
+  coords[,c("City","Site")],
+  income = NA,
+  housing = NA,
+  education = NA,
+  housing_price = NA
+)
+
+# now convert coords to spatial object
+coords <- sf::st_as_sf(
+  coords,
+  coords = c("Long", "Lat"),
+  crs = 4326
+)
+
+# transform to counties crs
+coords <- sf::st_transform(
+  coords,
+  sf::st_crs(counties)
+)
+
+
+# get lower 40th quantile of each county
+for(i in 1:length(med)){
+  
+  my_cnty <- unique(med[[i]]$NAME)
+  my_cnty <- strsplit(
+    my_cnty,","
+  )
+  my_state <- unique(
+    trimws(
+      sapply(
+        my_cnty,"[[", 3
+      )
+    )
+  )
+  my_cnty <- unique(
+    trimws(
+      sapply(
+        my_cnty,"[[", 2
+      )
+    )
+  )
+  # subset the counties
+  my_cnty <- gsub("\\s?County","", my_cnty)
+  
+  the_counties <- counties[
+    counties$NAME %in% my_cnty &
+    counties$STATE_NAME %in% my_state,
+  ]
+  
+  # get 40th quantile for median income
+  t40 <- quantile(
+    med[[i]]$value,
+    probs = 0.4
+  )
+  
+
+  # get intersection between counties and site coords
+  city_coords <- sf::st_intersection(
+    coords,
+    the_counties
+  )
+  
+  # get utm of sites
+  my_utm <- unique(
+    apply(
+      sf::st_coordinates(city_coords),
+      1,
+      longlat_to_utm
+    )
+  )
+  if(length(my_utm) > 1){
+    my_utm <- apply(
+      sf::st_coordinates(city_coords),
+      1,
+      longlat_to_utm
+    )
+    nutm <- length(unique(my_utm))
+    
+    city_coords <- split(
+      city_coords,
+      factor(my_utm)
+    )
+    
+    
+  } else {
+    city_coords <- list(city_coords)
+  }
+  for(ut in 1:length(city_coords)){
+    # determine which sites are in what county for transformation
+    #  purposes.
+    
+  med_utm <- sf::st_transform(
+    med[[i]],
+    my_utm
+  )
+    
+  }
+  # transform to UTM
+
+  med_utm$less_than_40 <- med_utm$value < t40
+  
+  city_coords <- sf::st_transform(
+    city_coords,
+    my_utm
+  )
+  city_buff <- sf::st_buffer(
+    city_coords,
+    1000
+  )
+  tmp <- sf::st_intersects(
+    city_buff,
+    med_utm
+  )
+  # fill in each site info
+  for(j in 1:length(tmp)){
+
+    gmets$income[
+      gmets$City == city_coords$City[j] &
+      gmets$Site == city_coords$Site[j]
+    ] <- max(
+      med_utm$less_than_40[tmp[[j]]]
+    )
+  }
+  
+}
+
+
+```
+

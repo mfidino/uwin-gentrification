@@ -60,7 +60,7 @@ coords <- split(
 )
 
 # data types
-my_folders <- c("education", "income", "race")
+my_folders <- c("education", "income", "race", "housing", "housing_price", "med_income")
 
 # poverty line
 # read in income classifications
@@ -68,8 +68,8 @@ i_class <- read.csv(
   "./data/census_data/income_classifications.csv"
 )
 
-
-for(fldr in 2:length(my_folders)){
+# loop through each covariate
+for(fldr in 1:length(my_folders)){
 
   cat(
     paste0(
@@ -78,18 +78,26 @@ for(fldr in 2:length(my_folders)){
     )
   )
   
-  # read in race data
+  tmp_fp <-list.files(
+    paste0(
+      "./data/census_data/",
+      my_folders[fldr],
+      "/"
+    ),
+    full.names = TRUE
+  )
+  if(length(grep("county", tmp_fp))> 0){
+    tmp_fp <- tmp_fp[-grep("county", tmp_fp)]
+  }
+  # read in the data
   census_data <- read_bind(
-    list.files(
-      paste0(
-        "./data/census_data/",
-        my_folders[fldr],
-        "/"
-      ),
-      full.names = TRUE
-    )
+    tmp_fp
   )
   
+  # remove NAME column from med_income
+  if(my_folders[fldr] == "med_income"){
+    census_data <- lapply(census_data, function(x) x[,-grep("NAME", colnames(x))])
+  }
   # number of years of census data
   nyear <- length(census_data)
   
@@ -212,12 +220,16 @@ for(fldr in 2:length(my_folders)){
   names(my_buffs) <- names(coords)
   
   cat("\n querying data around sites.\n")
-  # Abstract this code into a function so we can apply this to every 
-  #  location and year. Just put the for loop in the function itself.
+  
+  # the way this works across all different data sets
+  #  is hard coded into the function with if statements
+  #  because each needed a slightly different tweak.
+  #  So if you want to try and use this for something
+  #  else you may need to modify.
   
   to_save <- interpolate_census_data(
-    census_data,
-    my_buffs
+    my_cdat = census_data,
+    buff_coords = my_buffs
   )
   write.csv(
     to_save,

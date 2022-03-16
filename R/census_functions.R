@@ -157,7 +157,7 @@ interpolate_census_data <- function(
         )
         census_weight <- ins_area / total_area
         
-        if("estimate" %in% colnames(my_cdat[[yr]][[cs]])){
+        if(all(c("estimate", "summary_est") %in% colnames(my_cdat[[yr]][[cs]]))){
           tmp_cdat[[yr]][[cs]]$estimate[tmp1[,site]] <- 
             census_weight *  my_cdat[[yr]][[cs]]$estimate[tmp1[,site]] 
           tmp_cdat[[yr]][[cs]]$summary_est[tmp1[,site]] <-
@@ -177,6 +177,26 @@ interpolate_census_data <- function(
           )[,c("city", "site", "variable", "value", "total")]
           
         }
+        if("estimate" %in% colnames(my_cdat[[yr]][[cs]]) &
+           !"summary_est" %in% colnames(my_cdat[[yr]][[cs]])){
+          tmp_cdat[[yr]][[cs]]$estimate[tmp1[,site]] <- 
+            census_weight *  my_cdat[[yr]][[cs]]$estimate[tmp1[,site]] 
+
+          # group and summarise based on the variable name
+          
+          results[[yr]][[cs]][[site]] <- tmp_cdat[[yr]][[cs]][tmp1[,site],] %>% 
+            dplyr::group_by(variable) %>% 
+            dplyr::summarise(
+              value = sum(estimate, na.rm = TRUE)
+            )
+          results[[yr]][[cs]][[site]]$site <- buff_coords[[cs]]$Site[site]
+          results[[yr]][[cs]][[site]]$city <- buff_coords[[cs]]$City[site]
+          results[[yr]][[cs]][[site]] <- data.frame(
+            results[[yr]][[cs]][[site]]
+          )[,c("city", "site", "variable", "value")]
+          
+        }
+        
         if("summary_est" %in% colnames(my_cdat[[yr]][[cs]]) & 
            "hs diploma" %in% my_cdat[[yr]][[cs]]$variable){
           tmp_cdat[[yr]][[cs]]$value[tmp1[,site]] <- 
@@ -217,6 +237,24 @@ interpolate_census_data <- function(
           results[[yr]][[cs]][[site]] <- data.frame(
             results[[yr]][[cs]][[site]]
           )[,c("city", "site", "variable", "value", "total")]
+        }
+        if(length(colnames(my_cdat[[yr]][[cs]])) == 5 &
+           "value" %in% colnames(my_cdat[[yr]][[cs]])){
+          
+          tmp_cdat[[yr]][[cs]]$value[tmp1[,site]] <- 
+            census_weight *  my_cdat[[yr]][[cs]]$value[tmp1[,site]] 
+          
+          # group and summarise based on the variable name
+          
+          results[[yr]][[cs]][[site]] <- tmp_cdat[[yr]][[cs]][tmp1[,site],] %>% 
+            dplyr::group_by(variable) %>% 
+            dplyr::summarise(
+              value = sum(value, na.rm = TRUE))
+          results[[yr]][[cs]][[site]]$site <- buff_coords[[cs]]$Site[site]
+          results[[yr]][[cs]][[site]]$city <- buff_coords[[cs]]$City[site]
+          results[[yr]][[cs]][[site]] <- data.frame(
+            results[[yr]][[cs]][[site]]
+          )[,c("city", "site", "variable", "value")]
         }
       }
     }

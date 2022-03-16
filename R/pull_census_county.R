@@ -1,8 +1,9 @@
-# pull census data at the tract level
+# pull census data at the county level
 
 # this code could have been abstracted out A LOT to reduce
 #  it's length. But since this was a 'one and done' analysis
 #  I've kept it as is.
+
 
 
 library(dplyr)
@@ -30,6 +31,26 @@ if(open_urls){
   )
 }
 
+# Honestly, the best way to figure out which variables
+#  to gather is to look at the 'Subject Locator' metadata
+#  in the really big pdf for a given dataset. For example,
+#  the sf1 dataset api here:
+if(open_urls){
+  browseURL(
+    "https://www.census.gov/data/developers/data-sets/decennial-census.2010.html#sf1"
+  )
+}
+#  that page has a technical overview document.
+
+# looking through the above document, that is table P1 for
+#   totals (# of people in a census county) and P4 for race
+#   specific info
+#
+# a. proportion white 
+# b. proportion Black
+# c. proportion Hispanic
+# d. proportion Asian
+# d. other
 
 # make a list that stores the correct tables
 #  to query for each dataset.
@@ -47,7 +68,7 @@ if(
     "./data/census_data/var_tables.RDS"
   )
 } else {
-
+  
   my_vars <- list(
     yr00sf1 = tidycensus::load_variables(
       2000,
@@ -79,7 +100,7 @@ if(
     my_vars,
     "./data/census_data/var_tables.RDS"
   )
-
+  
 }
 
 # start figuring out the tables we need
@@ -161,8 +182,8 @@ race$`2019`$year <- 2019
 # get race data from all of these years
 
 for(year in 1:length(race)){
-
-# read in the county data
+  
+  # read in the county data
   
   
   counties <- sf::read_sf(
@@ -178,19 +199,19 @@ for(year in 1:length(race)){
     coords = c("Long", "Lat"),
     crs = 4326
   )
-
+  
   coords <- sf::st_transform(
     coords,
     sf::st_crs(counties)
   )
-
+  
   # buffer coordinates, just by some
   #  small value (this is > 1000m buffer)
   coords_buffer <- sf::st_buffer(
     coords,
     dist = 0.04
   )
-
+  
   # get just the counties that intersect these coordinates
   my_counties_idx <- unique(
     sort(
@@ -204,83 +225,98 @@ for(year in 1:length(race)){
   )
   # subset down to just the counties we need
   counties <- counties[my_counties_idx,]
-
+  
   counties <- data.frame(
     counties[,c("STATEFP", "COUNTYFP", "NAME", "STUSPS")]
   )[,1:4]
-
-
-counties <- split(
-  counties,
-  factor(counties$STUSPS)
-)
-
-my_results <- vector(
-  "list",
-  length = length(counties)
-)
-
-for(i in 1:length(my_results)){
-  # split counties by state
-  longshot <- TRUE
-  mc <- 1
-  while(longshot){
+  
+  
+  counties <- split(
+    counties,
+    factor(counties$STUSPS)
+  )
+  
+  my_results <- vector(
+    "list",
+    length = length(counties)
+  )
+  
+  for(i in 1:length(my_results)){
+    # split counties by state
+    longshot <- TRUE
+    mc <- 1
+    while(longshot){
+      
+      if(race[[year]]$census == "decennial"){
+        tmp <- try(
+          get_decennial(
+            geography = "county",
+            variables = race[[year]]$vars[-1],
+            year = race[[year]]$year,
+            summary_var = race[[year]]$vars[1],
+            state = unique(counties[[i]]$STATEFP),
+            county = counties[[i]]$COUNTYFP,
+            geometry = TRUE,
+            show_call = TRUE
+          ),
+          silent = TRUE
+        )
+        if(any(class(tmp) == "sf")){
+          tmp <- tmp %>% dplyr::group_by(variable) %>% 
+            dplyr::summarise(
+              value = sum(value, na.rm = TRUE),
+              summary_value...Total = sum(summary_value...Total, na.rm = TRUE)
+            )
+        }
+      } else {
+        tmp <- try(
+          get_acs(
+            geography = "county",
+            variables = race[[year]]$vars[-1],
+            year = race[[year]]$year,
+            summary_var = race[[year]]$vars[1],
+            state = unique(counties[[i]]$STATEFP),
+            county = counties[[i]]$COUNTYFP,
+            geometry = TRUE,
+            show_call = TRUE
+          ),
+          silent = TRUE
+        )
+        if(any(class(tmp) == "sf")){
+          tmp <- tmp %>% dplyr::group_by(variable) %>% 
+            dplyr::summarise(
+              estimate = sum(estimate, na.rm = TRUE),
+              summary_est = sum(summary_est, na.rm = TRUE)
+            )
+          
+        }
+      }
+      if(any(class(tmp) == "sf")){
+        longshot <- FALSE
+      } else {
+        mc <- mc+1
+      }
+      if(mc>10){
+        stop("badness.")
+      }
+    }
     
-    if(race[[year]]$census == "decennial"){
-      tmp <- try(
-        get_decennial(
-          geography = "tract",
-          variables = race[[year]]$vars[-1],
-          year = race[[year]]$year,
-          summary_var = race[[year]]$vars[1],
-          state = unique(counties[[i]]$STATEFP),
-          county = counties[[i]]$COUNTYFP,
-          geometry = TRUE,
-          show_call = TRUE
-        ),
-        silent = TRUE
-      )
-    } else {
-      tmp <- try(
-        get_acs(
-          geography = "tract",
-          variables = race[[year]]$vars[-1],
-          year = race[[year]]$year,
-          summary_var = race[[year]]$vars[1],
-          state = unique(counties[[i]]$STATEFP),
-          county = counties[[i]]$COUNTYFP,
-          geometry = TRUE,
-          show_call = TRUE
-        ),
-        silent = TRUE
-      )
-    }
-    if(any(class(tmp) == "sf")){
-      longshot <- FALSE
-    } else {
-      mc <- mc+1
-    }
-    if(mc>10){
-      stop("badness.")
-    }
+    my_results[[i]] <- tmp
+    
   }
   
-  my_results[[i]] <- tmp
+  saveRDS(
+    my_results,
+    paste0(
+      "./data/census_data/race/race_county_",
+      race[[year]]$year,
+      ".RDS"
+    )
+  )
   
 }
 
-saveRDS(
-  my_results,
-  paste0(
-    "./data/census_data/race/race_",
-    race[[year]]$year,
-    ".RDS"
-  )
-)
-
-}
-
-# Do the same with income totals data
+# Do the same with income data
 
 # just going to clear up the names and whatnot
 #  from the variables
@@ -311,7 +347,7 @@ inc_clean <- function(x){
 }
 
 # 2000
-View(my_vars$yr00sf3)
+
 tmp <- my_vars$yr00sf3[grep("P076",  my_vars$yr00sf3$name),]
 
 income$`2000` <- list(
@@ -418,7 +454,7 @@ for(year in 1:length(income)){
       if(income[[year]]$census == "decennial"){
         tmp <- try(
           get_decennial(
-            geography = "tract",
+            geography = "county",
             variables = income[[year]]$vars[-1],
             year = income[[year]]$year,
             summary_var = income[[year]]$vars[1],
@@ -430,10 +466,17 @@ for(year in 1:length(income)){
           ),
           silent = TRUE
         )
+        if(any(class(tmp) == "sf")){
+          tmp <- tmp %>% dplyr::group_by(variable) %>% 
+            dplyr::summarise(
+              value = sum(value, na.rm = TRUE),
+              summary_value...Total = sum(summary_value...total, na.rm = TRUE)
+            )
+        }
       } else {
         tmp <- try(
           get_acs(
-            geography = "tract",
+            geography = "county",
             variables = income[[year]]$vars[-1],
             year = income[[year]]$year,
             summary_var = income[[year]]$vars[1],
@@ -444,6 +487,16 @@ for(year in 1:length(income)){
           ),
           silent = TRUE
         )
+        if(any(class(tmp) == "sf")){
+          tmp <- tmp %>% dplyr::group_by(variable) %>% 
+            dplyr::summarise(
+              estimate = sum(estimate, na.rm = TRUE),
+              summary_est = sum(summary_est, na.rm = TRUE)
+            )
+          
+        }
+
+        
       }
       if(any(class(tmp) == "sf")){
         longshot <- FALSE
@@ -462,14 +515,13 @@ for(year in 1:length(income)){
   saveRDS(
     my_results,
     paste0(
-      "./data/census_data/income/income_",
+      "./data/census_data/income/income_county_",
       income[[year]]$year,
       ".RDS"
     )
   )
   
 }
-
 
 ## Education
 
@@ -617,7 +669,7 @@ for(year in 1:length(edu)){
       if(edu[[year]]$census == "decennial"){
         tmp <- try(
           get_decennial(
-            geography = "tract",
+            geography = "county",
             variables = edu[[year]]$vars[-1],
             year = edu[[year]]$year,
             summary_var = edu[[year]]$vars[1],
@@ -634,7 +686,7 @@ for(year in 1:length(edu)){
           tmp$variable <- edu_clean(tmp$variable)
           # and summarise based on the groups we created
           tmp <- tmp %>% dplyr::group_by(
-            GEOID, variable, summary_value...Total
+            variable,
           ) %>%
             dplyr::summarise(
               value = sum(value, na.rm = TRUE),
@@ -644,7 +696,7 @@ for(year in 1:length(edu)){
       } else {
         tmp <- try(
           get_acs(
-            geography = "tract",
+            geography = "county",
             variables = edu[[year]]$vars[-1],
             year = edu[[year]]$year,
             summary_var = edu[[year]]$vars[1],
@@ -660,13 +712,13 @@ for(year in 1:length(edu)){
           tmp$variable <- edu_clean(tmp$variable)
           # and summarise based on the groups we created
           tmp <- tmp %>% dplyr::group_by(
-            GEOID, variable, summary_est
+            variable
           ) %>%
             dplyr::summarise(
               value = sum(estimate, na.rm = TRUE),
               .groups = "drop_last"
             )
-          }
+        }
       }
       if(any(class(tmp) == "sf")){
         longshot <- FALSE
@@ -685,7 +737,7 @@ for(year in 1:length(edu)){
   saveRDS(
     my_results,
     paste0(
-      "./data/census_data/education/education_",
+      "./data/census_data/education/education_county_",
       edu[[year]]$year,
       ".RDS"
     )
@@ -717,7 +769,7 @@ names(hou$`2000`$vars) <- tmp$label
 
 # 2010
 
-View(my_vars$yr10sf1)
+#View(my_vars$yr10sf1)
 
 tmp <- my_vars$yr10acs5[grep("B25001_001", my_vars$yr10acs5$name),]
 tmp$label <- gsub("Estimate!!", "", tmp$label)
@@ -815,7 +867,7 @@ for(year in 1:length(hou)){
       if(hou[[year]]$census == "decennial"){
         tmp <- try(
           get_decennial(
-            geography = "tract",
+            geography = "county",
             variables = hou[[year]]$vars,
             year = hou[[year]]$year,
             state = unique(counties[[i]]$STATEFP),
@@ -830,7 +882,7 @@ for(year in 1:length(hou)){
           # clean up variable names
           # and summarise based on the groups we created
           tmp <- tmp %>% dplyr::group_by(
-            GEOID, variable
+            variable
           ) %>%
             dplyr::summarise(
               value = sum(value, na.rm = TRUE),
@@ -840,7 +892,7 @@ for(year in 1:length(hou)){
       } else {
         tmp <- try(
           get_acs(
-            geography = "tract",
+            geography = "county",
             variables = hou[[year]]$vars,
             year = hou[[year]]$year,
             state = unique(counties[[i]]$STATEFP),
@@ -854,7 +906,7 @@ for(year in 1:length(hou)){
         if( any(class(tmp) == "sf")){
           # and summarise based on the groups we created
           tmp <- tmp %>% dplyr::group_by(
-            GEOID, variable
+            variable
           ) %>%
             dplyr::summarise(
               value = sum(estimate, na.rm = TRUE),
@@ -879,13 +931,12 @@ for(year in 1:length(hou)){
   saveRDS(
     my_results,
     paste0(
-      "./data/census_data/housing/housing_",
+      "./data/census_data/housing/housing_county_",
       hou[[year]]$year,
       ".RDS"
     )
   )
 }
-
 
 
 ## Housing prices
@@ -898,6 +949,8 @@ pri <- vector(
 names(pri) <- all_years
 
 # 2000
+
+# turn View() on if you want to filter through the table
 View(my_vars$yr00sf3)
 tmp <- my_vars$yr00sf3[grep("H076001", my_vars$yr00sf3$name), 1:2]
 # drop the sub-totals that we do not need
@@ -1011,7 +1064,7 @@ for(year in 1:length(pri)){
       if(pri[[year]]$census == "decennial"){
         tmp <- try(
           get_decennial(
-            geography = "tract",
+            geography = "county",
             variables = pri[[year]]$vars,
             year = pri[[year]]$year,
             state = unique(counties[[i]]$STATEFP),
@@ -1026,10 +1079,10 @@ for(year in 1:length(pri)){
           # clean up variable names
           # and summarise based on the groups we created
           tmp <- tmp %>% dplyr::group_by(
-            GEOID, variable
+            variable
           ) %>%
             dplyr::summarise(
-              value = sum(value, na.rm = TRUE),
+              value = median(value, na.rm = TRUE),
               .groups = "drop_last"
             )
         }
@@ -1053,7 +1106,7 @@ for(year in 1:length(pri)){
             GEOID, variable
           ) %>%
             dplyr::summarise(
-              value = sum(estimate, na.rm = TRUE),
+              value = median(estimate, na.rm = TRUE),
               .groups = "drop_last"
             )
         }
@@ -1075,181 +1128,10 @@ for(year in 1:length(pri)){
   saveRDS(
     my_results,
     paste0(
-      "./data/census_data/housing_price/housing_price_",
+      "./data/census_data/housing_price/housing_price_county_",
       pri[[year]]$year,
       ".RDS"
     )
   )
-}
-
-
-## median income
-
-
-# Do the same with income totals data
-
-# just going to clear up the names and whatnot
-#  from the variables
-
-
-med_income <- vector(
-  "list",
-  length = length(all_years)
-)
-
-names(med_income) <- all_years
-
-
-# 2000
-
-tmp <- my_vars$yr00sf3[grep("HCT012001",  my_vars$yr00sf3$name),]
-
-med_income$`2000` <- list(
-  year = 2000,
-  census = "decennial",
-  vars = tmp$name
-)
-
-
-# 2010
-
-tmp <- my_vars$yr10acs5[grep("B19113_001", my_vars$yr10acs5$name),]
-
-med_income$`2010` <- list(
-  year = 2010,
-  census = "acs",
-  vars = tmp$name
-)
-
-
-# 2015, same as 2010
-my_vars$yr15[grep("B19113_001", my_vars$yr15$name),1:2]
-med_income$`2015` <- med_income$`2010`
-med_income$`2015`$year <- 2015
-
-# 2019, same as 2010
-my_vars$yr19[grep("B19113_001", my_vars$yr19$name),1:2]
-med_income$`2019` <- med_income$`2010`
-med_income$`2019`$year <- 2019
-
-
-
-for(year in 2:length(med_income)){
-  
-  # read in the county data
-  
-  
-  counties <- sf::read_sf(
-    "D:/GIS/counties/cb_2020_us_county_500k"
-  )
-  # read in spatial data, and reproject to counties crs
-  coords <- read.csv(
-    "./data/gentri_all_coordinates.csv"
-  )
-  
-  coords <- sf::st_as_sf(
-    coords,
-    coords = c("Long", "Lat"),
-    crs = 4326
-  )
-  
-  coords <- sf::st_transform(
-    coords,
-    sf::st_crs(counties)
-  )
-  
-  # buffer coordinates, just by some
-  #  small value (this is > 1000m buffer)
-  coords_buffer <- sf::st_buffer(
-    coords,
-    dist = 0.04
-  )
-  
-  # get just the counties that intersect these coordinates
-  my_counties_idx <- unique(
-    sort(
-      unlist(
-        sf::st_intersects(
-          coords_buffer,
-          counties,
-        )
-      )
-    )
-  )
-  # subset down to just the counties we need
-  counties <- counties[my_counties_idx,]
-  
-  counties <- data.frame(
-    counties[,c("STATEFP", "COUNTYFP", "NAME", "STUSPS")]
-  )[,1:4]
-  
-  
-  counties <- split(
-    counties,
-    factor(counties$STUSPS)
-  )
-  
-  my_results <- vector(
-    "list",
-    length = length(counties)
-  )
-  
-  for(i in 1:length(my_results)){
-    # split counties by state
-    longshot <- TRUE
-    mc <- 1
-    while(longshot){
-      
-      if(med_income[[year]]$census == "decennial"){
-        tmp <- try(
-          get_decennial(
-            geography = "tract",
-            variables = med_income[[year]]$vars,
-            year = med_income[[year]]$year,
-            state = unique(counties[[i]]$STATEFP),
-            county = counties[[i]]$COUNTYFP,
-            geometry = TRUE,
-            show_call = TRUE,
-            sumfile = "sf3"
-          ),
-          silent = TRUE
-        )
-      } else {
-        tmp <- try(
-          get_acs(
-            geography = "tract",
-            variables = med_income[[year]]$vars,
-            year = med_income[[year]]$year,
-            state = unique(counties[[i]]$STATEFP),
-            county = counties[[i]]$COUNTYFP,
-            geometry = TRUE,
-            show_call = TRUE
-          ),
-          silent = TRUE
-        )
-      }
-      if(any(class(tmp) == "sf")){
-        longshot <- FALSE
-      } else {
-        mc <- mc+1
-      }
-      if(mc>10){
-        stop("badness.")
-      }
-    }
-    
-    my_results[[i]] <- tmp
-    
-  }
-  
-  saveRDS(
-    my_results,
-    paste0(
-      "./data/census_data/med_income/med_income_",
-      med_income[[year]]$year,
-      ".RDS"
-    )
-  )
-  
 }
 
