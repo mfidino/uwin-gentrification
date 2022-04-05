@@ -16,9 +16,11 @@ library(bbplot)
 library(plot3D)
 library(viridis)
 library(sf)
+library(raster)
 source("./R/census_functions.R")
 
 ```
+
 
 
 ## The metric
@@ -44,6 +46,14 @@ Across all of these years I compiled data on race, income, number of housing uni
 
 ## Step 1. Median income at start of the 20 year period.
 
+To calculate this I took the median income at the 40th percentile for
+each census tract that fell within a county that was sampled in a given
+UWIN city. Following this, I determined which census tracts were less
+then that specific value. I then intersected the site coordinates on those census tracts to determine if that specific site fell within a 
+census tract that had a median income less than the 40th percentile of the studies area in 2000. Unlike other metrics we calculated here, we don't need to compare
+census tracts across time. Instead, all I did was calculated the 40th income
+percentile in 2000 and used that as the cutoff for the 2019 census tract levels.
+
 ```{r med_inc, echo = FALSE}
 med <- readRDS("./data/census_data/med_income/med_income_2000.RDS")
 
@@ -62,13 +72,6 @@ coords <- read.csv(
 )
 
 # gentrification metrics data.frame
-gmets <- data.frame(
-  coords[,c("City","Site")],
-  income = NA,
-  housing = NA,
-  education = NA,
-  housing_price = NA
-)
 
 # now convert coords to spatial object
 coords <- sf::st_as_sf(
@@ -83,113 +86,791 @@ coords <- sf::st_transform(
   sf::st_crs(counties)
 )
 
+coords$City <- gsub("phaz2", "phaz", coords$City)
 
-# get lower 40th quantile of each county
+city_result <- vector("list", length = length(med))
+
+gvals <- rep(NA, length(med))
+
+# # add the city to each census tract
 for(i in 1:length(med)){
   
+  # get the points that intersect with this specific 
+  #  bit of census data.
+  tmp <- sf::st_intersection(
+    med[[i]],
+    coords
+  )
+  my_cnty <- med[[i]]$NAME
+  my_cnty <- strsplit(
+    my_cnty,","
+  )
+  my_cnty <- trimws(
+    sapply(
+      my_cnty, "[[", 2
+    )
+  )
+  med[[i]]$County <- my_cnty
+  
+  if(length(unique(tmp$City)) == 1){
+    med[[i]]$City <- unique(tmp$City)
+  }
+  # funky IL stuff
+  if(i == 8){
   my_cnty <- unique(med[[i]]$NAME)
   my_cnty <- strsplit(
     my_cnty,","
   )
-  my_state <- unique(
-    trimws(
-      sapply(
-        my_cnty,"[[", 3
-      )
+  my_cnty <- trimws(
+    sapply(
+      my_cnty, "[[", 2
     )
   )
-  my_cnty <- unique(
-    trimws(
-      sapply(
-        my_cnty,"[[", 2
-      )
+  my_cnty <- gsub(" County", "", my_cnty)
+  med[[i]]$City <- NA
+  med[[i]]$City[my_cnty %in% c("Cook", "DuPage", "Lake", "Will", "Kane")] <- "chil"
+  med[[i]]$City[my_cnty %in% c("Champaign")] <- "uril"
+  med[[i]]$City[is.na(med[[i]]$City)] <- "slmo"
+  }
+  if(i == 20){
+    
+  my_cnty <- unique(med[[i]]$NAME)
+  my_cnty <- strsplit(
+    my_cnty,","
+  )
+  my_cnty <- trimws(
+    sapply(
+      my_cnty, "[[", 2
     )
   )
-  # subset the counties
-  my_cnty <- gsub("\\s?County","", my_cnty)
+  my_cnty <- gsub(" County", "", my_cnty)
+  med[[i]]$City <- NA
+  med[[i]]$City[my_cnty %in% c("Pierce")] <- "tawa"
+  med[[i]]$City[my_cnty %in% c("King")] <- "sewa"
+  }
   
-  the_counties <- counties[
-    counties$NAME %in% my_cnty &
-    counties$STATE_NAME %in% my_state,
-  ]
-  
-  # get 40th quantile for median income
-  t40 <- quantile(
-    med[[i]]$value,
-    probs = 0.4
+  # only get the counties where we have sites
+  my_cnties <- unique(
+    sf::st_intersection(
+      med[[i]],
+      coords
+    )$County
   )
   
+  med[[i]] <- med[[i]][med[[i]]$County %in% my_cnties,]
+  
+}
+# combine, and then split by city
+allmed <- dplyr::bind_rows(med)
 
-  # get intersection between counties and site coords
-  city_coords <- sf::st_intersection(
+citymed <- split(
+  allmed,
+  factor(allmed$City)
+)
+
+# go through each city now and compile the income metric
+income_result <- vector("list", length = length(citymed))
+for(i in 1:length(citymed)){
+  gvals[i] <- quantile(
+    citymed[[i]]$value,
+    probs = c(0.4)
+  )
+  # figure out which tracts are less than the 40th quantile
+  citymed[[i]]$income <- citymed[[i]]$value < gvals[i]
+  
+  # and then figure out which sites are
+  income_result[[i]] <- sf::st_intersection(
     coords,
-    the_counties
+    citymed[[i]]
+  )
+}
+
+# combine all city_results
+income_result <- dplyr::bind_rows(income_result)
+
+```
+
+Here is a table that shows how many sites are above (FALSE) and below (TRUE) the 40th percentile of median income. Some cities look to have  a pretty even split, which is nice, while other cities (e.g. Salt Lake City, **scut** has many sites above the median income value).
+
+```{r income_table, echo = FALSE}
+
+pander::pander(table(income_results$City, income_results$income),
+               caption = "The number of sites below the 40th percentile of income in 1990 for each city.")
+
+```
+
+## Step 2. Percent of housing built over 20 years
+
+We now need to find locations whose percentage of housing built over the past 20 years is below the 40th per centile for the metropolitan area. To do this we need to figure out the percent change for each census tract from 2000 to 2019, calculate the 40th percentile, and then identify the census tracts that are below the 40th percentile. However, census tracts change a little bit each decade, and we need to be able to know how many houses (roughly) were present in 2000 in the 2019 census tracts. To do this:
+
+1. I converted the raw housing counts into housing density based on the size
+of the census tracts in 2000 and 2019.
+2. I rasterized the housing data from 2000 into equally sized grid cells 
+among cities (500m x 500m).
+3. I extracted the rasterized data from 2000 with the 2019 census tracts, taking the mean from each intersecting raster layer.
+4. I unscaled the housing density value  back to 'number of houses built' (i.e.,
+multiplied by the area of the 2019 census tract).
+
+If a census tract did not change over time, then this method would be equivalent to spatially joining the two datasets. If a census tract did change, then this method is similar to conducting areal interpolation across the 2000 census tracts
+that a given 2019 census tract intersects with. I decided on a 500 m resolution because extracting the rasterized data from 2000 with the 2000 census tracts returned the same values (i.e., there really wasn't a reason to go to finer
+spatial scales).
+
+
+```{r hends_longshot, echo = FALSE}
+h1 <- readRDS("./data/census_data/housing/housing_2000.RDS")
+h1 <- lapply(
+  h1,
+  dplyr::ungroup
+)
+h1 <- dplyr::bind_rows(h1)
+
+# project to 4326
+h1 <- sf::st_transform(
+  h1,
+  4326
+)
+
+h2 <- readRDS("./data/census_data/housing/housing_2019.RDS")
+h2 <- lapply(
+  h2,
+  dplyr::ungroup
+)
+h2 <- dplyr::bind_rows(h2)
+
+h2 <- st_transform(
+  h2,
+  4326
+)
+
+#  we can use that over again.
+houdmed <- vector("list", length = length(citymed))
+
+# store the suggested GEOIDs using the explanation above.
+housing_list <- vector("list", length = length(citymed))
+names(housing_list) <- names(citymed)
+
+# This takes a while to run so I don't want to do it unless it's needed.
+#  thus I saved it as an RDS file.
+if(!file.exists("./data/census_data/housing/gent_classification.rds")){
+  for(i in 1:length(houdmed)){
+   # reproject h1 to
+   mmed <- st_transform(
+     citymed[[i]],
+     4326
+   )
+  
+   # get what intersects with a given city in 2000
+  tmp1 <- suppressMessages(
+      sf::st_intersects(
+      mmed,
+      h1
+    )
+  )
+  # and in 2019
+  tmp2 <- suppressMessages(
+    sf::st_intersects(
+      mmed,
+      h2
+    )
+  )
+  # store these values in a list
+  houdmed[[i]] <- list(
+    start = h1[unique(unlist(tmp1)),],
+    end = h2[unique(unlist(tmp2)),]
+  )
+  # get lat/long to convert to utm, needed for rasterizing.
+  my_utm <- longlat_to_utm(
+    c(
+      mean(st_bbox(houdmed[[i]]$start)[c(1,3)]),
+      mean(st_bbox(houdmed[[i]]$start)[c(2,3)])
+    )
+  )
+  # and convert the 2000 and 2019 data to utms for each city
+  houdmed[[i]] <- lapply(
+    houdmed[[i]],
+    function(x) sf::st_transform(x, my_utm)
   )
   
-  # get utm of sites
-  my_utm <- unique(
-    apply(
-      sf::st_coordinates(city_coords),
-      1,
-      longlat_to_utm
+  # divide the number of houses in a census tract
+  #  by the area of that census tract.
+  houdmed[[i]]$start$density <- houdmed[[i]]$start$value /
+    units::set_units(
+      sf::st_area(houdmed[[i]]$start),
+      km^2
     )
+  houdmed[[i]]$end$density19 <- houdmed[[i]]$end$value /
+    units::set_units(
+      sf::st_area(houdmed[[i]]$end),
+      km^2
+    )
+  # create a raster of the area with a 500 meter resolution.
+  my_rast <- raster(
+    resolution = 500,
+    crs = st_crs(my_utm)$proj4string,
+    xmn = st_bbox(houdmed[[i]]$start)[1],
+    xmx = st_bbox(houdmed[[i]]$start)[3],
+    ymn = st_bbox(houdmed[[i]]$start)[2],
+    ymx = st_bbox(houdmed[[i]]$start)[4]
   )
-  if(length(my_utm) > 1){
-    my_utm <- apply(
-      sf::st_coordinates(city_coords),
-      1,
-      longlat_to_utm
-    )
-    nutm <- length(unique(my_utm))
-    
-    city_coords <- split(
-      city_coords,
-      factor(my_utm)
-    )
-    
-    
-  } else {
-    city_coords <- list(city_coords)
-  }
-  for(ut in 1:length(city_coords)){
-    # determine which sites are in what county for transformation
-    #  purposes.
-    
-  med_utm <- sf::st_transform(
-    med[[i]],
-    my_utm
-  )
-    
-  }
-  # transform to UTM
-
-  med_utm$less_than_40 <- med_utm$value < t40
   
-  city_coords <- sf::st_transform(
-    city_coords,
-    my_utm
+  # and turn the 2000 census tract data into a raster
+  census_raster <- rasterize(
+    houdmed[[i]]$start,
+    my_rast,
+    field = "density",
+    fun = "mean"
   )
-  city_buff <- sf::st_buffer(
-    city_coords,
-    1000
-  )
-  tmp <- sf::st_intersects(
-    city_buff,
-    med_utm
-  )
-  # fill in each site info
-  for(j in 1:length(tmp)){
-
-    gmets$income[
-      gmets$City == city_coords$City[j] &
-      gmets$Site == city_coords$Site[j]
-    ] <- max(
-      med_utm$less_than_40[tmp[[j]]]
+  
+  # Extract based on the 2019 census tracts
+  start_housing <- suppressWarnings(
+    raster::extract(
+      census_raster,
+      houdmed[[i]]$end,
+      buffer = 0,
+      layer = 1,
+      fun = mean,
+      na.rm = TRUE
     )
-  }
+  )[,1]
+  # tack onto the housing list and save it
+  housing_list[[i]] <- houdmed[[i]]$end
+  housing_list[[i]]$density19 <- as.numeric(housing_list[[i]]$density19)
+  housing_list[[i]]$density00 <- start_housing
+  housing_list[[i]]$value19 <- housing_list[[i]]$density19 * 
+    as.numeric(units::set_units(sf::st_area(housing_list[[i]]), km^2))
+  housing_list[[i]]$value00 <- housing_list[[i]]$density00 * 
+    as.numeric(units::set_units(sf::st_area(housing_list[[i]]), km^2))
+}
+
+saveRDS(
+  housing_list,
+  "./data/census_data/housing/gent_classification.rds"
+)
+}else{
+  housing_list <- readRDS("./data/census_data/housing/gent_classification.rds")
+}
+
+# Now we need to calculate the percent housing across years of each census tract
+
+for(i in 1:length(housing_list)){
+  housing_list[[i]]$prop_housing <- housing_list[[i]]$value19 / housing_list[[i]]$value00
+  # then calculate the 40th percentile
+  my_cutoff <- quantile(
+    housing_list[[i]]$prop_housing,
+    probs = 0.4,
+    na.rm = TRUE
+  )
+  housing_list[[i]]$housing_under <- housing_list[[i]]$prop_housing < my_cutoff
+}
+# and then we need to figure out which of our sites fall within these areas
+housing_result <- vector("list", length = length(housing_list))
+for(i in 1:length(housing_result)){
+  tmp <- housing_list[[i]]
+  tmp <- sf::st_transform(
+    tmp,
+    sf::st_crs(coords)
+  )
+  housing_result[[i]] <- sf::st_intersection(
+    coords,
+    tmp
+  )
+}
+
+housing_result <- dplyr::bind_rows(housing_result)
+
+```
+
+Here is a table that shows how many sites are above (FALSE) and below (TRUE) the 40th percentile of houses built. 
+
+```{r housing_table, echo = FALSE}
+
+pander::pander(table(housing_result$City, housing_result$housing_under),
+               caption = "The number of sites below the 40th percentile of the number of houses built between 2000 and 2019.")
+
+```
+
+
+## Step 3. Has a percentage increase in educational attainment that is greater than that of the metropolitan area.
+
+Again, we need to know what the percent increase is for each census tract, so I needed to rasterize the 2000 census data.
+
+
+```{r education, echo = FALSE}
+h1 <- readRDS("./data/census_data/education/education_2000.RDS")
+h1 <- lapply(
+  h1,
+  dplyr::ungroup
+)
+h1 <- dplyr::bind_rows(h1)
+
+# project to 4326
+h1 <- sf::st_transform(
+  h1,
+  4326
+)
+
+h2 <- readRDS("./data/census_data/education/education_2019.RDS")
+h2 <- lapply(
+  h2,
+  dplyr::ungroup
+)
+h2 <- dplyr::bind_rows(h2)
+
+h2 <- st_transform(
+  h2,
+  4326
+)
+
+#  we can use that over again.
+edumed <- vector("list", length = length(citymed))
+
+# store the suggested GEOIDs using the explanation above.
+edu_list <- vector("list", length = length(citymed))
+names(edu_list) <- names(citymed)
+
+# This takes a while to run so I don't want to do it unless it's needed.
+#  thus I saved it as an RDS file.
+if(!file.exists("./data/census_data/education/gent_classification.rds")){
+  for(i in 1:length(edumed)){
+   # reproject h1 to
+   mmed <- st_transform(
+     citymed[[i]],
+     4326
+   )
+  
+   # get what intersects with a given city in 2000
+  tmp1 <- suppressMessages(
+      sf::st_intersects(
+      mmed,
+      h1
+    )
+  )
+  # and in 2019
+  tmp2 <- suppressMessages(
+    sf::st_intersects(
+      mmed,
+      h2
+    )
+  )
+  # store these values in a list
+  edumed[[i]] <- list(
+    start = h1[unique(unlist(tmp1)),],
+    end = h2[unique(unlist(tmp2)),]
+  )
+  # get lat/long to convert to utm, needed for rasterizing.
+  my_utm <- longlat_to_utm(
+    c(
+      mean(st_bbox(edumed[[i]]$start)[c(1,3)]),
+      mean(st_bbox(edumed[[i]]$start)[c(2,3)])
+    )
+  )
+  # and convert the 2000 and 2019 data to utms for each city
+  edumed[[i]] <- lapply(
+    edumed[[i]],
+    function(x) sf::st_transform(x, my_utm)
+  )
+  
+  # we need to reduce this to people with and without 
+  #  a college degree
+  edumed[[i]]$start$variable <- gsub(
+    "advanced college degree|college graduate",
+    "college degree",
+    edumed[[i]]$start$variable
+  )
+  edumed[[i]]$end$variable <- gsub(
+    "advanced college degree|college graduate",
+    "college degree",
+    edumed[[i]]$end$variable
+  )
+  edumed[[i]]$start$variable <- gsub(
+    "hs diploma|no hs diploma|some college",
+    "no college degree",
+    edumed[[i]]$start$variable
+  )
+  edumed[[i]]$end$variable <- gsub(
+    "hs diploma|no hs diploma|some college",
+    "no college degree",
+    edumed[[i]]$end$variable
+  )
+  # now group and sum a bit, and then calcualte proportion
+  #  with a college degree
+  edumed[[i]]$start <- edumed[[i]]$start %>% 
+    dplyr::group_by(GEOID, variable) %>% 
+    dplyr::summarise(
+      total = unique(summary_value...Total),
+      value = sum(value, na.rm = TRUE),
+      .groups = "drop_last"
+    ) %>% 
+    dplyr::ungroup()
+  edumed[[i]]$start$prop <- edumed[[i]]$start$value / edumed[[i]]$start$total
+  edumed[[i]]$start <- edumed[[i]]$start[
+    edumed[[i]]$start$variable ==  "college degree",
+    ]
+  
+  edumed[[i]]$end <- edumed[[i]]$end %>% 
+  dplyr::group_by(GEOID, variable) %>% 
+  dplyr::summarise(
+    total = unique(summary_est),
+    value = sum(value, na.rm = TRUE),
+    .groups = "drop_last"
+  ) %>% 
+  dplyr::ungroup()
+  edumed[[i]]$end$prop19 <- edumed[[i]]$end$value / edumed[[i]]$end$total
+  edumed[[i]]$end <- edumed[[i]]$end[
+    edumed[[i]]$end$variable ==  "college degree",
+    ]
+
+  # create a raster of the area with a 500 meter resolution.
+  my_rast <- raster(
+    resolution = 500,
+    crs = st_crs(my_utm)$proj4string,
+    xmn = st_bbox(edumed[[i]]$start)[1],
+    xmx = st_bbox(edumed[[i]]$start)[3],
+    ymn = st_bbox(edumed[[i]]$start)[2],
+    ymx = st_bbox(edumed[[i]]$start)[4]
+  )
+  
+  # and turn the 2000 census tract data into a raster
+  census_raster <- rasterize(
+    edumed[[i]]$start,
+    my_rast,
+    field = "prop",
+    fun = "mean"
+  )
+  
+  # Extract based on the 2019 census tracts
+  start_education <- suppressWarnings(
+    raster::extract(
+      census_raster,
+      edumed[[i]]$end,
+      buffer = 0,
+      layer = 1,
+      fun = mean,
+      na.rm = TRUE
+    )
+  )[,1]
+  # tack onto the change list and save it
+  edu_list[[i]] <- edumed[[i]]$end
+  edu_list[[i]]$prop00 <- start_education
+}
+
+saveRDS(
+  edu_list,
+  "./data/census_data/education/gent_classification.rds"
+)
+}else{
+  edu_list <- readRDS("./data/census_data/education/gent_classification.rds")
+}
+
+# and then figure out which sites fall in these areas
+
+for(i in 1:length(edu_list)){
+  edu_list[[i]]$prop_edu <- edu_list[[i]]$prop19 - edu_list[[i]]$prop00
+  # get the mean change
+  
+  # then calculate the 40th percentile
+  my_cutoff <- quantile(
+    edu_list[[i]]$prop_edu,
+    probs = 0.5,
+    na.rm = TRUE
+  )
+  edu_list[[i]]$edu_over <- edu_list[[i]]$prop_edu > my_cutoff
+}
+# and then we need to figure out which of our sites fall within these areas
+edu_result <- vector("list", length = length(edu_list))
+for(i in 1:length(edu_result)){
+  tmp <- edu_list[[i]]
+  tmp <- sf::st_transform(
+    tmp,
+    sf::st_crs(coords)
+  )
+  edu_result[[i]] <- sf::st_intersection(
+    coords,
+    tmp
+  )
+}
+
+edu_result <- dplyr::bind_rows(edu_result)
+
+```
+
+
+Here is a table that shows how many sites are above (TRUE) and below (FALSE) the average change in in educational attainment.
+
+```{r edu_table, echo = FALSE}
+
+pander::pander(table(edu_result$City, edu_result$edu_over),
+               caption = "The number of sites below the 50th percentile of educational attainment (i.e,. college degree) between 2000 and 2019.")
+
+```
+
+
+### Step 4: Housing prices increased during the decade.
+
+calculating this is similar to comparing changes in the number of houses built 
+within a given census tract. However, we also need to account for inflation in these calculations. I went to the [U.S. Bureau of Labor Statistics website] (https://www.bls.gov/data/inflation_calculator.htm) and used their inflation calculator to determine how much the price of \$1 has changed between January 2000 and January 2019 (it is \$1.50). Thus, I multiplied the dollar values of median housing prices in 2000 by `1.50` before comparing changes in housing prices.
+
+
+```{r prices_longshot, echo = FALSE}
+h1 <- readRDS("./data/census_data/housing_price/housing_price_2000.RDS")
+h1 <- lapply(
+  h1,
+  dplyr::ungroup
+)
+h1 <- dplyr::bind_rows(h1)
+
+# project to 4326
+h1 <- sf::st_transform(
+  h1,
+  4326
+)
+
+h2 <- readRDS("./data/census_data/housing_price/housing_price_2019.RDS")
+h2 <- lapply(
+  h2,
+  dplyr::ungroup
+)
+h2 <- dplyr::bind_rows(h2)
+
+h2 <- st_transform(
+  h2,
+  4326
+)
+
+#  we can use that over again.
+pricemed <- vector("list", length = length(citymed))
+
+# store the suggested GEOIDs using the explanation above.
+price_list <- vector("list", length = length(citymed))
+names(price_list) <- names(citymed)
+
+# This takes a while to run so I don't want to do it unless it's needed.
+#  thus I saved it as an RDS file.
+if(!file.exists("./data/census_data/housing_price/gent_classification.rds")){
+  for(i in 1:length(pricemed)){
+   # reproject h1 to
+   mmed <- st_transform(
+     citymed[[i]],
+     4326
+   )
+  
+   # get what intersects with a given city in 2000
+  tmp1 <- suppressMessages(
+      sf::st_intersects(
+      mmed,
+      h1
+    )
+  )
+  # and in 2019
+  tmp2 <- suppressMessages(
+    sf::st_intersects(
+      mmed,
+      h2
+    )
+  )
+  # store these values in a list
+  pricemed[[i]] <- list(
+    start = h1[unique(unlist(tmp1)),],
+    end = h2[unique(unlist(tmp2)),]
+  )
+  # get lat/long to convert to utm, needed for rasterizing.
+  my_utm <- longlat_to_utm(
+    c(
+      mean(st_bbox(pricemed[[i]]$start)[c(1,3)]),
+      mean(st_bbox(pricemed[[i]]$start)[c(2,3)])
+    )
+  )
+  # and convert the 2000 and 2019 data to utms for each city
+  pricemed[[i]] <- lapply(
+    pricemed[[i]],
+    function(x) sf::st_transform(x, my_utm)
+  )
+  
+  # create a raster of the area with a 500 meter resolution.
+  my_rast <- raster(
+    resolution = 500,
+    crs = st_crs(my_utm)$proj4string,
+    xmn = st_bbox(pricemed[[i]]$start)[1],
+    xmx = st_bbox(pricemed[[i]]$start)[3],
+    ymn = st_bbox(pricemed[[i]]$start)[2],
+    ymx = st_bbox(pricemed[[i]]$start)[4]
+  )
+  
+  # and turn the 2000 census tract data into a raster
+  census_raster <- rasterize(
+    pricemed[[i]]$start,
+    my_rast,
+    field = "value",
+    fun = "mean"
+  )
+  
+  # Extract based on the 2019 census tracts, mu
+  start_price <- suppressWarnings(
+    raster::extract(
+      census_raster,
+      pricemed[[i]]$end,
+      buffer = 0,
+      layer = 1,
+      fun = mean,
+      na.rm = TRUE
+    )
+  )[,1]
+  # tack onto the price list and save it
+  price_list[[i]] <- pricemed[[i]]$end
+  # Add year to value19
+  colnames(price_list[[i]]) <- gsub(
+    "value",
+    "value19",
+    colnames(price_list[[i]])
+  )
+  # add price in 2000, and multiply by 1.5
+  price_list[[i]]$value00 <- start_price * 1.5
+}
+
+saveRDS(
+  price_list,
+  "./data/census_data/housing_price/gent_classification.rds"
+)
+}else{
+  price_list <- readRDS("./data/census_data/housing_price/gent_classification.rds")
+}
+
+# Now we need to calculate if the price of houses increased
+
+for(i in 1:length(price_list)){
+  price_list[[i]]$price_up <- price_list[[i]]$value19 > price_list[[i]]$value00
+}
+# and then we need to figure out which of our sites fall within these areas
+price_result <- vector("list", length = length(price_list))
+for(i in 1:length(price_result)){
+  tmp <- price_list[[i]]
+  tmp <- sf::st_transform(
+    tmp,
+    sf::st_crs(coords)
+  )
+  price_result[[i]] <- sf::st_intersection(
+    coords,
+    tmp
+  )
+}
+
+price_result <- dplyr::bind_rows(price_result)
+
+```
+
+Here is a table that shows how many sites reside in census tracts that have increased in price (TRUE) over time and those that have not (FALSE)
+
+```{r price_table, echo = FALSE}
+
+pander::pander(table(price_result$City, price_result$price_up),
+               caption = "The number of sites that reside in census tracts whose housing prices have increased between 2000 and 2019.")
+
+```
+
+
+## Step 5: Combining all of these metrics to calculate our gentrification metric.
+
+For an area to be gentrifying, it must have all four of the aforementioned categories. As I calculated all of these as boolean, I just needed to take the product of each. In this section, I will do this for all of the sites across cities so we can get an idea of how well we sampled gentrifying areas. Unfortunately, it doesn't look like our cameras do that great of a job with being placed in 'gentrifying' areas based on this metric, so we are going to have to think about other ways to represent this.
+
+```{r compute_gentrification_first, echo = FALSE}
+
+# get just the income stuff first
+gent_result <- income_result[,c("City", "Site", "income")]
+gent_result <- sf::st_join(
+  gent_result,
+  housing_result[,c("housing_under")]
+)
+gent_result <- sf::st_join(
+  gent_result,
+  edu_result[,"edu_over"]
+)
+gent_result <- sf::st_join(
+  gent_result,
+  price_result[,"price_up"]
+)
+
+gent_result <- gent_result %>% 
+  dplyr::group_by(Site, City) %>% 
+  dplyr::mutate(
+    gentrify_a = sum(c(income, housing_under, edu_over, price_up)) > 3,
+    gentrify_b = sum(c(income, edu_over)) == 2,
+    gentrify_c = sum(c(income, price_up)) == 2
+  )
+
+pander::pander(table(gent_result$City, gent_result$gentrify_c),
+               caption = "The number of sites that reside in census tracts we identified as gentrifying based on the Freeman metric.")
+
+
+```
+
+One thing we could do instead is take the sum of these four indicators as a measure of gentrification. This would allow for us to see how many gentrifying 'qualifiers' a site has instead of making it a binary outcome, which would have a little more information. To me, this looks a bit better, though we do make the assumption that all metrics are exchangeable (e.g.,, we don't care which  of the 2 metrics a site has, so it could be any combination of the four variables).
+
+```{r gentrification_two, echo = FALSE}
+# get just the income stuff first
+gent_result <- income_result[,c("City", "Site", "income")]
+gent_result <- sf::st_join(
+  gent_result,
+  housing_result[,c("housing_under")]
+)
+gent_result <- sf::st_join(
+  gent_result,
+  edu_result[,"edu_over"]
+)
+gent_result <- sf::st_join(
+  gent_result,
+  price_result[,"price_up"]
+)
+
+gent_result <- gent_result %>% 
+  dplyr::group_by(Site, City) %>% 
+  dplyr::mutate(
+    gentrify = sum(
+      c(income, housing_under, edu_over, price_up) * 
+        income )
+  )
+
+pander::pander(table(gent_result$City, gent_result$gentrify),
+               caption = "The number of gentrification metrics attributed to each camera trap site across cities.")
+
+```
+
+
+## Step 6: Mapping gentrification
+
+If we go the latter route, here is what the different cities look like.
+
+```{r map_gentrification, echo = FALSE}
+
+for(i in 1:length(citymed)){
+  
+
+  all_metrics <- citymed[[i]][,c("GEOID", "income")]
+  all_metrics <- sf::st_join(
+    all_metrics,
+    sf::st_transform(
+      housing_list[[i]][,"housing_under"],
+      sf::st_crs(all_metrics),
+    ),
+    left = FALSE
+  )
+  all_metrics <- sf::st_join(
+    all_metrics,
+    sf::st_transform(
+      price_list[[i]][,"price_up"],
+      sf::st_crs(all_metrics)
+    )
+  )
+  all_metrics <- sf::st_join(
+    all_metrics,
+    sf::st_transform(
+      edu_list[[i]][,c("edu_over")],
+      sf::st_crs(all_metrics)
+    )
+  )
+  
+
   
 }
 
 
 ```
-

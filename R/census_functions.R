@@ -28,6 +28,12 @@ read_bind <- function(x){
 
 # going from long/lat to utm crs
 longlat_to_utm <- function(longlat) {
+  if("sf" %in% class(longlat)){
+    longlat <- c(
+      mean(sf::st_bbox(longlat)[c("xmin", "xmax")]),
+      mean(sf::st_bbox(longlat)[c("ymin", "ymax")])
+    )
+  }
   utm <- (floor((longlat[1] + 180) / 6) %%60) + 1
   if(longlat[2] > 0) {
     utm <- utm + 32600
