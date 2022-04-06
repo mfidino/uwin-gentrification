@@ -52,44 +52,46 @@ Because of this, I scoured through the literature again to find some other metri
   c. The proportion of nonwhite residents in the census tract must be greater than the proportion of nonwhite residents across the city.
   
 
-After calculating the census tract vulnerability, I created a 250m radius buffer around each camera trapping location within a city and intersected that buffer with the census tract level vulnerability index. This buffer was chosen because many sites were close to the edge of a given census tract and I wanted to capture the general area around each site. 
+After calculating the census tract vulnerability, I created a 500m radius buffer around each camera trapping location within a city and intersected that buffer with the census tract level vulnerability index. This buffer was chosen because many sites were close to the edge of a given census tract and I wanted to capture the general area around each site that easily fell within the home range of the species
+we'll be modeling. 
 
-Of 956 UWIN sites across 20 cities, 410 (42.9%) were considered vulnerable to gentrification (see more below).
+Of 962 UWIN sites across 20 cities, 459 (47.7%) were considered vulnerable to gentrification (see more below).
 
 Following this, a census tract was considered gentrifying if at the end of the study (in this case that is 2019) if the census tract:
 
 1. Was vulnerable to gentrification in 2010.
-2. Had at least two of these three qualities.
+2. The change in median income was greater than the average change across the city, after correcting for inflation.
+3. Had at least one of these two qualities.
   a. The change in the proportion of college educated residents was greater than average change across the city.
   b. The change in the proportion of non-hispanic white residents was greater than the average change across the city.
-  c. The change in median income was greater than the average change across the city, after correcting for inflation.
   
 
+Of the 459 sites that were vulnerable to gentrification, about half of them of them (n = 251) are gentrifying, though there is a substantial amount of variation among cities. For example, Urbana only had one site near a gentrifying census tract (of 35 sites) while Phoenix had exactly half of their 96 sites in gentrifying areas.
 
-Of the 410 sites that were vulnerable to gentrification, about half of them of them (n = 186) are gentrifying. 
+Calculating change across census datasets is unfortunately not simple, because census tracts can (and often do) change every ten years. To rectify this issue, I rasterized the 2010 census data at a 500m resolution and then extracted the data with the 2019 census tracts. If census tracts did not change, this would provide a direct comparison. If census tracts did change, then this technique is similar to performing areal interpolation.
 
-
-
-## The data
-
-The objective of this analysis is to determine how historical patterns of gentrification are associated to patterns of urban biodiversity. As such, we needed to compile census data from multiple years. To do so, I used the `tidycensus` package in `R` to query census data from the year 2000, 2010, 2015, and 2019. The 2000 data came from the 10-year decennial census whereas the remaining data come from the 5-year American Community Survey (ACS). The 10 year gap between 2000 and 2010 was because the 2005 5-year ACS data was not available. The 5-year ACS data was used because the 1-year ACS data did not contain estimates for smaller towns. 
-
-Across all of these years I compiled data on race, income, number of housing units educational attainment (Table 1) for all census tracts that fell within counties that were sampled. For a given city that is sampled, we are making the assumption that the metropoliation area is "the counties that are sampled."
+The rest of this document has some summary tables for each level of the classification process (for those that are interested, otherwise just skip passed them). However, at the end of the document I generated some plots for each city. Based on these, it appears we may need to correct some spatial clustering in our alpha and beta diversity analysis, given that lots of sites are that gentrifying are nearby one another. Please look over the plot for your city and let me know if it passes a 'smell test.'
 
 
-# Step 1. Figuring out which areas are vulnerable to gentrification
 
-## Step 1.1 Household income in 2010 less than reginonal median.
+## How I got the data
 
-To calculate this I took the median income at the 40th percentile for
-each census tract that fell within a county that was sampled in a given
-UWIN city. Following this, I determined which census tracts were less
-then that specific value. I then intersected the site coordinates on those census tracts to determine if that specific site fell within a 
-census tract that had a median income less than the 40th percentile of the studies area in 2000. Unlike other metrics we calculated here, we don't need to compare
-census tracts across time. Instead, all I did was calculated the 40th income
-percentile in 2000 and used that as the cutoff for the 2019 census tract levels.
+The objective of this analysis is to determine how historical patterns of gentrification are associated to patterns of urban biodiversity. As such, we needed to compile census data from multiple years. To do so, I used the `tidycensus` package in `R` to query census data from the year 2010 and 2019. The 2010 data came from the 10-year decennial census whereas the 2019 data came from the 5-year American Community Survey (ACS).
+
+Across these years I compiled data the aforementioned variables for all census tracts that were within the general area of a UWIN transect. To figure that out, I created a bounding box around the camera trap locations for each city, added 500m to each edge to make it a little larger, and then cropped the census data to that bounding box. Because of this we are making the assumption that the metropolitan area is "the general area that a UWIN partner samples," which I think is appropriate given standard UWIN study designs. 
+
+
+## Step 1. Figuring out which areas are vulnerable to gentrification
+
+### Step 1.1 Household income in 2010 less than regional median.
+
+After cropping the census tracts to an area around a cities sampled location, I calculated the regional median (i.e., median income across census tracts) and identified census tracts that fell below that number.
 
 ```{r med_inc, echo = FALSE}
+
+# the buffer around which you want to explore whether a site
+#  is nearby a gentrifying area.
+my_buffer <- 500
 med <- readRDS("./data/census_data/med_income/med_income_2010.RDS")
 
 
@@ -132,9 +134,11 @@ city_dict <- vector(
 # map each element of the list to a given city
 for(i in 1:length(med)){
   for(j in 1:length(unq_city)){
-  tmp <- sf::st_intersection(
-    med[[i]],
-    coords[coords$City == unq_city[j],]
+  tmp <- suppressMessages(
+      sf::st_intersection(
+      med[[i]],
+      coords[coords$City == unq_city[j],]
+    )
   )
   if(nrow(tmp)> 0){
     if(length(city_dict[[i]]) > 0){
@@ -161,7 +165,6 @@ med <- append(
 
 
 # remap
-
 city_dict <- vector(
   "list",
   length = length(med)
@@ -170,9 +173,11 @@ city_dict <- vector(
 # map each element of the list to a given city
 for(i in 1:length(med)){
   for(j in 1:length(unq_city)){
-  tmp <- sf::st_intersection(
-    med[[i]],
-    coords[coords$City == unq_city[j],]
+  tmp <-suppressMessages(
+    sf::st_intersection(
+      med[[i]],
+      coords[coords$City == unq_city[j],]
+    )
   )
   if(nrow(tmp)> 0){
     if(length(city_dict[[i]]) > 0){
@@ -274,7 +279,7 @@ income_result <- dplyr::bind_rows(income_result)
 
 ```
 
-Here is a table that shows how many sites are above (FALSE) and below (TRUE) the 40th percentile of median income. Some cities look to have  a pretty even split, which is nice, while other cities (e.g. Salt Lake City, **scut** has many sites above the median income value).
+Here is a table that shows how many sites are above (FALSE) and below (TRUE) the regional median income.
 
 ```{r income_table, echo = FALSE}
 
@@ -284,11 +289,12 @@ pander::pander(table(income_result$City, income_result$income),
 ```
 
 
-## Step 1.2. Educational attainment less than regional median
+## Step 1.2. Educational attainment less than regional median in 2010.
 
-
+This was calculated in the same way as the income data. I simplified the census data into two categories for educational attainment: those with a college degree and those without a college degree.
 
 ```{r education_vuln, echo = FALSE}
+if(!file.exists("./data/census_data/education/gent_vulnerability.rds")){
 h1 <- readRDS("./data/census_data/education/education_2010.RDS")
 h1 <- lapply(
   h1,
@@ -318,12 +324,10 @@ h2 <- st_transform(
 edumed <- vector("list", length = length(citymed))
 
 # store the suggested GEOIDs using the explanation above.
-edu_list <- vector("list", length = length(citymed))
-names(edu_list) <- names(citymed)
 
 # This takes a while to run so I don't want to do it unless it's needed.
 #  thus I saved it as an RDS file.
-if(!file.exists("./data/census_data/education/gent_vulnerability.rds")){
+
   for(i in 1:length(edumed)){
    # reproject h1 to
    mmed <- st_transform(
@@ -381,9 +385,9 @@ saveRDS(
   edumed,
   "./data/census_data/education/gent_vulnerability.rds"
 )
-edu_list <- edumed
+edu_list_vuln <- edumed
 }else{
-  edu_list <- readRDS("./data/census_data/education/gent_vulnerability.rds")
+  edu_list_vuln <- readRDS("./data/census_data/education/gent_vulnerability.rds")
 }
 
 
@@ -391,9 +395,9 @@ edu_list <- edumed
 # and then figure out which sites fall in these areas
 
 # and then we need to figure out which of our sites fall within these areas
-edu_result <- vector("list", length = length(edu_list))
+edu_result <- vector("list", length = length(edu_list_vuln))
 for(i in 1:length(edu_result)){
-  tmp <- edu_list[[i]]
+  tmp <- edu_list_vuln[[i]]
   tmp <- sf::st_transform(
     tmp,
     sf::st_crs(coords)
@@ -409,7 +413,7 @@ edu_result <- dplyr::bind_rows(edu_result)
 ```
 
 
-Here is a table that shows how many sites are above (TRUE) and below (FALSE) the average change in in educational attainment.
+Here is a table that shows how many sites are below (TRUE) and above (FALSE) the regional median in educational attainment in 2010.
 
 ```{r edu_vuln_table, echo = FALSE}
 
@@ -421,11 +425,10 @@ pander::pander(table(edu_result$City, edu_result$edu_under),
 
 
 ## Step 1.3: The census tract must have at least 500 people.
-
+ The education data from above also has information on the number of people in each census tract, so I just used that to create a binary metric for whether or not a census tract in 2010 had at least 500 people living in them (almost all of them did).
 ```{r mt500, echo = FALSE}
-# We can calculate this from the previous query
 
-npeople <- edu_list
+npeople <- edu_list_vuln
 
 for(i in 1:length(npeople)){
   npeople[[i]]$mt500 <- npeople[[i]]$total >= 500
@@ -435,7 +438,10 @@ for(i in 1:length(npeople)){
 
 ## Step 1.4: The proportion of non-white people in a census tract is greater than the city median.
 
+Calculated same as above. I compiled the total number of people in a census tract as well as the number of non-hispanic white people living in a census tract to get this number (i.e., 1 - (number of non-Hispanic white people in a census tract / total number of residents in a census tract )).
+
 ```{r nwprop, echo = FALSE}
+if(!file.exists("./data/census_data/race/gent_vulnerability.rds")){
 nw <- readRDS("./data/census_data/race/race_2010.RDS")
 
 
@@ -461,7 +467,7 @@ names(nw_list) <- names(citymed)
 
 # This takes a while to run so I don't want to do it unless it's needed.
 #  thus I saved it as an RDS file.
-if(!file.exists("./data/census_data/race/gent_vulnerability.rds")){
+
   for(i in 1:length(nwmed)){
    # reproject h1 to
    mmed <- st_transform(
@@ -546,19 +552,27 @@ pander::pander(table(nw_result$City, nw_result$nw_over),
 
 ## Step 1.5: Combining the vulnerability metrics.
 
-The site MUST have > 500 people and at least two of the other qualities
-to be considered vulnerable to gentrification.
+The site MUST have > 500 people and at least two of the other qualities to be considered vulnerable to gentrification. 
 
 
 ```{r vuln_combo, echo = FALSE}
-
+# store site-specific info
 vuln_list <- vector("list", length = length(citymed))
+# store census tract data too
+vuln_list_poly <- vuln_list
+if(
+  !file.exists(
+    "./data/census_data/vuln_census_tracts.rds") |
+  !file.exists(
+    "./data/census_data/vuln_sites.rds"
+  )
+){
 for(i in 1:length(citymed)){
   gent_result <- citymed[[i]][,c("City", "income")]
   
   gent_result <- sf::st_join(
     gent_result,
-    edu_list[[i]][,"edu_under"],
+    edu_list_vuln[[i]][,"edu_under"],
     largest = TRUE
   )
   gent_result <- sf::st_join(
@@ -595,6 +609,11 @@ for(i in 1:length(citymed)){
   gent_result <- gent_result[,
       -which(colnames(gent_result) == "tmpsi")
   ]
+  # keep this spatial data, we'll need it later
+  vuln_list_poly[[i]] <- sf::st_transform(
+    gent_result,
+    4326
+  )
   
   tmp_coords <- sf::st_transform(
     tmp_coords,
@@ -602,7 +621,7 @@ for(i in 1:length(citymed)){
   )
   tmp_buff <- sf::st_buffer(
     tmp_coords,
-    250
+    my_buffer
   )
   
   g_tmp <- sf::st_intersection(
@@ -627,6 +646,22 @@ for(i in 1:length(citymed)){
   vuln_list[[i]] <- g_tmp
   
 }
+  saveRDS(
+    vuln_list,
+    "./data/census_data/vuln_sites.rds"
+  )
+  saveRDS(
+    vuln_list_poly,
+    "./data/census_data/vuln_census_tracts.rds"
+  )
+}else{
+  vuln_list <- readRDS(
+    "./data/census_data/vuln_sites.rds"
+  )
+  vuln_list_poly <- readRDS(
+    "./data/census_data/vuln_census_tracts.rds"
+  )
+}
 
 gent_result <- dplyr::bind_rows(vuln_list)
 
@@ -641,24 +676,12 @@ pander::pander(
 
 # Step 2. Determine if a vulnerable location has undergone gentrification.
 
-For a site to be considered gentrifying it must:
-
-1. Have been vulnerable to gentrification in 2010.
-2. Have at least two of the following qualities:
-
-a. An increase in the proportion of college educated people that is greater than the city average.
-b. An increase in the proportion of white people greater than the city average.
-c. An increase in median household income greater than the city average (absolute value).
-
-We already have the first part calculated, so we just need to
-do the rest.
-
-
-
 ## Step 2.1. Has a percentage increase in educational attainment that is greater than that of the metropolitan area.
 
 
+
 ```{r education, echo = FALSE}
+if(!file.exists("./data/census_data/education/gent_classification_r2.rds")){
 h1 <- readRDS("./data/census_data/education/education_2010.RDS")
 h1 <- lapply(
   h1,
@@ -693,7 +716,7 @@ names(edu_list) <- names(citymed)
 
 # This takes a while to run so I don't want to do it unless it's needed.
 #  thus I saved it as an RDS file.
-if(!file.exists("./data/census_data/education/gent_classification_r2.rds")){
+
   for(i in 1:length(edumed)){
    # reproject h1 to
    mmed <- st_transform(
@@ -703,34 +726,34 @@ if(!file.exists("./data/census_data/education/gent_classification_r2.rds")){
   
    # get what intersects with a given city in 2000
   tmp1 <- suppressMessages(
-      sf::st_intersects(
-      mmed,
-      h1
+      sf::st_crop(
+      h1,
+      mmed
     )
   )
   # and in 2019
   tmp2 <- suppressMessages(
-    sf::st_intersects(
-      mmed,
-      h2
+    sf::st_crop(
+      h2,
+      mmed
     )
   )
   # store these values in a list
   edumed[[i]] <- list(
-    start = h1[unique(unlist(tmp1)),],
-    end = h2[unique(unlist(tmp2)),]
+    start = tmp1,
+    end = tmp2
   )
   # get lat/long to convert to utm, needed for rasterizing.
   my_utm <- longlat_to_utm(
-    c(
-      mean(st_bbox(edumed[[i]]$start)[c(1,3)]),
-      mean(st_bbox(edumed[[i]]$start)[c(2,3)])
-    )
+    edumed[[i]]$start
   )
   # and convert the 2000 and 2019 data to utms for each city
   edumed[[i]] <- lapply(
     edumed[[i]],
-    function(x) sf::st_transform(x, my_utm)
+    function(x) sf::st_transform(
+      x,
+      my_utm
+    )
   )
   
   # we need to reduce this to people with and without 
@@ -814,7 +837,7 @@ if(!file.exists("./data/census_data/education/gent_classification_r2.rds")){
   )[,1]
   # tack onto the change list and save it
   edu_list[[i]] <- edumed[[i]]$end
-  edu_list[[i]]$prop00 <- start_education
+  edu_list[[i]]$prop10 <- start_education
 }
 
 saveRDS(
@@ -828,7 +851,7 @@ saveRDS(
 # and then figure out which sites fall in these areas
 
 for(i in 1:length(edu_list)){
-  edu_list[[i]]$prop_edu <- edu_list[[i]]$prop19 - edu_list[[i]]$prop00
+  edu_list[[i]]$prop_edu <- edu_list[[i]]$prop19 - edu_list[[i]]$prop10
   # get the mean change
   
   edu_list[[i]]$edu_over <- edu_list[[i]]$prop_edu >
@@ -866,6 +889,7 @@ pander::pander(table(edu_result$City, edu_result$edu_over),
 
 
 ```{r nw_prop_change, echo = FALSE}
+if(!file.exists("./data/census_data/race/gent_classification_r2.rds")){
 h1 <- readRDS("./data/census_data/race/race_2010.RDS")
 h1 <- lapply(
   h1,
@@ -900,7 +924,7 @@ names(race_list) <- names(citymed)
 
 # This takes a while to run so I don't want to do it unless it's needed.
 #  thus I saved it as an RDS file.
-if(!file.exists("./data/census_data/race/gent_classification_r2.rds")){
+
   for(i in 1:length(racemed)){
    # reproject h1 to
    mmed <- st_transform(
@@ -910,29 +934,26 @@ if(!file.exists("./data/census_data/race/gent_classification_r2.rds")){
   
    # get what intersects with a given city in 2000
   tmp1 <- suppressMessages(
-      sf::st_intersects(
-      mmed,
-      h1
+      sf::st_crop(
+      h1,
+      mmed
     )
   )
   # and in 2019
   tmp2 <- suppressMessages(
-    sf::st_intersects(
-      mmed,
-      h2
+    sf::st_crop(
+      h2,
+      mmed
     )
   )
   # store these values in a list
   racemed[[i]] <- list(
-    start = h1[unique(unlist(tmp1)),],
-    end = h2[unique(unlist(tmp2)),]
+    start = tmp1,
+    end = tmp2
   )
   # get lat/long to convert to utm, needed for rasterizing.
   my_utm <- longlat_to_utm(
-    c(
-      mean(st_bbox(racemed[[i]]$start)[c(1,3)]),
-      mean(st_bbox(racemed[[i]]$start)[c(2,3)])
-    )
+    racemed[[i]]$start
   )
   # and convert the 2000 and 2019 data to utms for each city
   racemed[[i]] <- lapply(
@@ -1065,6 +1086,7 @@ within a given census tract. However, we also need to account for inflation in t
 
 
 ```{r income_longshot, echo = FALSE}
+if(!file.exists("./data/census_data/med_income/gent_classification_r2.rds")){
 h1 <- readRDS("./data/census_data/med_income/med_income_2010.RDS")
 h1 <- lapply(
   h1,
@@ -1099,7 +1121,7 @@ names(price_list) <- names(citymed)
 
 # This takes a while to run so I don't want to do it unless it's needed.
 #  thus I saved it as an RDS file.
-if(!file.exists("./data/census_data/med_income/gent_classification_r2.rds")){
+
   for(i in 1:length(pricemed)){
    # reproject h1 to
    mmed <- st_transform(
@@ -1109,29 +1131,26 @@ if(!file.exists("./data/census_data/med_income/gent_classification_r2.rds")){
   
    # get what intersects with a given city in 2000
   tmp1 <- suppressMessages(
-      sf::st_intersects(
-      mmed,
-      h1
+      sf::st_crop(
+      h1,
+      mmed
     )
   )
   # and in 2019
   tmp2 <- suppressMessages(
-    sf::st_intersects(
-      mmed,
-      h2
+    sf::st_crop(
+      h2,
+      mmed
     )
   )
   # store these values in a list
   pricemed[[i]] <- list(
-    start = h1[unique(unlist(tmp1)),],
-    end = h2[unique(unlist(tmp2)),]
+    start = tmp1,
+    end = tmp2
   )
   # get lat/long to convert to utm, needed for rasterizing.
   my_utm <- longlat_to_utm(
-    c(
-      mean(st_bbox(pricemed[[i]]$start)[c(1,3)]),
-      mean(st_bbox(pricemed[[i]]$start)[c(2,3)])
-    )
+    pricemed[[i]]$start
   )
   # and convert the 2000 and 2019 data to utms for each city
   pricemed[[i]] <- lapply(
@@ -1154,7 +1173,8 @@ if(!file.exists("./data/census_data/med_income/gent_classification_r2.rds")){
     pricemed[[i]]$start,
     my_rast,
     field = "estimate",
-    fun = "mean"
+    fun = "mean",
+    na.rm = TRUE
   )
   
   # Extract based on the 2019 census tracts, mu
@@ -1218,7 +1238,7 @@ Here is a table that shows how many sites reside in census tracts that have incr
 ```{r price_table, echo = FALSE}
 
 pander::pander(table(price_result$City, price_result$income_over),
-               caption = "The number of sites that reside in census tracts whose housing prices have increased between 2000 and 2019.")
+               caption = "The number of sites that reside in census tracts where median income increased more than the regional median.")
 
 ```
 
@@ -1227,36 +1247,121 @@ pander::pander(table(price_result$City, price_result$income_over),
 
 ```{r gent_combo, echo = FALSE}
 
-gent_combo <- gent_result[,c("City", "Site", "vulnerable")]
-
-gent_combo <- sf::st_join(
-  gent_combo,
-  edu_result[,"edu_over"]
-)
-gent_combo <- sf::st_join(
-  gent_combo,
-  race_result[,"race_over"]
-)
-gent_combo <- sf::st_join(
-  gent_combo,
-  price_result[,"income_over"]
-)
-
-
-gent_combo <- gent_combo %>% 
-  dplyr::group_by(Site, City) %>% 
+gent_list <- vector("list", length = length(citymed))
+gent_list_poly <- gent_list
+if(
+  !file.exists(
+    "./data/census_data/gent_census_tracts.rds") |
+  !file.exists(
+    "./data/census_data/gent_sites.rds"
+  )
+){
+for(i in 1:length(citymed)){
+  gent_result <- vuln_list_poly[[i]][,c("City", "vulnerable")]
+  
+  gent_result <- sf::st_join(
+    gent_result,
+    sf::st_transform(
+      edu_list[[i]][,"edu_over"],
+      4326
+    ),
+    largest = TRUE
+  )
+  gent_result <- sf::st_join(
+    gent_result,
+    sf::st_transform(
+      price_list[[i]][,"income_over"],
+      4326
+    ),
+    largest = TRUE
+  )
+  gent_result <- sf::st_join(
+    gent_result,
+    sf::st_transform(
+      race_list[[i]][,"race_over"],
+      4326
+    ),
+    largest = TRUE
+  )
+  tmp_coords <- coords[
+    coords$City == names(citymed)[i],
+  ]
+  # convert to UTMs
+  gent_result <- sf::st_transform(
+    gent_result,
+    longlat_to_utm(gent_result)
+  )
+  gent_result$tmpsi <- 1:nrow(gent_result)
+  gent_result <- gent_result %>% 
+  dplyr::group_by(tmpsi) %>% 
   dplyr::mutate(
     gentrifying = 
       (
         sum(
-          c(edu_over, race_over, income_over),
+          c(edu_over, race_over),
           na.rm = TRUE
-        ) > 1
-      ) * vulnerable
+        ) >= 1
+      ) * vulnerable * income_over
+  ) %>% 
+    dplyr::ungroup()
+  gent_result <- gent_result[,
+      -which(colnames(gent_result) == "tmpsi")
+  ]
+  
+  tmp_coords <- sf::st_transform(
+    tmp_coords,
+    crs = sf::st_crs(gent_result)
   )
+  tmp_buff <- sf::st_buffer(
+    tmp_coords,
+    my_buffer
+  )
+  
+  g_tmp <- sf::st_intersection(
+    gent_result,
+    tmp_buff
+  ) %>% 
+    dplyr::group_by(
+      Site
+    ) %>% 
+    dplyr::summarise(
+      gentrifying = sum(gentrifying, na.rm = TRUE)>0
+    ) %>% 
+    sf::st_intersection(
+      .,
+      tmp_coords
+    ) %>% 
+    sf::st_transform(
+      .,
+      crs = 4326
+    )
+  
+  gent_list[[i]] <- g_tmp
+  gent_list_poly[[i]] <- sf::st_transform(
+    gent_result,
+    4326
+  )
+  
+}
+  saveRDS(gent_list, "./data/census_data/gent_sites.rds")
+  saveRDS(gent_list_poly, "./data/census_data/gent_census_tracts.rds")
+  
+} else {
+  gent_list  <- readRDS(
+    "./data/census_data/gent_sites.rds"
+  )
+  gent_list_poly <- readRDS(
+    "./data/census_data/gent_census_tracts.rds"
+  )
+}
+
+gent_result <- dplyr::bind_rows(gent_list)
+
+
+
 
 pander::pander(
-  table(gent_combo$City, gent_combo$gentrifying),
+  table(gent_result$City, gent_result$gentrifying),
   caption = "The number of sites that reside in census tracts we identified as vulnerable to gentrification."
 )
 
@@ -1265,145 +1370,74 @@ pander::pander(
 
 ## Plotting out the results across cities
 
-I'm plotting out all the census tracts in counties that were sampled in each city in two ways:
-
-1. The census tracts that were vulnerable to gentrification.
-2. The census tracts that were identified as gentrifying.
+Here is a plot for each city, it's pretty self-explanatory, though the legend does get overlaid on some cities a bit. Sorry!
 
 ```{r city_plots, echo = FALSE}
 
-race_vuln <- readRDS(
-  "./data/census_data/race/gent_vulnerability.rds"
+pretty_names <- c(
+  "Athens, GA",
+  "Austin, TX",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "National Capital",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
 )
-
-inc_vuln <- citymed
-
-edu_vuln <- readRDS(
-  "./data/census_data/education/gent_vulnerability.rds"
-)
-
-# will need to calculate this within the loop
-ppl_vuln <- edu_vuln
-
-race_gent <- race_list
-
-my_coords <- sf::st_transform(
-  coords,
-  crs = 4326
-)
-
 
 for(i in 1:length(citymed)){
   # Figure out all the vulnerable census tracts across a city
-   cityname <- names(citymed)[i]
-   
-   all_vuln <- inc_vuln[[i]][,"income"]
-   all_vuln <- sf::st_transform(
-     all_vuln,
-     crs = 4326
-   )
-   all_vuln <- sf::st_join(
-     all_vuln,
-     race_vuln[[i]][,"nw_over"],
-     largest = TRUE
-   )
-   all_vuln <- sf::st_join(
-     all_vuln,
-     edu_vuln[[i]][,"edu_under"],
-     largest = TRUE
-   )
-   ppl_vuln[[i]]$mt500 <- ppl_vuln[[i]]$total >= 500
-   all_vuln <- sf::st_join(
-     all_vuln,
-     ppl_vuln[[i]][,"mt500"],
-     largest = TRUE
-   )
-   all_vuln$site <- 1:nrow(all_vuln)
-   all_vuln <- all_vuln %>% 
-     group_by(site) %>% 
-     mutate(
-       vulnerable = (sum(
-         income, nw_over, edu_under
-       ) > 1) * mt500
-     ) %>% 
-     ungroup()
-   
-   all_vuln$vulnerable <- as.logical(
-     all_vuln$vulnerable
-   )
-   
-   all_gent <- race_list[[i]][,c("race_over")]
-   all_gent <- sf::st_transform(
-     all_gent,
-     crs = 4326
-   )
-   
-   all_gent <- sf::st_join(
-     all_gent,
-     all_vuln[,"vulnerable"],
-     largest = TRUE
-   )
-   all_gent <- sf::st_join(
-     all_gent,
-     sf::st_transform(
-       price_list[[i]][,"income_over"],
-       crs = 4326
-     ),
-     largest = TRUE
-   )
-   all_gent <- sf::st_join(
-     all_gent,
-     sf::st_transform(
-       edu_list[[i]][,"edu_over"],
-       crs = 4326
-     ),
-    largest = TRUE
-   )
-   
-   # calculate gentrification:
-   all_gent$site <- 1:nrow(all_gent)
-   
-   all_gent <- all_gent %>% 
-   group_by(site) %>% 
-     mutate(
-       gentrifying = (sum(
-         c(income_over, edu_over, race_over),
-         na.rm = TRUE
-       ) > 1) * vulnerable
-     )
+
      
    plot(
-     all_gent["vulnerable"],
+     gent_list_poly[[i]]["gentrifying"],
      main = paste0(
-       cityname, ": vulnerable"
+       pretty_names[i]
        ),
      reset = FALSE,
-     pal = c("gray60", "gray 40")
+     pal = c("gray60", "gray40"),
+     key.pos = NULL
+    )
+   legend(
+     "topright",
+     c(
+       "gentrifying census tract",
+       "non-gentrifying census tract",
+       "site < 500m of gentrifying census tract",
+       "site > 500m of gentrifying census tract"
+      ),
+     pch = c(15,15,21,21),
+     col = c("gray40", "gray60", "black", "black"),
+     pt.bg = c(NA, NA, "black", "white"),
+     bty = "n", pt.cex = 1.4,
+     title = ""
     )
    
+   my_bgs <- ifelse(
+     gent_list[[i]]$gentrifying,
+     "black",
+     "white"
+   )
    points(
      st_coordinates(
-       my_coords
+       gent_list[[i]]
      ),
-     pch = 19
+     pch =21,
+     cex = 1.2,
+     bg = my_bgs,
    )
-   
-    plot(
-     all_gent["gentrifying"],
-     main = paste0(
-       cityname, ": gentrifying"
-       ),
-     reset = FALSE,
-     pal = c("gray60", "gray 40")
-    )
-   
-   points(
-     st_coordinates(
-       my_coords
-     ),
-     pch = 19
-   )
-  
    
 }
 
