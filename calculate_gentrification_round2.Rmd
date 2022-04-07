@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(pander)
 library(dplyr)
 library(bbplot)
-library(plot3D)
 library(viridis)
 library(sf)
 library(raster)
@@ -23,67 +22,71 @@ source("./R/census_functions.R")
 
 
 
-## The metric I think we should use
+# The metric I think we should use
 
 So, I had to go back to the drawing board a few times in order
 to generate a gentrification metric that could be applied
 to the 20 different UWIN cities in this study. Initially,
-we were going to hitch our wagon to the metrics provided in Freeman (2009). However, after collecting all the necessary census data and calculating these metrics it became apparent that the Freeman (2009) paper quantified city-level segregation, not gentrification. Instead, Freeman's 2009 paper actually used a gentrification metric they proposed in a 2005 paper of theirs to identify gentrifying areas. The general 'rules' tied to this metric are that a census tract must (Freeman 2005):
+we were going to hitch our wagon to the metrics provided in Freeman (2009). However, after collecting all the necessary census data and calculating these metrics it became apparent that the Freeman (2009) paper quantified city-level segregation, not gentrification. Instead, Freeman's 2009 paper actually used a gentrification metric they proposed in a 2005 paper of theirs to identify gentrifying areas, and then they explored the relationship between gentrification and segregation in their 2009 paper. The general 'rules' tied to the Freeman (2005) gentrification metric was that a census tract must:
 
 1. Be located in the inner city.
 
 2. Have a median income less than the 40th percentile of the metropolitan area at the beginning of the intercentennial.
 
-3. Has a percentage of housing built over the past 20 years that is below the 40th per centile for the metropolitan area.
+3. Have a percentage of housing built over the past 20 years that is below the 40th per centile for the metropolitan area.
 
-4. Has a percentage increase in educational attainment that is greater than that of the metropolitan area.
+4. Have a percentage increase in educational attainment that is greater than that of the metropolitan area.
 
-5. Housing prices increased during the decade.
-
+5. Housing prices increased over a decade.
 
 Unfortunately, when using these rules most UWIN sites within cities were not located in 'gentrifying' areas. As a result, this metric made gentrification so rare that it would be impossible to make comparisons in gentrifying vs non-gentrifying areas.
 
-Because of this, I scoured through the literature again to find some other metrics that we could use to identify gentrifying areas within a city. From this, it became apparent rather quickly that there is a lot of disagreement on what 'rules' should be used to identify gentrification. This is good news, in some regards, as it gives us a little bit of wiggle room. After some searching, I decided to give a slightly modified version of the gentrification metric used by Chapple et al. (2017). This metric uses a two-step process to identify gentrifying areas. First, for an area to be gentrifying, it must be vulnerable to gentrification at the start of the study (in this case that is 2010). For a census tract to be vulnerable to gentrification it must:
+Because of this, I scoured through the literature to find some other metrics that we could use to identify gentrifying areas within a city. From this, it became apparent rather quickly that there is a lot of variability on what 'rules' should be used to identify gentrification. This is good news, in some regards, as it gives us a little bit of wiggle room to make a metric we can use. However, there was some commonality. Overall, to identify gentrification most metrics in the literature compare some combination of:
+
+1. Changes in income within census tracts over time. Gentrifying locations have observed an increase in income.
+2. Changes in educational attainment over time. Gentrifying locations have observed an increase in people with a college deegree.
+3. Changes in racial composition over time. Gentrifying areas have more non-hispanic white residents.
+
+Based on these common themes, I decided to use a slightly modified version of the gentrification metric proposed by Chapple et al. (2017). This metric used a two-step process to identify gentrification. First, for an area to be gentrifying, it must be vulnerable to gentrification at the start of the study (in this case that is 2010). For a census tract to be vulnerable to gentrification it must:
 
 1. Have at least 500 residents in year 1.
-2. Have at least two of these three qualities.
+2. Have at least two of these three qualities (Chapple had a fourth metric here, which was related to rental units, that I removed).
   a. The median income of residents in the census tract must be lower than the city's average income.
   b. The proportion of college-educated residents in the census-tract must be lower than the proportion of college-educated residents across the city.
   c. The proportion of nonwhite residents in the census tract must be greater than the proportion of nonwhite residents across the city.
   
 
-After calculating the census tract vulnerability, I created a 500m radius buffer around each camera trapping location within a city and intersected that buffer with the census tract level vulnerability index. This buffer was chosen because many sites were close to the edge of a given census tract and I wanted to capture the general area around each site that easily fell within the home range of the species
-we'll be modeling. 
+After calculating census tract vulnerability, I created a 500m radius buffer around each camera trapping location within a city and intersected that buffer with the census tract level vulnerability index. This buffer was chosen because I wanted to capture the general area around each site that easily fell within the home range of the species we'll be modeling. For example, a site could be right on the edge of a non-vulnerable census tract that abuts a vulnerable census tract and we would want to identify that location as 'vulnerable.'
 
-Of 962 UWIN sites across 20 cities, 459 (47.7%) were considered vulnerable to gentrification (see more below).
+Of 962 UWIN sites across 20 cities, 459 (47.7%) were considered vulnerable to gentrification.
 
-Following this, a census tract was considered gentrifying if at the end of the study (in this case that is 2019) if the census tract:
+Following this, a census tract was considered gentrifying if at the end of the study (in this case that is 2019) a census tract:
 
 1. Was vulnerable to gentrification in 2010.
 2. The change in median income was greater than the average change across the city, after correcting for inflation.
-3. Had at least one of these two qualities.
+3. Had at least one of these two qualities (Chapple required both of these, I relaxed it down to either or).
   a. The change in the proportion of college educated residents was greater than average change across the city.
   b. The change in the proportion of non-hispanic white residents was greater than the average change across the city.
   
 
-Of the 459 sites that were vulnerable to gentrification, about half of them of them (n = 251) are gentrifying, though there is a substantial amount of variation among cities. For example, Urbana only had one site near a gentrifying census tract (of 35 sites) while Phoenix had exactly half of their 96 sites in gentrifying areas.
+Of the 459 sites that were vulnerable to gentrification, about half of them of them were gentrifying (n = 251). However,there is a substantial amount of variation among cities. For example, Urbana only had one of thirty five sites near a gentrifying census tract while Phoenix had exactly half of their 96 sites in gentrifying areas.
 
-Calculating change across census datasets is unfortunately not simple, because census tracts can (and often do) change every ten years. To rectify this issue, I rasterized the 2010 census data at a 500m resolution and then extracted the data with the 2019 census tracts. If census tracts did not change, this would provide a direct comparison. If census tracts did change, then this technique is similar to performing areal interpolation.
+Before I jump into the results a bit more, one thing I wanted to bring up here is how I calculated change over time across census datasets to quantify gentrification. Census tracts can (and often do) change every ten years, which makes it difficult to make a 1 to 1 comparison of census tracts over time. To address this, I rasterized the 2010 census data at a 500m resolution and then extracted the data with the 2019 census tracts. A 500m resolution was used because increasing the resolution had a negligible influence on the results I collected. This technique is a way to approximate areal interpolation. For example, if census tracts did not change over time, this would technique would provide a close to direct comparison (i.e., a 2019 census tract would mostly intersect the rasterized values of the same 2010 census tract). If a census tract did change, the 2019 census tract would take the spatial average over the 2010 census tracts it intersected with. As such, you can sort of this as performing a spatial Riemann sum.
 
-The rest of this document has some summary tables for each level of the classification process (for those that are interested, otherwise just skip passed them). However, at the end of the document I generated some plots for each city. Based on these, it appears we may need to correct some spatial clustering in our alpha and beta diversity analysis, given that lots of sites are that gentrifying are nearby one another. Please look over the plot for your city and let me know if it passes a 'smell test.'
+The rest of this document has some summary tables for each level of the classification process (for those that are interested, otherwise just skip over them). However, at the end of the document I generated some plots for each city. Based on these, it appears we may need to correct some spatial clustering in our alpha and beta diversity analysis, given that lots of sites are that gentrifying are nearby one another. Please look over the plot for your city and let me know if it passes a 'smell test.'
 
 
 
-## How I got the data
+# How I got the data
 
 The objective of this analysis is to determine how historical patterns of gentrification are associated to patterns of urban biodiversity. As such, we needed to compile census data from multiple years. To do so, I used the `tidycensus` package in `R` to query census data from the year 2010 and 2019. The 2010 data came from the 10-year decennial census whereas the 2019 data came from the 5-year American Community Survey (ACS).
 
 Across these years I compiled data the aforementioned variables for all census tracts that were within the general area of a UWIN transect. To figure that out, I created a bounding box around the camera trap locations for each city, added 500m to each edge to make it a little larger, and then cropped the census data to that bounding box. Because of this we are making the assumption that the metropolitan area is "the general area that a UWIN partner samples," which I think is appropriate given standard UWIN study designs. 
 
 
-## Step 1. Figuring out which areas are vulnerable to gentrification
+# Step 1. Figuring out which areas are vulnerable to gentrification
 
-### Step 1.1 Household income in 2010 less than regional median.
+## Step 1.1 Household income in 2010 less than regional median.
 
 After cropping the census tracts to an area around a cities sampled location, I calculated the regional median (i.e., median income across census tracts) and identified census tracts that fell below that number.
 
@@ -283,7 +286,33 @@ Here is a table that shows how many sites are above (FALSE) and below (TRUE) the
 
 ```{r income_table, echo = FALSE}
 
-pander::pander(table(income_result$City, income_result$income),
+
+pretty_names <- c(
+  "Athens, GA",
+  "Austin, TX",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "National Capital",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+
+aa <- table(income_result$City, income_result$income)
+row.names(aa) <- pretty_names
+pander::pander(aa,
                caption = "The number of sites below the median income in 2010 for each city.")
 
 ```
@@ -417,7 +446,10 @@ Here is a table that shows how many sites are below (TRUE) and above (FALSE) the
 
 ```{r edu_vuln_table, echo = FALSE}
 
-pander::pander(table(edu_result$City, edu_result$edu_under),
+aa <- table(edu_result$City, edu_result$edu_under)
+row.names(aa) <- pretty_names
+
+pander::pander(aa,
                caption = "The number of sites below the 
                median educational attainment 50th percentile of educational attainment (i.e,. college degree) between 2000 and 2019.")
 
@@ -425,7 +457,7 @@ pander::pander(table(edu_result$City, edu_result$edu_under),
 
 
 ## Step 1.3: The census tract must have at least 500 people.
- The education data from above also has information on the number of people in each census tract, so I just used that to create a binary metric for whether or not a census tract in 2010 had at least 500 people living in them (almost all of them did).
+ The education data from above also has information on the number of people in each census tract, so I just used that to create a binary metric for whether or not a census tract in 2010 had at least 500 people living in them (almost all of them did). As such, I'm not sharing a table here (e.g., of the 5661 census tracts across all cities, only 76 of them had fewer than 500 residents).
 ```{r mt500, echo = FALSE}
 
 npeople <- edu_list_vuln
@@ -433,6 +465,7 @@ npeople <- edu_list_vuln
 for(i in 1:length(npeople)){
   npeople[[i]]$mt500 <- npeople[[i]]$total >= 500
 }
+
 
 ```
 
@@ -544,8 +577,10 @@ nw_result <- dplyr::bind_rows(nw_result)
 
 
 ```{r nw_vuln_table, echo = FALSE}
+aa <- table(nw_result$City, nw_result$nw_over)
+row.names(aa) <- pretty_names
 
-pander::pander(table(nw_result$City, nw_result$nw_over),
+pander::pander(aa,
                caption = "The number of sites over with more non-white people than the city average.")
 
 ```
@@ -665,8 +700,11 @@ for(i in 1:length(citymed)){
 
 gent_result <- dplyr::bind_rows(vuln_list)
 
+aa <- table(gent_result$City, gent_result$vulnerable)
+row.names(aa) <- pretty_names
+
 pander::pander(
-  table(gent_result$City, gent_result$vulnerable),
+  aa,
   caption = "The number of sites that reside in census tracts we identified as vulnerable to gentrification."
 )
 
@@ -880,12 +918,15 @@ Here is a table that shows how many sites are above (TRUE) and below (FALSE) the
 
 ```{r edu_table, echo = FALSE}
 
-pander::pander(table(edu_result$City, edu_result$edu_over),
+aa <- table(edu_result$City, edu_result$edu_over)
+row.names(aa) <- pretty_names
+
+pander::pander(aa,
                caption = "The number of sites where the increase in educational attainment (i.e., a college degree) between 2010 and 2019 was greater than the city average.")
 
 ```
 
-## Step 2.2: The proportion of white people living in a census tract is greater than the city average.
+## Step 2.2: The proportion of non-hispanic white people living in a census tract is greater than the city average.
 
 
 ```{r nw_prop_change, echo = FALSE}
@@ -1072,8 +1113,9 @@ race_result <- dplyr::bind_rows(race_result)
 ```
 
 ```{r race_table, echo = FALSE}
-
-pander::pander(table(race_result$City, race_result$race_over),
+aa <- table(race_result$City, race_result$race_over)
+row.names(aa) <- pretty_names
+pander::pander(aa,
                caption = "The number of sites where the change in the proportion of white people was greater than the city average.")
 
 ```
@@ -1082,7 +1124,7 @@ pander::pander(table(race_result$City, race_result$race_over),
 ## Step 2.3: The change in median income was greater than the city average between 2010 and 2019.
 
 Calculating this is similar to educational attainment
-within a given census tract. However, we also need to account for inflation in these calculations. I went to the [U.S. Bureau of Labor Statistics website] (https://www.bls.gov/data/inflation_calculator.htm) and used their inflation calculator to determine how much the price of \$1 has changed between January 2010 and January 2019 (it is \$1.17). Thus, I multiplied the dollar values of median housing prices in 2000 by `1.17` before comparing changes in housing prices.
+within a given census tract. However, we also need to account for inflation in these calculations. I went to the [U.S. Bureau of Labor Statistics website](https://www.bls.gov/data/inflation_calculator.htm) and used their inflation calculator to determine how much the price of \$1 has changed between January 2010 and January 2019 (it is \$1.17). Thus, I multiplied the dollar values of median housing prices in 2000 by `1.17` before comparing changes in housing prices.
 
 
 ```{r income_longshot, echo = FALSE}
@@ -1236,8 +1278,9 @@ price_result <- dplyr::bind_rows(price_result)
 Here is a table that shows how many sites reside in census tracts that have increased in price (TRUE) over time and those that have not (FALSE)
 
 ```{r price_table, echo = FALSE}
-
-pander::pander(table(price_result$City, price_result$income_over),
+aa <- table(price_result$City, price_result$income_over)
+row.names(aa) <- pretty_names
+pander::pander(aa,
                caption = "The number of sites that reside in census tracts where median income increased more than the regional median.")
 
 ```
@@ -1357,50 +1400,30 @@ for(i in 1:length(citymed)){
 
 gent_result <- dplyr::bind_rows(gent_list)
 
-
+aa <- table(gent_result$City, gent_result$gentrifying)
+row.names(aa) <- pretty_names
 
 
 pander::pander(
-  table(gent_result$City, gent_result$gentrifying),
+  aa,
   caption = "The number of sites that reside in census tracts we identified as vulnerable to gentrification."
 )
 
 
 ```
 
-## Plotting out the results across cities
+# Step 3. Plotting out the results across cities
 
 Here is a plot for each city, it's pretty self-explanatory, though the legend does get overlaid on some cities a bit. Sorry!
 
-```{r city_plots, echo = FALSE}
+```{r city_plots, echo = FALSE, out.width = "110%"}
 
-pretty_names <- c(
-  "Athens, GA",
-  "Austin, TX",
-  "Boston, MA",
-  "Chicago, IL",
-  "Denver, CO",
-  "Indianapolis, IN",
-  "Iowa City, IA",
-  "Jackson, MS",
-  "Little Rock, AR",
-  "Madison, WI",
-  "National Capital",
-  "Phoenix, AZ",
-  "Portland, Oregon",
-  "Rochester, NY",
-  "Salt Lake City, UT",
-  "Seattle, WA",
-  "Saint Louis, MO",
-  "Tacoma, WA",
-  "Urbana, IL",
-  "Wilmington, DE"
-)
+
 
 for(i in 1:length(citymed)){
   # Figure out all the vulnerable census tracts across a city
-
-     
+     m <- matrix(c(1,1,2), ncol = 3, nrow = 1)
+     layout(m)
    plot(
      gent_list_poly[[i]]["gentrifying"],
      main = paste0(
@@ -1408,10 +1431,29 @@ for(i in 1:length(citymed)){
        ),
      reset = FALSE,
      pal = c("gray60", "gray40"),
-     key.pos = NULL
+     key.pos = NULL,
+     mar = c(4,4,4,4)
     )
+
+   my_bgs <- ifelse(
+     gent_list[[i]]$gentrifying,
+     "black",
+     "white"
+   )
+   points(
+     st_coordinates(
+       gent_list[[i]]
+     ),
+     pch =21,
+     cex = 1.1,
+     bg = my_bgs,
+   )
+   par(mar = c(0,0,0,0))
+   blank()
+     
+  
    legend(
-     "topright",
+     "center",
      c(
        "gentrifying census tract",
        "non-gentrifying census tract",
@@ -1424,23 +1466,18 @@ for(i in 1:length(citymed)){
      bty = "n", pt.cex = 1.4,
      title = ""
     )
-   
-   my_bgs <- ifelse(
-     gent_list[[i]]$gentrifying,
-     "black",
-     "white"
-   )
-   points(
-     st_coordinates(
-       gent_list[[i]]
-     ),
-     pch =21,
-     cex = 1.2,
-     bg = my_bgs,
-   )
-   
 }
 
 
 
 ```
+
+
+# References
+
+Chapple, K., Waddell, P., Chatman, D., Zuk, M., Loukaitou-Sideris, A., Ong, P.,  Gorska, C. P., & Gonzalez, S. R. (2017). Developing a new methodology for analyzing potential displacement. Accessed at https://trid.trb.org/view/1464806
+
+Freeman, L. (2005). Displacement or succession? Residential mobility in gentrifying neighborhoods. Urban Affairs Review, 40(4), 463-491.
+
+
+Freeman, L. (2009). Neighbourhood diversity, metropolitan segregation and gentrification: What are the links in the US?. Urban Studies, 46(10), 2079-2101.
