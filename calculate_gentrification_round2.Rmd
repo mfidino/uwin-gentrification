@@ -79,7 +79,7 @@ The rest of this document has some summary tables for each level of the classifi
 
 # How I got the data
 
-The objective of this analysis is to determine how historical patterns of gentrification are associated to patterns of urban biodiversity. As such, we needed to compile census data from multiple years. To do so, I used the `tidycensus` package in `R` to query census data from the year 2010 and 2019. The 2010 data came from the 10-year decennial census whereas the 2019 data came from the 5-year American Community Survey (ACS).
+I used the `tidycensus` package in `R` to query census data from the year 2010 and 2019. The 2010 data came from the 10-year decennial census whereas the 2019 data came from the 5-year American Community Survey (ACS).
 
 Across these years I compiled data the aforementioned variables for all census tracts that were within the general area of a UWIN transect. To figure that out, I created a bounding box around the camera trap locations for each city, added 500m to each edge to make it a little larger, and then cropped the census data to that bounding box. Because of this we are making the assumption that the metropolitan area is "the general area that a UWIN partner samples," which I think is appropriate given standard UWIN study designs. 
 
