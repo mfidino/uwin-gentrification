@@ -311,7 +311,7 @@ inc_clean <- function(x){
 }
 
 # 2000
-View(my_vars$yr00sf3)
+#View(my_vars$yr00sf3)
 tmp <- my_vars$yr00sf3[grep("P076",  my_vars$yr00sf3$name),]
 
 income$`2000` <- list(
@@ -717,7 +717,7 @@ names(hou$`2000`$vars) <- tmp$label
 
 # 2010
 
-View(my_vars$yr10sf1)
+#View(my_vars$yr10sf1)
 
 tmp <- my_vars$yr10acs5[grep("B25001_001", my_vars$yr10acs5$name),]
 tmp$label <- gsub("Estimate!!", "", tmp$label)
@@ -898,7 +898,7 @@ pri <- vector(
 names(pri) <- all_years
 
 # 2000
-View(my_vars$yr00sf3)
+#View(my_vars$yr00sf3)
 tmp <- my_vars$yr00sf3[grep("H076001", my_vars$yr00sf3$name), 1:2]
 # drop the sub-totals that we do not need
 
@@ -913,7 +913,7 @@ names(pri$`2000`$vars) <- tmp$label
 
 # 2010
 
-View(my_vars$yr10acs5)
+#View(my_vars$yr10acs5)
 
 tmp <- my_vars$yr10acs5[grep("B25077_001", my_vars$yr10acs5$name),]
 tmp$label <- gsub("Estimate!!", "", tmp$label)

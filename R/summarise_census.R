@@ -86,6 +86,7 @@ for(fldr in 1:length(my_folders)){
     ),
     full.names = TRUE
   )
+  tmp_fp <- tmp_fp[grep("_20", tmp_fp)]
   if(length(grep("county", tmp_fp))> 0){
     tmp_fp <- tmp_fp[-grep("county", tmp_fp)]
   }

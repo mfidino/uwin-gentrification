@@ -5,151 +5,96 @@ library(dplyr)
 
 dat <- read.csv("../uwin-dataset/data_2022-04-11/cleaned_data/full_capture_history.csv")
 
-#
+dat <- read.csv("./data/detection_data.csv")
+
+dat$Season <- factor(dat$Season, unique(dat$Season))
+
+dat$City <- gsub("safa|oaca", "baca", dat$City)
+
+
 dat$City <- gsub("phaz2", "phaz", dat$City)
-dat$City <- gsub("oaca|safa", "baca", dat$City)
+dat <- dat[dat$City %in% dat2$City,]
 
-#dat$City <- gsub("phaz2", "phaz", dat$City)
-
-dat2 <- read.csv("./data/detection_data.csv")
-
-# reduce down to cities in dat2
-dat <- dat[dat$City %in% c(unique(dat2$City)),]
-
-# reduce down to correct seasons
-dat <- dat[dat$Season %in% unique(dat2$Season),]
-
-# and then species
-dat <- dat[dat$Species %in% unique(dat2$Species),]
-
-# change some city names and reorder
-dat$Season <- factor(dat$Season, levels = unique(dat$Season))
-
-# drop any sites with absolutely zero data
-zdat <- dat %>% 
-  dplyr::group_by(Site,City) %>% 
-  dplyr::summarise(ssamp = sum(J>0)) %>% 
-  dplyr::filter(ssamp == 0)
-
-
-dat <- dat[-which(dat$Site %in% zdat$Site),]
-
-# drop autx
-dat <- dat[-which(dat$City == "autx"),]
-
-write.csv(dat, "./data/detection_data.csv", row.names = FALSE)
-
-# drop some season data here MASON
+dat <- dat[dat$Season %in% dat2$Season,]
 
 # get number of sites sampled per city
-hm <- dat[dat$Species == dat$Species[1],] %>%
+sampled <- dat[dat$Species == dat$Species[1],] %>%
   dplyr::group_by(Season, City) %>% 
   dplyr::summarise(ssamp = sum(J>0))
-hm <- hm[order(hm$City, hm$Season),]
+sampled <- sampled[order(sampled$City, sampled$Season),]
 
-hm <- split(
-  hm,
-  factor(hm$City)
+sampled <- split(
+  sampled,
+  factor(sampled$City)
 )
-# censor all of autx
-hm$autx$ssamp <- 0
 
 # turn all 10 or less to zero as well
 
-for(i in 1:length(hm)){
-  hm[[i]]$ssamp[hm[[i]]$ssamp <= 10] <- 0
+for(i in 1:length(sampled)){
+  sampled[[i]]$ssamp[sampled[[i]]$ssamp <= 10] <- 0
 }
+
+sampled <- dplyr::bind_rows(sampled)
+# go through and convert all 0 for a city / season
+for(i in 1:nrow(sampled)){
+  if( sampled$ssamp[i] == 0 ){
+    dat$Y[
+      dat$City == sampled$City[i] & 
+      dat$Season == sampled$Season[i]
+    ] <- 0
+    dat$J[
+      dat$City == sampled$City[i] & 
+      dat$Season == sampled$Season[i]
+    ] <- 0
+  }
+}
+
+# remove sites sampled zero times
+
+si_go <- dat %>% 
+  group_by(Site, City) %>% 
+  summarise(nsamp = sum(J)) %>% 
+  filter(nsamp == 0) %>% 
+  data.frame()
+
+dat <- dat[-which(dat$Site %in% si_go$Site),]
+
 
 write.csv(dat, "./data/detection_data.csv")
 
-sf <- dat[dat$City == "safa",]
 
-sf <- distinct(sf[,c("Site", "Long", "Lat")])
+coords <- dat[,c("Site", "City","Long", "Lat", "Crs")]
 
-tmp <- SELECT(
-  "select cl.locationAbbr, cl.utmEast, cl.utmNorth, cl.utmZone from CameraLocations cl
-  inner join StudyAreas sa on sa.areaID = cl.areaID
-  and sa.areaAbbr IN ('safa')"
-)
-
-library(sf)
-
-
-tmp <- sf::st_as_sf(
-  tmp,
-  coords = c("utmEast", "utmNorth"),
-  crs = 32610
-)
-
-my_df <- data.frame(
-  site = tmp$locationAbbr,
-  long = st_coordinates(t2)[,1],
-  lat = st_coordinates(t2)[,2],
-  crs = 4326,
-  city = "SAFA"
-)
-
-t2 <- sf::st_transform(
-  tmp,
-  crs = 4326
-)
-plot(st_coordinates(t2))
-
-aa <- season_availability(dat, "here.tiff", TRUE)
-
-dat <- dat %>% group_by(Site,City) %>% 
+coords <- coords %>% group_by(Site,City) %>% 
   summarise(Long = mean(Long), Lat = mean(Lat)) %>% 
   as.data.frame()
-row.names(dat) <- NULL
+row.names(coords) <- NULL
 
-# drop sanfrancisco
-dat <- dat[-which(dat$City == "safa"),]
+# do a histogram and inspect
+hist(coords$Lat)
+coords[coords$Lat < 30,]
 
-# read in coords from uwin db
-d2 <- read.csv("./data/raw_coordinates/gent_sites.csv")
-
-# remove any city where I already have coors
-d2$areaAbbr <- tolower(d2$areaAbbr)
-
-d2 <- d2[-which(d2$areaAbbr %in% c(dat$City, "paca", "lbca")),]
-
-
-d2 <- split(d2, factor(d2$areaAbbr))
-library(sf)
-for(i in 1:length(d2)){
-  tmp <- d2[[i]]
-  tmp$utmZone <- gsub("T|S|N| ", "", tmp$utmZone)
-  tmp <- sf::st_as_sf(
-    tmp,
-    coords = c("utmEast", "utmNorth"),
-    crs = as.numeric(paste0("326", unique(tmp$utmZone)))
-  )
-  tmp <- sf::st_transform(
-    tmp,
-    crs = 4326
-  )
-  
-  response <- data.frame(
-    Site = tmp$locationAbbr,
-    City = tmp$areaAbbr,
-    Long = sf::st_coordinates(tmp)[,1],
-    Lat = sf::st_coordinates(tmp)[,2]
-  )
-  d2[[i]] <- response
-}
-
-d2 <- dplyr::bind_rows(d2)
-
-d2 <- data.frame(d2)
-
-d2 <- d2[-grep("SFCA-O01-GGP2", d2$Site),]
-all_dat <- dplyr::bind_rows(
-  list(dat, d2)
+ctmp <- split(
+  coords,
+  factor(coords$City)
 )
-
-all_dat <- all_dat[all_dat$City %in% cities,]
-
-which(!cities %in% all_dat$City)
-all_dat$Crs <- "4326"
-row.names(all_dat) <- NULL
-write.csv(all_dat, "gentri_all_coordinates.csv", row.names = FALSE)
+pdf("city_hist.pdf")
+for(i in 1:length(ctmp)){
+  hist(ctmp[[i]]$Long, main = paste(names(ctmp)[i], "Long"))
+  hist(ctmp[[i]]$Lat, main = paste(names(ctmp)[i], "Lat"))
+  
+}
+dev.off()
+# t1 <- sf::st_as_sf(
+#   data.frame(x = 720932, y = 4270280),
+#   coords = c("x","y"),
+#   crs = 32615
+# )
+# 
+# t1 <- sf::st_transform(
+#   t1,
+#   crs = 4326
+# )
+# 
+# hist(coords$Long)
+write.csv(coords, "./data/gentri_all_coordinates.csv", row.names = FALSE)
