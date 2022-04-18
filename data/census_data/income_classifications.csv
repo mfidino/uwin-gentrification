@@ -1,0 +1,17 @@
+variable,y2000,y2010,y2015,y2020
+under_10,poor,poor,poor,poor
+btw_10_to_14,poor,poor,poor,poor
+btw_15_to_19,poor,poor,poor,poor
+btw_20_to_24,working class,poor,poor,poor
+btw_25_to_29,working class,working class,working class,working class
+btw_30_to_34,working class,working class,working class,working class
+btw_35_to_39,middle class,working class,working class,working class
+btw_40_to_44,middle class,working class,working class,working class
+btw_45_to_49,middle class,middle class,working class,working class
+btw_50_to_59,middle class,middle class,middle class,middle class
+btw_60_to_74,affluent,middle class,middle class,middle class
+btw_75_to_99,affluent,affluent,affluent,affluent
+btw_100_to_124,affluent,affluent,affluent,affluent
+btw_125_to_149,affluent,affluent,affluent,affluent
+btw_150_to_199,affluent,affluent,affluent,affluent
+over_200,affluent,affluent,affluent,affluent
