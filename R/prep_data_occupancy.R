@@ -370,6 +370,67 @@ within_covs$mean_19 <- within_covs$mean_19 / 100
   # these are the "first" instances of sampling at a location
   # that may need to be linked to sit
   first_sites <- do.call("rbind", first_sites)
+  first_sites <- first_sites[order(first_sites$city, first_sites$sites),]
+  
+  # reorder data so these are all at the very beginning
+  my_rows <- vector("list", length = nrow(first_sites))
+  for(i in 1:nrow(first_sites)){
+    my_rows[[i]] <-  which(
+      tmp$Site == first_sites$sites[i] &
+        tmp$City == first_sites$city[i]  &
+        tmp$Season == first_sites$season[i]
+    )
+  }
+  
+  new_order <- unlist(my_rows)
+  new_order <- c(new_order, (1:nrow(tmp))[-new_order])
+  
+  tmp <- tmp[new_order,]
+  tmp$starter <- FALSE
+  tmp$starter[1:length(unlist(my_rows))] <- TRUE
+  row.names(tmp) <- NULL
+  
+  tmp$rowID <- 1:nrow(tmp)
+  
+  sp_recs <- distinct(tmp[,c("Species","Site","City")])
+  sp_recs_list <- vector("list", length = nrow(sp_recs))
+  tmp$Season <- factor(tmp$Season, order_seasons(tmp$Season))
+  tmp$last_sample_vec <- NA
+  pb <- txtProgressBar(max = nrow(sp_recs))
+  for(i in 1:nrow(sp_recs)){
+    setTxtProgressBar(pb, i)
+    small_dat <- tmp[
+      tmp$Species == sp_recs$Species[i] &
+      tmp$Site == sp_recs$Site[i] &
+      tmp$City == sp_recs$City[i],
+    ]
+    small_dat <- small_dat[order(small_dat$Season),]
+    if(all(diff(small_dat$Season_id) == 1)){
+      tmp$last_sample_vec[small_dat$rowID[-1]] <- 
+        small_dat$rowID[1:(nrow(small_dat)-1)]
+    } else {
+      s_groups <- which(small_dat$starter)
+      # check if any of the s_groups only have 0 trailing seasons
+      
+      for(j in 1:length(s_groups)){
+        if(j < length(s_groups)){
+          tdat <- small_dat[s_groups[j]:(s_groups[j+1]-1),]
+        } else {
+          tdat <- small_dat[s_groups[j]:nrow(small_dat),]
+        }
+        if(nrow(tdat) == 1) next
+        if(all(diff(tdat$Season_id) == 1)){
+          tmp$last_sample_vec[tdat$rowID[-1]] <- 
+            tdat$rowID[1:(nrow(tdat)-1)]
+        } else {
+          stop("investigate")
+        }
+        
+      }
+      
+    }
+  }
+  # just do a quick check to make sure this was set up correctly.
   
   # tmp covs is ordered like tmp, so we should be good to go with this
   #  for psi, we are going to use all of the covariates
