@@ -208,13 +208,13 @@ edu_mean <- edu_mean[order(edu_mean$median),]
 
 # plot it out
 par(xpd = NA)
-bbplot::blank(xlim = c(1,20), ylim = c(0.5, 0.8), bty = 'l')
-bbplot::axis_blank(1, 1:20, minor = FALSE)
+bbplot::blank(xlim = c(1,23), ylim = c(0.5, 0.8), bty = 'l')
+bbplot::axis_blank(1, 1:23, minor = FALSE)
 bbplot::axis_blank(2,seq(0.5,0.8,0.1))
 bbplot::axis_text(side = 2, las = 1, line = 0.75)
 # x axis labels
 text(
-  x = c(1:20 - 0.25),
+  x = c(1:23 - 0.25),
   y = 0.46,
   labels = edu_mean$city,
   srt = 45
@@ -231,7 +231,7 @@ for(i in 1:nrow(edu_mean)){
 }
 # add the points
 points(
-  x = 1:20,
+  x = 1:23,
   y = edu_mean$median,
   pch = 21,
   bg = "gray50",
@@ -308,13 +308,13 @@ inc_mean <- inc_mean[order(inc_mean$median),]
 
 # plot it out
 par(xpd = NA)
-bbplot::blank(xlim = c(1,20), ylim = c(0.4, 1), bty = 'l')
-bbplot::axis_blank(1, 1:20, minor = FALSE)
+bbplot::blank(xlim = c(1,23), ylim = c(0.4, 1), bty = 'l')
+bbplot::axis_blank(1, 1:23, minor = FALSE)
 bbplot::axis_blank(2,seq(0.4,1,0.1))
 bbplot::axis_text(side = 2, las = 1, line = 0.75)
 # x axis labels
 text(
-  x = c(1:20 - 0.25),
+  x = c(1:23 - 0.25),
   y = 0.32,
   labels = inc_mean$city,
   srt = 45
@@ -331,7 +331,7 @@ for(i in 1:nrow(inc_mean)){
 }
 # add the points
 points(
-  x = 1:20,
+  x = 1:23,
   y = inc_mean$median,
   pch = 21,
   bg = "gray50",
@@ -525,13 +525,13 @@ race_mean <- race_mean[order(race_mean$median),]
 
 # plot it out
 par(xpd = NA)
-bbplot::blank(xlim = c(1,20), ylim = c(0.2, 1.4), bty = 'l')
-bbplot::axis_blank(1, 1:20, minor = FALSE)
+bbplot::blank(xlim = c(1,23), ylim = c(0.2, 1.4), bty = 'l')
+bbplot::axis_blank(1, 1:23, minor = FALSE)
 bbplot::axis_blank(2,seq(0.2,1.4,0.1))
 bbplot::axis_text(side = 2, las = 1, line = 0.75)
 # x axis labels
 text(
-  x = c(1:20 - 0.25),
+  x = c(1:23 - 0.25),
   y = 0.03,
   labels = race_mean$city,
   srt = 45
@@ -548,7 +548,7 @@ for(i in 1:nrow(race_mean)){
 }
 # add the points
 points(
-  x = 1:20,
+  x = 1:23,
   y = race_mean$median,
   pch = 21,
   bg = "gray50",
@@ -670,13 +670,13 @@ inc_it_mean <- inc_it %>%
 inc_it_mean <- inc_it_mean[order(inc_it_mean$median),]
 
 par(xpd = NA)
-bbplot::blank(xlim = c(1,20), ylim = c(0, 0.2), bty = 'l')
-bbplot::axis_blank(1, 1:20, minor = FALSE)
+bbplot::blank(xlim = c(1,23), ylim = c(0, 0.2), bty = 'l')
+bbplot::axis_blank(1, 1:23, minor = FALSE)
 bbplot::axis_blank(2,seq(0.0,0.2,0.025))
 bbplot::axis_text(side = 2, las = 1, line = 0.75)
 # x axis labels
 text(
-  x = c(1:20 - 0.25),
+  x = c(1:23 - 0.25),
   y = -0.03,
   labels = inc_it_mean$city,
   srt = 45
@@ -693,7 +693,7 @@ for(i in 1:nrow(inc_it_mean)){
 }
 # add the points
 points(
-  x = 1:20,
+  x = 1:23,
   y = inc_it_mean$median,
   pch = 21,
   bg = "gray50",
@@ -709,6 +709,11 @@ bbplot::axis_text(
   line = 2.8
 )
 
+write.csv(
+  inc_it_mean,
+  "./data/cleaned_data/covariates/income_segregation.csv",
+  row.names = FALSE
+)
 
 
 ```
@@ -808,13 +813,13 @@ edu_it_mean <- edu_it %>%
 edu_it_mean <- edu_it_mean[order(edu_it_mean$median),]
 
 par(xpd = NA)
-bbplot::blank(xlim = c(1,20), ylim = c(0, 0.2), bty = 'l')
-bbplot::axis_blank(1, 1:20, minor = FALSE)
+bbplot::blank(xlim = c(1,23), ylim = c(0, 0.2), bty = 'l')
+bbplot::axis_blank(1, 1:23, minor = FALSE)
 bbplot::axis_blank(2,seq(0.0,0.2,0.025))
 bbplot::axis_text(side = 2, las = 1, line = 0.75)
 # x axis labels
 text(
-  x = c(1:20 - 0.25),
+  x = c(1:23 - 0.25),
   y = -0.03,
   labels = edu_it_mean$city,
   srt = 45
@@ -831,7 +836,7 @@ for(i in 1:nrow(edu_it_mean)){
 }
 # add the points
 points(
-  x = 1:20,
+  x = 1:23,
   y = edu_it_mean$median,
   pch = 21,
   bg = "gray50",
@@ -845,6 +850,12 @@ bbplot::axis_text(
   "City",
   1,
   line = 2.8
+)
+
+write.csv(
+  edu_it_mean,
+  "./data/cleaned_data/covariates/education_segregation.csv",
+  row.names = FALSE
 )
 
 ```
@@ -943,13 +954,13 @@ race_it_mean <- race_it %>%
 race_it_mean <- race_it_mean[order(race_it_mean$median),]
 
 par(xpd = NA)
-bbplot::blank(xlim = c(1,20), ylim = c(0, 0.4), bty = 'l')
-bbplot::axis_blank(1, 1:20, minor = FALSE)
+bbplot::blank(xlim = c(1,23), ylim = c(0, 0.4), bty = 'l')
+bbplot::axis_blank(1, 1:23, minor = FALSE)
 bbplot::axis_blank(2,seq(0.0,0.4,0.05))
 bbplot::axis_text(side = 2, las = 1, line = 0.75)
 # x axis labels
 text(
-  x = c(1:20 - 0.25),
+  x = c(1:23 - 0.25),
   y = -0.055,
   labels = race_it_mean$city,
   srt = 45
@@ -966,7 +977,7 @@ for(i in 1:nrow(race_it_mean)){
 }
 # add the points
 points(
-  x = 1:20,
+  x = 1:23,
   y = race_it_mean$median,
   pch = 21,
   bg = "gray50",
@@ -980,6 +991,12 @@ bbplot::axis_text(
   "City",
   1,
   line = 2.8
+)
+
+write.csv(
+  race_it_mean,
+  "./data/cleaned_data/covariates/racial_segregations.csv",
+  row.names = FALSE
 )
 
 ```

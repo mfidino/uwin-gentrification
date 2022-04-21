@@ -1295,6 +1295,7 @@ pander::pander(aa,
 
 gent_list <- vector("list", length = length(citymed))
 gent_list_poly <- gent_list
+gent_list_prop <- gent_list
 if(
   !file.exists(
     "./data/census_data/gent_census_tracts.rds") |
@@ -1363,6 +1364,35 @@ for(i in 1:length(citymed)){
     my_buffer
   )
   
+  gent_prop <- sf::st_intersection(
+    gent_result,
+    tmp_buff
+  ) 
+  gent_prop <- split(
+    gent_prop,
+    factor(gent_prop$Site)
+  )
+  
+
+  gent_prop <- lapply(
+    gent_prop,
+    function(x){
+      if(sum(x$gentrifying, na.rm = TRUE)>0){
+        to_return <- sum(
+          sf::st_area(x[x$gentrifying == 1,])
+        ) / sum(sf::st_area(x))
+      } else {
+        to_return <- 0
+      }
+      return(as.numeric(to_return))
+    }
+  )
+  gent_prop <- utils::stack(gent_prop)
+  colnames(gent_prop) <- c("prop_gent", "Site")
+  gent_prop$City <- tmp_coords$City
+  gent_list_prop[[i]] <- gent_prop
+  
+  
   g_tmp <- sf::st_intersection(
     gent_result,
     tmp_buff
@@ -1389,6 +1419,7 @@ for(i in 1:length(citymed)){
   )
   
 }
+  saveRDS(gent_list_prop, "./data/census_data/gent_sites_proportion.rds")
   saveRDS(gent_list, "./data/census_data/gent_sites.rds")
   saveRDS(gent_list_poly, "./data/census_data/gent_census_tracts.rds")
   
@@ -1406,6 +1437,27 @@ gent_result <- dplyr::bind_rows(gent_list)
 aa <- table(gent_result$City, gent_result$gentrifying)
 row.names(aa) <- pretty_names
 
+to_save <- data.frame(gent_result)
+
+# remove duplicates
+to_save <- to_save[!duplicated(to_save[,c("Site","City")]),]
+
+
+# read in the imperv data
+imperv <- read.csv("./data/imperv.csv")
+
+to_save <- dplyr::inner_join(
+  to_save[,c("City", "Site", "gentrifying")],
+  imperv[,c("city", "site", "mean_19")],
+  by = c("City" = "city", "Site" = "site")
+)
+
+
+write.csv(
+  to_save,
+  "./data/cleaned_data/covariates/site_covariates.csv",
+  row.names = FALSE
+)
 
 pander::pander(
   aa,
