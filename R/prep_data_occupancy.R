@@ -5,6 +5,7 @@
 #  "./R/cleaning_scripts/data_cleaning_script.R"
 #  "./R/cleaning_scripts/covariate_cleaning_script.R"
 
+cat("Loading functions...\n")
 # load functions used to clean data
 functions_to_load <- list.files(
   "./R/functions/",
@@ -15,11 +16,15 @@ for(fn in functions_to_load){
   source(fn)
 }
 
+cat("Reading in detection data...\n")
 # read in the data
 city_data <- read.csv(
   "./data/detection_data.csv",
   stringsAsFactors = FALSE
 )
+
+# drop J01-NOR1
+city_data <- city_data[-which(city_data$Site == "J01-NOR1"),]
 
 # There are A LOT of NA's in this sampling array 
 #  prop.table(table(city_data$J > 0))
@@ -46,10 +51,10 @@ min_dets <- 25
 first_species <- reduce_species[which(reduce_species[,2] >= min_dets),]
 
 cdet <- city_data %>% group_by(Species, City) %>% 
-  summarise(cdet = any(Y>0)) %>% 
+  summarise(cdet = any(Y>0), .groups = "drop_last") %>% 
   ungroup() %>% 
   group_by(Species) %>% 
-  summarise(n = sum(cdet)) %>% 
+  summarise(n = sum(cdet), .groups = "drop_last") %>% 
   data.frame()
 
 cdet <- cdet[order(cdet$n),]
@@ -164,8 +169,50 @@ tmp <- dplyr::left_join(
     by = "City"
   )
 
+cat("Removing sites with no data...\n")
 # now we just need to drop the rows where J == 0 (i.e., no sampling).
+tmp2 <- tmp[tmp$J > 0,]
+
+tmp2 <- split(
+  tmp2,
+  factor(
+    tmp2$Season,
+    order_seasons(tmp2$Season)
+  )
+)
+
+
+for(i in 1:length(tmp2)){
+  tmp2[[i]] <- table(
+    paste0(tmp2[[i]]$City, "_", tmp2[[i]]$Site)
+  )
+  tmp2[[i]] <- tmp2[[i]][tmp2[[i]] != nrow(species_map)]
+}
+
+# remove these as well
 tmp <- tmp[tmp$J > 0,]
+for(i in 1:length(tmp2)){
+  if(length(tmp2[[i]])==0) next
+  to_go <- data.frame(
+    City = sapply( strsplit(names(tmp2[[i]]),"_"), "[[",1),
+    Site = sapply( strsplit(names(tmp2[[i]]),"_"), "[[",2),
+    Season = names(tmp2)[i]
+  )
+  for(j in 1:nrow(to_go)){
+    baddies <- which(
+      tmp$Season == to_go$Season[j] &
+        tmp$Site == to_go$Site[j] &
+        tmp$City == to_go$City[j]
+    )
+    if(length(baddies)> 0){
+      tmp <- tmp[-baddies,]
+    } else {
+      stop()
+    }
+  }
+  
+}
+
 
 # We have multiple seasons of sampling and therefore need to account for 
 #  this in the model. The issue here though is that each city does not
@@ -257,7 +304,8 @@ city_ll <- city_ll %>%
   dplyr::group_by(City) %>% 
   dplyr::summarise(
     Lat = mean(Lat),
-    Long = mean(Long)
+    Long = mean(Long),
+    .groups = "drop_last"
   )
 
 # make sure city_ll is ordered by city
@@ -292,263 +340,315 @@ among_covs[,,2] <- city_covs / sd(city_covs)
 #   byrow = TRUE
 # )
 
+cat("Creating auto-logistic id for model...\n")
+# set up the model for the autologistic formulation. First off,
+# get just the site, city, and season info.
+scs <- dplyr::distinct(tmp[,c("Site","City","Season")])
+scs$si <- paste0(scs$City,"-",scs$Site)
+
+scs <- split(
+  scs,
+  factor(scs$City)
+)
+all_seas <- unique(tmp$Season)
+
+first_sites <- vector("list", length = length(scs))
+for(i in 1:length(scs)){
+  my_seas <- unique(scs[[i]]$Season)
+  my_seas <- all_seas[
+    which(all_seas == my_seas[1]):
+      which(all_seas == my_seas[length(my_seas)])
+  ]
+  
+  first_sites[[i]] <- data.frame(
+    sites = scs[[i]]$Site[scs[[i]]$Season == my_seas[1]],
+    season = my_seas[1],
+    city = unique(scs[[i]]$City)
+  )
+  for(j in 2:length(my_seas)){
+    a1 <- scs[[i]]$Site[scs[[i]]$Season == my_seas[j]]
+    if(length(a1) == 0) next
+    a2 <- scs[[i]]$Site[scs[[i]]$Season == my_seas[j-1]]
+    tmp_si <- which(
+      !a1 %in% a2
+    )
+    if(length(tmp_si)>0){
+      first_sites[[i]] <- rbind(
+        first_sites[[i]],
+        data.frame(
+          sites = scs[[i]]$Site[scs[[i]]$Season == my_seas[j]][tmp_si],
+          season = my_seas[j],
+          city = unique(scs[[i]]$City)
+        )
+      )
+    }
+  }
+}
+# these are the "first" instances of sampling at a location
+# that may need to be linked to sit
+first_sites <- do.call("rbind", first_sites)
+first_sites$season <- factor(
+  first_sites$season,
+  order_seasons(first_sites$season)
+)
+first_sites <- first_sites[order(first_sites$city, first_sites$season, first_sites$sites),]
+row.names(first_sites) <- NULL
+# reorder data so these are all at the very beginning
+my_rows <- vector("list", length = nrow(first_sites))
+for(i in 1:nrow(first_sites)){
+  my_rows[[i]] <-  which(
+    tmp$Site == first_sites$sites[i] &
+      tmp$City == first_sites$city[i]  &
+      tmp$Season == first_sites$season[i]
+  )
+}
+  
+new_tmp <- vector("list", length = length(my_rows))
+for(i in 1:length(my_rows)){
+  new_tmp[[i]] <- tmp[my_rows[[i]],]
+}
+new_tmp <- do.call("rbind", new_tmp)
+new_tmp$starter <- TRUE
+tmp$starter <- FALSE
+tmp <- rbind(
+  new_tmp,
+  tmp[-which(tmp$X %in% new_tmp$X),]
+)
+row.names(tmp) <- NULL
+
+# make a unique identifier for each sample
+tmp$rowID <- 1:nrow(tmp)
+  
+sp_recs <- distinct(tmp[,c("Species","Site","City")])
+sp_recs_list <- vector("list", length = nrow(sp_recs))
+tmp$Season <- factor(tmp$Season, order_seasons(tmp$Season))
+# vector that incidates where the previous sample was
+tmp$last_sample_vec <- NA
+sp_recs[sp_recs$Species == "woodchuck" & sp_recs$Site == "MLP1",]
+  
+pb <- txtProgressBar(max = nrow(sp_recs))
+for(i in 1:nrow(sp_recs)){
+  setTxtProgressBar(pb, i)
+  small_dat <- tmp[
+    tmp$Species == sp_recs$Species[i] &
+    tmp$Site == sp_recs$Site[i] &
+    tmp$City == sp_recs$City[i],
+  ]
+  small_dat <- small_dat[order(small_dat$Season),]
+  if(all(diff(small_dat$Season_id) == 1)){
+    tmp$last_sample_vec[small_dat$rowID[-1]] <- 
+      small_dat$rowID[1:(nrow(small_dat)-1)]
+  } else {
+    s_groups <- which(small_dat$starter)
+    # check if any of the s_groups only have 0 trailing seasons
+    
+    for(j in 1:length(s_groups)){
+      if(j < length(s_groups)){
+        tdat <- small_dat[s_groups[j]:(s_groups[j+1]-1),]
+      } else {
+        tdat <- small_dat[s_groups[j]:nrow(small_dat),]
+      }
+      if(nrow(tdat) == 1) next
+      if(all(diff(tdat$Season_id) == 1)){
+        tmp$last_sample_vec[tdat$rowID[-1]] <- 
+          tdat$rowID[1:(nrow(tdat)-1)]
+      } else {
+        stop("investigate")
+      }
+    }
+  }
+}
+  # just do a quick check to make sure this was set up correctly.
+my_seas <- levels(tmp$Season)
+for(i in rev(1:nrow(tmp))){
+  if(tmp$starter[i]) next
+  my_eval <- tmp$Species[tmp$last_sample_vec[i]] == tmp$Species[i] &
+    tmp$Site[tmp$last_sample_vec[i]] == tmp$Site[i] &
+    tmp$Season[tmp$last_sample_vec[i]] ==
+    my_seas[which(my_seas == tmp$Season[i])-1]
+  if(!my_eval){
+    stop("last_sample_vec wrong, investigate.")
+  }
+}
+
+# remove a bunch of stuff that is not needed
+rm(list = c("new_tmp", "first_sites", "my_rows", "pb", "small_dat", "sp_recs",
+     "sp_recs_list", "tdat", "tmp2", "to_go", "a1", "a2", "baddies",
+     "my_eval", "my_seas"))
+
+cat("Reading in site covariates...\n")
 # read in the within-city covariates
 within_covs <- read.csv(
   "./data/cleaned_data/covariates/site_covariates.csv",
   stringsAsFactors = FALSE
 )
-
+  
 # divide mean_19 by 100
 within_covs$mean_19 <- within_covs$mean_19 / 100
 
-  # Second, we are going to log population density because it has a very
-  #  long right tail.
+# Second, we are going to log population density because it has a very
+#  long right tail.
 
-  # calculate the mean of each variable across cities
-  wc_mean <- within_covs %>% 
-    dplyr::group_by(City) %>% 
-    dplyr::summarise_if(is.numeric, mean)
+# calculate the mean of each variable across cities
+wc_mean <- within_covs %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise_if(is.numeric, mean, .groups = "drop_last")
 
-  # city-mean center the data
-  within_covs_centered <- within_covs %>% 
-    dplyr::group_by(City) %>% 
-    dplyr::mutate_if(is.numeric, function(x) x - mean(x)) %>% 
-    dplyr::ungroup()
-  
-  # now we need to replicate this across our detection matrix.
-  tmp_covs <- dplyr::inner_join(
-    tmp[,c("Site", "City")],
-    within_covs_centered,
-    by = c("Site", "City")
-  )
-  
-  # set up the model for the autologistic formulation. First off,
-  # get just the site, city, and season info.
-  scs <- dplyr::distinct(tmp[,c("Site","City","Season")])
-  scs$si <- paste0(scs$City,"-",scs$Site)
-  
-  scs <- split(
-    scs,
-    factor(scs$City)
-  )
-  all_seas <- unique(tmp$Season)
-  
-  first_sites <- vector("list", length = length(scs))
-  for(i in 1:length(scs)){
-    my_seas <- unique(scs[[i]]$Season)
-    my_seas <- all_seas[
-      which(all_seas == my_seas[1]):
-        which(all_seas == my_seas[length(my_seas)])
-    ]
-    
-    first_sites[[i]] <- data.frame(
-      sites = scs[[i]]$Site[scs[[i]]$Season == my_seas[1]],
-      season = my_seas[1],
-      city = unique(scs[[i]]$City)
+# city-mean center the data
+within_covs_centered <- split(
+  within_covs,
+  factor(within_covs$City)
+)
+for(i in 1:length(within_covs_centered)){
+  within_covs_centered[[i]]$mean_19 <- 
+    within_covs_centered[[i]]$mean_19 - mean(
+      within_covs_centered[[i]]$mean_19
     )
-    for(j in 2:length(my_seas)){
-      a1 <- scs[[i]]$Site[scs[[i]]$Season == my_seas[j]]
-      if(length(a1) == 0) next
-      a2 <- scs[[i]]$Site[scs[[i]]$Season == my_seas[j-1]]
-      tmp_si <- which(
-        !a1 %in% a2
-      )
-      if(length(tmp_si)>0){
-        first_sites[[i]] <- rbind(
-          first_sites[[i]],
-          data.frame(
-            sites = scs[[i]]$Site[scs[[i]]$Season == my_seas[j]][tmp_si],
-            season = my_seas[j],
-            city = unique(scs[[i]]$City)
-          )
-        )
-        
-      }
-    }
+}
 
+within_covs_centered <- do.call("rbind", within_covs_centered)
+# now we need to replicate this across our detection matrix.
+
+tmp_covs <- tmp[,c("Site","City", "Season")]
+tmp_covs$gentrifying <- FALSE
+tmp_covs$mean_19 <- NA
+for(i in 1:nrow(within_covs_centered)){
+  my_loc <-    which( tmp_covs$Site == within_covs_centered$Site[i] &
+    tmp_covs$City == within_covs_centered$City[i])
+  if(length(my_loc) > 0){
+    tmp_covs$gentrifying[my_loc] <- within_covs_centered$gentrifying[i]
+    tmp_covs$mean_19[my_loc] <- within_covs_centered$mean_19[i]
+  } else {
+    stop()
   }
-  # these are the "first" instances of sampling at a location
-  # that may need to be linked to sit
-  first_sites <- do.call("rbind", first_sites)
-  first_sites <- first_sites[order(first_sites$city, first_sites$sites),]
+}
+
+cat("Creating design matrices...\n")
+# tmp covs is ordered like tmp, so we should be good to go with this
+#  for psi, we are going to use all of the covariates
+# -3 columns for site, season, and city. +1 column for intercept (i.e., -2)
+psi_covs <- matrix(
+  1,
+  ncol = ncol(tmp_covs) - 2,
+  nrow = nrow(tmp_covs)
+)
+psi_covs[,-1] <- as.matrix(
+  tmp_covs[,-which(
+    colnames(tmp_covs) %in% c("Site", "Season", "City")
+  )]
+)
+
+# for detection (rho) we are going to use NDVI and population density
+rho_covs <- matrix(
+  1,
+  ncol = ncol(tmp_covs) - 2,
+  nrow = nrow(tmp_covs)
+)
   
-  # reorder data so these are all at the very beginning
-  my_rows <- vector("list", length = nrow(first_sites))
-  for(i in 1:nrow(first_sites)){
-    my_rows[[i]] <-  which(
-      tmp$Site == first_sites$sites[i] &
-        tmp$City == first_sites$city[i]  &
-        tmp$Season == first_sites$season[i]
+rho_covs[,-1] <- as.matrix(
+  tmp_covs[,-which(
+    colnames(tmp_covs) %in% c("Site", "Season", "City")
+  )]
+)
+  
+  
+cat("Creating data_list and inits() function...\n")
+data_list <- list(
+  # detection data
+  y = tmp$Y,
+  J = tmp$J,
+  # ids to fit the model in long format
+  species_idx = tmp$Species_id,
+  city_idx = tmp$City_id,
+  combo_species_idx = combo$Species_id,
+  combo_city_idx = combo$City_id,
+  combo_idx = tmp$Combo_id,
+  last_sample_vec = tmp$last_sample_vec,
+  # covariates
+  among_covs = among_covs,
+  psi_covs = psi_covs,
+  rho_covs = rho_covs,
+  #season_covs = season_covs,
+  # number of species, parameters, etc.
+  nspecies = max(tmp$Species_id),
+  ncity = max(tmp$City_id),
+  ncov_among = dim(among_covs)[3],
+  ncov_within = ncol(psi_covs),
+  nsamples_one = sum(tmp$starter),
+  nsamples_two = nrow(tmp),
+  nseason_params = nrow(combo),
+  #nseason_covs = ncol(season_covs),
+  ncov_det = ncol(rho_covs)
+)
+  
+inits <- function(chain){
+  gen_list <- function(chain = chain){
+    list( 
+      z = rep(1, nrow(tmp)),
+      x = matrix(1, ncol = data_list$ncity, nrow = data_list$nspecies),
+      a_among = rnorm(data_list$ncov_among),
+      tau_among = rgamma(data_list$ncov_among, 1, 1),
+      b_among = matrix(rnorm(data_list$nspecies * data_list$ncov_among),
+                       ncol = data_list$nspecies,
+                       nrow = data_list$ncov_among),
+      b_within = rnorm(data_list$ncov_within),
+      tau_within = rgamma(data_list$ncov_within, 1, 1),
+      b_species = matrix(
+        rnorm(data_list$nspecies * data_list$ncov_within),
+        ncol = data_list$nspecies,
+        nrow = data_list$ncov_within),
+      tau_species = matrix(
+        rgamma(data_list$nspecies * data_list$ncov_within, 1, 1),
+        ncol = data_list$nspecies,
+        nrow = data_list$ncov_within),
+      tau_shape = runif(data_list$ncov_within, 0.5,2),
+      tau_rate = runif(data_list$ncov_within, 0.5,2),
+      b_species_city = array(
+        rnorm(data_list$ncov_within * data_list$nspecies * data_list$ncity),
+        dim = c(data_list$ncov_within, data_list$nspecies, data_list$ncity)
+      ),
+      c_shape_psi = runif(1),
+      c_rate_psi = runif(1),
+      c_tau_psi = rgamma(data_list$ncity, 1, 1),
+      ssc_psi = rnorm(data_list$nseason_params),
+      c_shape_rho = runif(1),
+      c_rate_rho = runif(1),
+      c_tau_rho = rgamma(data_list$ncity, 1, 1),
+      ssc_rho = rnorm(data_list$nseason_params),
+      theta_mu = rnorm(1),
+      tau_theta = rgamma(1,1,1),
+      theta_shape = runif(1),
+      theta_rate = runif(1),
+      theta_species = rnorm(data_list$nspecies),
+      tau_theta_species = rgamma(data_list$nspecies, 1, 1),
+      theta = matrix(
+        rnorm(data_list$nspecies * data_list$ncity),
+        nrow = data_list$nspecies,
+        ncol = data_list$ncity
+      ),
+      .RNG.name = switch(chain,
+                         "1" = "base::Wichmann-Hill",
+                         "2" = "base::Marsaglia-Multicarry",
+                         "3" = "base::Super-Duper",
+                         "4" = "base::Mersenne-Twister",
+                         "5" = "base::Wichmann-Hill",
+                         "6" = "base::Marsaglia-Multicarry",
+                         "7" = "base::Super-Duper",
+                         "8" = "base::Mersenne-Twister"),
+      .RNG.seed = sample(1:1e+06, 1)
     )
   }
-  
-  new_order <- unlist(my_rows)
-  new_order <- c(new_order, (1:nrow(tmp))[-new_order])
-  
-  tmp <- tmp[new_order,]
-  tmp$starter <- FALSE
-  tmp$starter[1:length(unlist(my_rows))] <- TRUE
-  row.names(tmp) <- NULL
-  
-  tmp$rowID <- 1:nrow(tmp)
-  
-  sp_recs <- distinct(tmp[,c("Species","Site","City")])
-  sp_recs_list <- vector("list", length = nrow(sp_recs))
-  tmp$Season <- factor(tmp$Season, order_seasons(tmp$Season))
-  tmp$last_sample_vec <- NA
-  pb <- txtProgressBar(max = nrow(sp_recs))
-  for(i in 1:nrow(sp_recs)){
-    setTxtProgressBar(pb, i)
-    small_dat <- tmp[
-      tmp$Species == sp_recs$Species[i] &
-      tmp$Site == sp_recs$Site[i] &
-      tmp$City == sp_recs$City[i],
-    ]
-    small_dat <- small_dat[order(small_dat$Season),]
-    if(all(diff(small_dat$Season_id) == 1)){
-      tmp$last_sample_vec[small_dat$rowID[-1]] <- 
-        small_dat$rowID[1:(nrow(small_dat)-1)]
-    } else {
-      s_groups <- which(small_dat$starter)
-      # check if any of the s_groups only have 0 trailing seasons
-      
-      for(j in 1:length(s_groups)){
-        if(j < length(s_groups)){
-          tdat <- small_dat[s_groups[j]:(s_groups[j+1]-1),]
-        } else {
-          tdat <- small_dat[s_groups[j]:nrow(small_dat),]
-        }
-        if(nrow(tdat) == 1) next
-        if(all(diff(tdat$Season_id) == 1)){
-          tmp$last_sample_vec[tdat$rowID[-1]] <- 
-            tdat$rowID[1:(nrow(tdat)-1)]
-        } else {
-          stop("investigate")
-        }
-        
-      }
-      
-    }
-  }
-  # just do a quick check to make sure this was set up correctly.
-  
-  # tmp covs is ordered like tmp, so we should be good to go with this
-  #  for psi, we are going to use all of the covariates
-  # -3 columns for site, season, and city. +1 column for intercept (i.e., -2)
-  psi_covs <- matrix(
-    1,
-    ncol = ncol(tmp_covs) - 1,
-    nrow = nrow(tmp_covs)
+  return(switch(chain,           
+                "1" = gen_list(chain),
+                "2" = gen_list(chain),
+                "3" = gen_list(chain),
+                "4" = gen_list(chain),
+                "5" = gen_list(chain),
+                "6" = gen_list(chain),
+                "7" = gen_list(chain),
+                "8" = gen_list(chain)
   )
-  psi_covs[,-1] <- as.matrix(
-    tmp_covs[,-which(
-      colnames(tmp_covs) %in% c("Site", "Season", "City")
-    )]
   )
-  
-  # for detection (rho) we are going to use NDVI and population density
-  rho_covs <- matrix(
-    1,
-    ncol = ncol(tmp_covs) - 1,
-    nrow = nrow(tmp_covs)
-  )
-  
-  rho_covs[,-1] <- as.matrix(
-    tmp_covs[,-which(
-      colnames(tmp_covs) %in% c("Site", "Season", "City")
-    )]
-  )
-  
-  
-  # for seasonal variation
-  #season_covs <- scale(city_ll)
-  #season_covs <- cbind(
-  #  1, 
-  #  season_covs
-  #)
-  
-  data_list <- list(
-    # detection data
-    y = tmp$Y,
-    J = tmp$J,
-    # ids to fit the model in long format
-    species_idx = tmp$Species_id,
-    city_idx = tmp$City_id,
-    combo_species_idx = combo$Species_id,
-    combo_city_idx = combo$City_id,
-    combo_idx = tmp$Combo_id,
-    # covariates
-    among_covs = among_covs,
-    psi_covs = psi_covs,
-    rho_covs = rho_covs,
-    #season_covs = season_covs,
-    # number of species, parameters, etc.
-    nspecies = max(tmp$Species_id),
-    ncity = max(tmp$City_id),
-    ncov_among = dim(among_covs)[3],
-    ncov_within = ncol(psi_covs),
-    nsamples = nrow(tmp),
-    nseason_params = nrow(combo),
-    #nseason_covs = ncol(season_covs),
-    ncov_det = ncol(rho_covs)
-  )
-  
-  
-  inits <- function(chain){
-    gen_list <- function(chain = chain){
-      list( 
-        z = rep(1, nrow(tmp)),
-        x = matrix(1, ncol = data_list$ncity, nrow = data_list$nspecies),
-        a_among = rnorm(data_list$ncov_among),
-        tau_among = rgamma(data_list$ncov_among, 1, 1),
-        b_among = matrix(rnorm(data_list$nspecies * data_list$ncov_among),
-                         ncol = data_list$nspecies,
-                         nrow = data_list$ncov_among),
-        b_within = rnorm(data_list$ncov_within),
-        tau_within = rgamma(data_list$ncov_within, 1, 1),
-        b_species = matrix(
-          rnorm(data_list$nspecies * data_list$ncov_within),
-          ncol = data_list$nspecies,
-          nrow = data_list$ncov_within),
-        tau_species = matrix(
-          rgamma(data_list$nspecies * data_list$ncov_within, 1, 1),
-          ncol = data_list$nspecies,
-          nrow = data_list$ncov_within),
-        tau_shape = runif(data_list$ncov_within, 0.5,2),
-        tau_rate = runif(data_list$ncov_within, 0.5,2),
-        b_species_city = array(
-          rnorm(data_list$ncov_within * data_list$nspecies * data_list$ncity),
-          dim = c(data_list$ncov_within, data_list$nspecies, data_list$ncity)
-        ),
-        c_shape_psi = runif(1),
-        c_rate_psi = runif(1),
-        c_tau_psi = rgamma(data_list$ncity, 1, 1),
-        ssc_psi = rnorm(data_list$nseason_params),
-        c_shape_rho = runif(1),
-        c_rate_rho = runif(1),
-        c_tau_rho = rgamma(data_list$ncity, 1, 1),
-        ssc_rho = rnorm(data_list$nseason_params),
-        .RNG.name = switch(chain,
-                           "1" = "base::Wichmann-Hill",
-                           "2" = "base::Marsaglia-Multicarry",
-                           "3" = "base::Super-Duper",
-                           "4" = "base::Mersenne-Twister",
-                           "5" = "base::Wichmann-Hill",
-                           "6" = "base::Marsaglia-Multicarry",
-                           "7" = "base::Super-Duper",
-                           "8" = "base::Mersenne-Twister"),
-        .RNG.seed = sample(1:1e+06, 1)
-      )
-    }
-    return(switch(chain,           
-                  "1" = gen_list(chain),
-                  "2" = gen_list(chain),
-                  "3" = gen_list(chain),
-                  "4" = gen_list(chain),
-                  "5" = gen_list(chain),
-                  "6" = gen_list(chain),
-                  "7" = gen_list(chain),
-                  "8" = gen_list(chain)
-    )
-    )
-  }
+}
+
+cat("prep_data_occupancy.R Complete!\n")

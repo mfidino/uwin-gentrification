@@ -30,6 +30,18 @@ model{
       }
     }
   }
+  # prior for auotlogistic term
+  theta_mu ~ dt(0, 2.5, 1)
+  tau_theta ~ dgamma(1, 1)
+  theta_shape ~ dunif(0.1, 10)
+  theta_rate ~ dunif(0.1, 10)
+  for(j in 1:nspecies){
+    theta_species[j] ~ dnorm(theta_mu, tau_theta)
+    tau_theta_species[j] ~ dgamma(theta_shape, theta_rate)
+    for(k in 1:ncity){
+      theta[j,k] ~ dnorm(theta_species[j], tau_theta_species[j])
+    }
+  }
   # Setting up within-city seasonal variation now that we have
   #  a structure set up for each species in a city.
   c_shape_psi ~ dunif(0.001, 10)
@@ -49,14 +61,25 @@ model{
       c_tau_psi[combo_city_idx[m]]
     )
   }
-  # within-city regression (latent-state)
-  for(s in 1:nsamples){
+  # within-city regression (latent-state) for 'first' surveys
+  for(s in 1:nsamples_one){
     logit(psi[s]) <- inprod(
       b_species_city[2:ncov_within,species_idx[s],city_idx[s]],
       psi_covs[s,2:ncov_within]
     ) + 
       ssc_psi[combo_idx[s]]
     z[s] ~ dbern(psi[s] * x[species_idx[s], city_idx[s]])
+  }
+  # within-city regression (latent-state) with auto-logistic term
+  for(ss in (nsamples_one+1):nsamples_two){
+    logit(psi[ss]) <- inprod(
+      b_species_city[2:ncov_within,species_idx[ss],city_idx[ss]],
+      psi_covs[ss,2:ncov_within]
+    ) + 
+      ssc_psi[combo_idx[ss]] + 
+      theta[species_idx[ss], city_idx[ss]] * z[last_sample_vec[ss]]
+    z[ss] ~ dbern(psi[ss] * x[species_idx[ss], city_idx[ss]])
+    
   }
   # prior for detection
   # prior for random intercepts & slopes within city
@@ -73,23 +96,6 @@ model{
       }
     }
   }
-  # prior for multiple seasons of sampling, rho
-  #s_tau_rho  ~ dgamma(1, 1) # variation among species
-  #sc_shape_rho ~ dunif(0.001, 10) # shape for variation among cities
-  #sc_rate_rho ~ dunif(0.001, 10) # rate for variation among cities
-  #for(j in 1:nspecies){
-  #  s_rho[j] ~ dnorm(
-  #    0,
-  #    s_tau_rho # variation among species
-  #  )
-  #  sc_tau_rho[j] ~ dgamma(sc_shape_rho, sc_rate_rho)
-  #  for(k in 1:ncity){
-  #    sc_rho[j,k] ~ dnorm(
-  #      s_rho[j], # species mean
-  #      sc_tau_rho[j] # variation among cities for each species
-  #    )
-  #  }
-  #}
   # Setting up within-city seasonal variation now that we have
   #  a structure set up for each species in a city.
   c_shape_rho ~ dunif(0.001, 10)
@@ -110,7 +116,7 @@ model{
     )
   }
   # within-city regression (observation)
-  for(s in 1:nsamples){
+  for(s in 1:nsamples_two){
     logit(rho[s]) <- inprod(
       c_species_city[2:ncov_det,species_idx[s],city_idx[s]],
       rho_covs[s,2:ncov_det]
