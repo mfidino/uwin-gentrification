@@ -476,7 +476,7 @@ rm(list = c("new_tmp", "first_sites", "my_rows", "pb", "small_dat", "sp_recs",
      "sp_recs_list", "tdat", "tmp2", "to_go", "a1", "a2", "baddies",
      "my_eval", "my_seas"))
 
-cat("Reading in site covariates...\n")
+cat("\nReading in site covariates...\n")
 # read in the within-city covariates
 within_covs <- read.csv(
   "./data/cleaned_data/covariates/site_covariates.csv",

@@ -1,10 +1,19 @@
+#########################################
+#
+# Fit initial occupancy model
+#
+# Written by M. Fidino
+#
+#########################################
+
+
+
+
 library(dplyr)
 library(runjags)
 library(googledrive)
 
 source("./R/prep_data_occupancy.R")
-
-
 
 
 my_start <- Sys.time()
