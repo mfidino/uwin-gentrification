@@ -1,7 +1,10 @@
 model{
-  # priors for among-city variability
+  # priors for among-city variability, from past research
+  # we have strong evidence this slope term is positive.
+  a_among[1] ~ dt(0, 2.5, 1)
+  a_among[2] ~ dt(2, 2.5, 1)
   for(i in 1:ncov_among){
-    a_among[i] ~ dt(0, 2.5, 1)
+    #a_among[i] ~ dt(0, 2.5, 1)
     tau_among[i] ~ dgamma(1, 1)
   }
   for(i in 1:ncov_among){

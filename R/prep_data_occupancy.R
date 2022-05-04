@@ -617,8 +617,8 @@ inits <- function(chain){
       ssc_rho = rnorm(data_list$nseason_params),
       theta_mu = rnorm(1),
       tau_theta = rgamma(1,1,1),
-      theta_shape = runif(1),
-      theta_rate = runif(1),
+      theta_shape = runif(1,0.5,1),
+      theta_rate = runif(1, 0.5,1),
       theta_species = rnorm(data_list$nspecies),
       tau_theta_species = rgamma(data_list$nspecies, 1, 1),
       theta = matrix(
