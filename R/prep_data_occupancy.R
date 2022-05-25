@@ -486,8 +486,6 @@ within_covs <- read.csv(
 # divide mean_19 by 100
 within_covs$mean_19 <- within_covs$mean_19 / 100
 
-# Second, we are going to log population density because it has a very
-#  long right tail.
 
 # calculate the mean of each variable across cities
 wc_mean <- within_covs %>% 
