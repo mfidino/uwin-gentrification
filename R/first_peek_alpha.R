@@ -49,6 +49,13 @@ alpha <- dplyr::inner_join(
   by = c("City","Site")
 )
 
+
+test <- dplyr::inner_join(
+  alpha,
+  hm[,c("Site", "City","Season","mu")],
+  by= c("Site", "City", "Season")
+)
+
 alpha$City <- factor(alpha$City)
 
 alpha$site_re <- factor(
@@ -58,7 +65,10 @@ alpha$site_re <- factor(
 
 library(lme4)
 
-m1 <- glmer(n ~ mean_19 + prop_gent + (1 + mean_19 + prop_gent|City),
+m1 <- glmer(n ~ mean_19 *gentrifying + (1 + mean_19 * gentrifying|City),
+            family = poisson, data = alpha)
+
+m1 <- glmer(n ~ mean_19 +gentrifying + (1 + mean_19 + gentrifying|City),
             family = poisson, data = alpha)
 
 data_list <- list(

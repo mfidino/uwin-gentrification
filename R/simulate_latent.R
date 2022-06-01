@@ -167,7 +167,7 @@ sp_rich_mcmc <- matrix(
 
 for(gr in 1:ngroup){
   cat(
-    paste0("group ", gr, " of ", ngroup,"...\n")
+    paste0("\ngroup ", gr, " of ", ngroup,"...\n")
   )
   mcsamp_piece <- mcsamp_list[[gr]]
   # where to store stuff in sp_rich_mcmc
@@ -178,11 +178,9 @@ for(gr in 1:ngroup){
 
 
 # calculate mean and sd
-sp_rich_mean <- apply(sp_rich_mcmc, 2, mean)
-sp_rich_sd <- apply(sp_rich_mcmc, 2, sd)
 
-sp_rich$mu <- sp_rich_mean
-sp_rich$sd <- sp_rich_sd
+sp_rich$mu <- apply(sp_rich_mcmc, 2, mean)
+sp_rich$sd <- apply(sp_rich_mcmc, 2, sd)
 sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
 write.csv(
   sp_rich,

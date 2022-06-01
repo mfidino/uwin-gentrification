@@ -80,6 +80,7 @@ z[,1:nsamples_one] <- rbinom(
   1,
   z_prob[,1:nsamples_one]
 )
+z[,which(data_list$y>0)[1:nsamples_one]] <- 1
 
 # and then with the auto-regressive term added in
 # within-city regression (latent-state) with auto-logistic term.
@@ -94,8 +95,7 @@ for(s in (nsamples_one+1):nsamples_two){
     z[,s] <- 1
     psi[,s] <- 1
     rho[,s] <- 1
-    next
-  }
+  }else{
   # Other calculate probability of occupancy
   psi[,s] <-  mcsamp_piece$b_species_city[
     , , data_list$species_idx[s], data_list$city_idx[s]] %*%
@@ -127,6 +127,7 @@ for(s in (nsamples_one+1):nsamples_two){
   ) + numerator[,s]
   z_prob[,s] <- numerator[,s] / denominator[,s]
   z[,s] <- rbinom(nmcmc,1, z_prob[,s])
+  }
 }
 # calculate species richness at each site. The tmp_covs object
 #   stores the site, city, and season of data collection. It
@@ -149,7 +150,10 @@ for(i in 1:nmcmc){
     ) %>% 
     data.frame()
   
-  sp_rich$Season <- order_seasons(sp_rich$Season)
+  sp_rich$Season <- factor(
+    sp_rich$Season,
+    levels = order_seasons(as.character(sp_rich$Season))
+  )
   
   
   sp_rich <- sp_rich[order(sp_rich$City, sp_rich$Season, sp_rich$Site),]
