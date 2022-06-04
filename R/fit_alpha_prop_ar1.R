@@ -1,3 +1,6 @@
+library(dplyr)
+library(runjags)
+
 sp_rich <- read.csv("./results/alpha_for_stage_two.csv")
 cat("Loading functions...\n")
 # load functions used to clean data
@@ -6,23 +9,31 @@ functions_to_load <- list.files(
   full.names = TRUE
 )
 
+gent_prop <- read.csv("gent_prop1k.csv")
 
-
-within_covs <- read.csv(
-  "./data/cleaned_data/covariates/site_covariates.csv",
-  stringsAsFactors = FALSE
+sp_rich <- dplyr::inner_join(
+  sp_rich,
+  gent_prop,
+  by = c("Site", "City")
 )
 
-# see which cities to drop
-to_go <- within_covs %>%
-  dplyr::group_by(City) %>%
-  dplyr::summarise(
-    count = sum(gentrifying)
-  ) %>%
-  dplyr::filter( count < 4) %>%
-  data.frame()
+sp_rich <- sp_rich %>% group_by(City) %>% 
+  mutate(sp = prop_gent - mean(prop_gent))
 
-sp_rich <- sp_rich[-which(sp_rich$City %in% to_go$City),]
+rc <-read.csv("./data/cleaned_data/covariates/racial_segregations.csv")
+rc <- rc[order(rc$city),]
+
+rc$med_scale <- scale(rc$median)
+# see which cities to drop
+# to_go <- within_covs %>%
+#   dplyr::group_by(City) %>%
+#   dplyr::summarise(
+#     count = sum(gentrifying)
+#   ) %>%
+#   dplyr::filter( count < 4) %>%
+#   data.frame()
+# 
+# sp_rich <- sp_rich[-which(sp_rich$City %in% to_go$City),]
 
 for(fn in functions_to_load){
   source(fn)
@@ -81,7 +92,7 @@ for(i in 1:length(scs)){
 }
 # these are the "first" instances of sampling at a location
 # that may need to be linked to sit
-first_sites <- do.call("rbind", first_sites)
+first_sites <- dplyr::bind_rows(first_sites)
 first_sites$season <- factor(
   first_sites$season,
   order_seasons(first_sites$season)
@@ -102,7 +113,7 @@ new_tmp <- vector("list", length = length(my_rows))
 for(i in 1:length(my_rows)){
   new_tmp[[i]] <- tmp[my_rows[[i]],]
 }
-new_tmp <- do.call("rbind", new_tmp)
+new_tmp <- dplyr::bind_rows(new_tmp)
 new_tmp$starter <- TRUE
 tmp$starter <- FALSE
 tmp <- rbind(
@@ -223,20 +234,15 @@ data_list <- list(
   npar_alpha = 4,
   npar_among = 2,
   design_matrix_alpha = cbind(
-    1, sp_rich$gentrifying, sp_rich$mean_19,
-    sp_rich$gentrifying * sp_rich$mean_19),
+    1, sp_rich$prop_gent > 0, sp_rich$mean_19,
+    (sp_rich$prop_gent > 0) * sp_rich$mean_19),
   design_matrix_among = cbind(
-    1, mean_imp$mean_imp
+    1, rc$med_scale
   ),
   ncity = length(unique(sp_rich$City)),
   ndata_alpha = nrow(sp_rich),
   log_mu = sp_rich$log_mu,
-  log_sd = sp_rich$log_sd,
-  nsite = length(
-    unique(
-      paste0(sp_rich$City, "-", sp_rich$Site)
-    )
-  )
+  log_sd = sp_rich$log_sd
 )
 
 inits <- function(chain){
@@ -289,8 +295,8 @@ m1 <- run.jags(
   monitor= c("alpha", "alpha_mu", "alpha_sd", "resid_sd",
              "theta", "theta_mu", "theta_sd"),
   n.chains = 3,
-  burnin = 2500,
-  sample = 5000,
+  burnin = 6000,
+  sample = 6000,
   adapt = 1000,
   thin = 1,
   inits = inits,
@@ -300,26 +306,22 @@ m1 <- run.jags(
 )
 
 msum <- summary(m1)
-
-summary(m1, vars = "alpha_mu")
+range(msum[,11])
+which(msum[,11]>1.1)
+round(summary(m1, vars = "alpha_mu"),2)
 
 
 yo <- do.call("rbind", m1$mcmc)
 
 mr <- round(msum, 2)
 
-yo <- mr[grep(",2\\]", row.names(mr)),]
+yo <- mr[grep(",4\\]", row.names(mr)),]
 
-
-g_val <- within_covs %>% 
-  dplyr::group_by(City) %>% 
-  dplyr::summarise(gent = mean(gentrifying),
-                   imp = mean(mean_19),
-                   gi = mean(gentrifying * mean_19),
-                   count = sum(gentrifying))
 
 plot(yo[,2] ~ g_val$gent)
-plot(yo[1:16,2] ~ data_list$design_matrix_among[,2])
+cor(yo[,2], rc$median)
+plot(yo[1:data_list$ncity,2] ~ rc$median)
+abline(a = 1.4, b = -0.16)
 plot(yo[,2] ~ g_val$gi)
 
 

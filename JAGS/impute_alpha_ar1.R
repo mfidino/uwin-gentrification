@@ -11,7 +11,7 @@ model{
     tmp_rich[i] ~ dlnorm(
       log_mu[i],
       pow(log_sd[i], -2)
-      )#T(0.0001,)
+      )
     # log the richness to bring the range down
     log_rich[i] <- log(tmp_rich[i])
   }
@@ -60,7 +60,7 @@ model{
   # intercept and slope terms
   # for(alphai in 1:npar_alpha){
   #   for(betai in 1:npar_among){
-  #     alpha_mu[alphai,betai] ~ dnorm(0, pow(1.3, -2))
+  #     alpha_mu[alphai,betai] ~ dt(0,2.5,1)
   #   }
   #   alpha_tau[alphai] ~ dgamma(1,1)
   #   alpha_sd[alphai] <- 1/sqrt(alpha_tau[alphai])

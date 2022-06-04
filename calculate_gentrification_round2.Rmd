@@ -14,9 +14,10 @@ library(pander)
 library(dplyr)
 library(bbplot)
 library(viridis)
-library(sf)
 library(raster)
+library(sf)
 source("./R/census_functions.R")
+sf::sf_use_s2(FALSE)
 
 ```
 
@@ -94,19 +95,7 @@ After cropping the census tracts to an area around a cities sampled location, I 
 
 # the buffer around which you want to explore whether a site
 #  is nearby a gentrifying area.
-my_buffer <- 500
-med <- readRDS("./data/census_data/med_income/med_income_2010.RDS")
-
-
-med <- lapply(
-  med,
-  function(x){
-    sf::st_transform(
-      x,
-      crs = 4326
-    )
-  }
-)
+my_buffer <- 1000
 
 coords <- read.csv(
     "./data/gentri_all_coordinates.csv"
@@ -123,6 +112,21 @@ coords <- sf::st_as_sf(
 
 coords$City <- gsub("phaz2", "phaz", coords$City)
 
+med <- readRDS("./data/census_data/med_income/med_income_2010.RDS")
+
+
+med <- lapply(
+  med,
+  function(x){
+    sf::st_transform(
+      x,
+      crs = 4326
+    )
+  }
+)
+
+
+
 city_result <- vector("list", length = length(med))
 
 gvals <- rep(NA, length(med))
@@ -136,7 +140,15 @@ city_dict <- vector(
 
 # map each element of the list to a given city
 for(i in 1:length(med)){
+  cat(paste("\n",i,"\n"))
+  pb <- txtProgressBar(max = length(unq_city))
   for(j in 1:length(unq_city)){
+    setTxtProgressBar(pb, j)
+    found_cities <- unlist(city_dict)
+    if(unq_city[j] %in% found_cities & unq_city[j] != "naca"){
+      next
+    }
+
   tmp <- suppressMessages(
       sf::st_intersection(
       med[[i]],
@@ -175,7 +187,14 @@ city_dict <- vector(
 
 # map each element of the list to a given city
 for(i in 1:length(med)){
+  cat(paste("\n",i,"\n"))
+  pb <- txtProgressBar(max = length(unq_city))
   for(j in 1:length(unq_city)){
+    setTxtProgressBar(pb, j)
+    found_cities <- unlist(city_dict)
+    if(unq_city[j] %in% found_cities & unq_city[j] != "naca"){
+      next
+    }
   tmp <-suppressMessages(
     sf::st_intersection(
       med[[i]],
@@ -892,6 +911,7 @@ saveRDS(
 # and then figure out which sites fall in these areas
 
 for(i in 1:length(edu_list)){
+
   edu_list[[i]]$prop_edu <- edu_list[[i]]$prop19 - edu_list[[i]]$prop10
   # get the mean change
   
@@ -907,7 +927,7 @@ for(i in 1:length(edu_result)){
     sf::st_crs(coords)
   )
   edu_result[[i]] <- sf::st_intersection(
-    coords,
+    coords[coords$City == names(edu_list)[i],],
     tmp
   )
 }
@@ -1105,7 +1125,7 @@ for(i in 1:length(race_result)){
     sf::st_crs(coords)
   )
   race_result[[i]] <- sf::st_intersection(
-    coords,
+    coords[coords$City == names(race_list)[i],],
     tmp
   )
 }
@@ -1269,7 +1289,7 @@ for(i in 1:length(price_result)){
     sf::st_crs(coords)
   )
   price_result[[i]] <- sf::st_intersection(
-    coords,
+    coords[coords$City == names(price_list)[i],],
     tmp
   )
 }
@@ -1432,6 +1452,8 @@ for(i in 1:length(citymed)){
   )
 }
 
+gent_prop <- bind_rows(gent_list_prop)
+write.csv(gent_prop, "gent_prop1k.csv", row.names = FALSE)
 gent_result <- dplyr::bind_rows(gent_list)
 
 aa <- table(gent_result$City, gent_result$gentrifying)
