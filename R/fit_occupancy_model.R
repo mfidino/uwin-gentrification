@@ -15,6 +15,18 @@ library(runjags)
 
 source("./R/prep_data_occupancy.R")
 
+data_list$ncov_within <- 4
+data_list$ncov_det <- 4
+
+data_list$psi_covs <- cbind(
+  data_list$psi_covs,
+  data_list$psi_covs[,2] * data_list$psi_covs[,3]
+)
+data_list$rho_covs <- cbind(
+  data_list$rho_covs,
+  data_list$rho_covs[,2] * data_list$rho_covs[,3]
+)
+
 
 my_start <- Sys.time()
 
@@ -59,14 +71,14 @@ parallel::stopCluster(cl)
 
 
 
-saveRDS(m1, "./results/occupancy_model_fit_z.RDS")
+saveRDS(m1, "./results/occupancy_model_fit_simpler.RDS")
 # and then move it to the cloud
 #googledrive::drive_upload(
 #  "./results/occupancy_model_fit.RDS",
 #  "~/gentrification_analysis/occupancy_model_fit.rds"
 #)
 
-m1 <- readRDS("./results/occupancy_model_fit.RDS")
+m1 <- readRDS("./results/occupancy_model_fit_simpler.RDS")
 
 my_end <- Sys.time()
 
@@ -89,7 +101,7 @@ for(i in 1:length(my_pars)){
 summary_list <- do.call("rbind", summary_list)
 
 
-saveRDS(summary_list, "./results/occupancy_model_fit_summary.RDS")
+saveRDS(summary_list, "./results/occupancy_model_fit_simpler_summary.RDS")
 
 # sample z
 
