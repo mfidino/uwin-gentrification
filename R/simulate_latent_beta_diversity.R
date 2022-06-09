@@ -6,7 +6,6 @@
 #
 ####################################################
 
-analysis <- "beta"
 
 library(runjags)
 library(dplyr)
@@ -29,8 +28,7 @@ mcmc <- do.call(
 
 # take a random sample to iterate through
 set.seed(11556644)
-my_samples <- 10000
-mcsamp <- mcmc[sample(1:nrow(mcmc), my_samples),]
+mcsamp <- mcmc[sample(1:nrow(mcmc), 10000),]
 
 rm(mout, mcmc)
 gc()
@@ -158,21 +156,16 @@ unq_site_samps <- unq_site_samps[
 ]
 
 # and now make a matrix to store the sp_rich results for
-if(analysis == "alpha"){
-  sp_rich_mcmc <- matrix(
-    NA,
-    ncol = nrow(unq_site_samps),
-    nrow = nrow(mcsamp$a_among)
-  )
-}
-if(analysis == "beta"){
-  sp_dat <- tmp
-  
-  beta_results <- vector("list", length = my_samples)
-}
+
+sp_rich_mcmc <- matrix(
+  NA,
+  ncol = nrow(unq_site_samps),
+  nrow = nrow(mcsamp$a_among)
+)
 
 # and now we need to split the mcmc into pieces because we cannot store
 #  all of the results at once. Splitting into pieces of 1K.
+
 for(gr in 1:ngroup){
   cat(
     paste0("\ngroup ", gr, " of ", ngroup,"...\n")
@@ -186,16 +179,16 @@ for(gr in 1:ngroup){
 
 
 # calculate mean and sd
-if(analysis == "alpha"){
-  sp_rich$mu <- apply(sp_rich_mcmc, 2, mean)
-  sp_rich$sd <- apply(sp_rich_mcmc, 2, sd)
-  sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
-  write.csv(
-    sp_rich,
-    "./results/alpha_for_stage_two.csv",
-    row.names = FALSE
-  )
-}
+
+sp_rich$mu <- apply(sp_rich_mcmc, 2, mean)
+sp_rich$sd <- apply(sp_rich_mcmc, 2, sd)
+sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
+write.csv(
+  sp_rich,
+  "./results/alpha_for_stage_two.csv",
+  row.names = FALSE
+)
+
 
 
 
