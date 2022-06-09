@@ -1,13 +1,25 @@
 library(dplyr)
 library(runjags)
 
-sp_rich <- read.csv("./results/alpha_for_stage_two.csv")
+sp_rich <- read.csv("./results/alpha_for_stage_two_simpler.csv")
+
 cat("Loading functions...\n")
 # load functions used to clean data
 functions_to_load <- list.files(
   "./R/functions/",
   full.names = TRUE
 )
+
+my_site <- read.csv("./data/cleaned_data/covariates/site_covariates.csv")
+
+
+my_site$imp <- my_site$mean_19 / 100
+
+sp_rich <-  dplyr::inner_join(
+    sp_rich,
+    my_site[,c("City", "Site", "imp")],
+    by = c("City", "Site")
+  )
 
 gent_prop <- read.csv("gent_prop1k.csv")
 
@@ -234,8 +246,8 @@ data_list <- list(
   npar_alpha = 4,
   npar_among = 2,
   design_matrix_alpha = cbind(
-    1, sp_rich$prop_gent > 0, sp_rich$mean_19,
-    (sp_rich$prop_gent > 0) * sp_rich$mean_19),
+    1, sp_rich$gentrifying, sp_rich$imp,
+    sp_rich$gentrifying * sp_rich$imp),
   design_matrix_among = cbind(
     1, rc$med_scale
   ),
@@ -290,15 +302,15 @@ inits <- function(chain){
   )
 }
 
-m1 <- run.jags(
+m2 <- run.jags(
   "./JAGS/impute_alpha_ar1.R",
   monitor= c("alpha", "alpha_mu", "alpha_sd", "resid_sd",
              "theta", "theta_mu", "theta_sd"),
-  n.chains = 3,
+  n.chains = 6,
   burnin = 6000,
   sample = 6000,
   adapt = 1000,
-  thin = 1,
+  thin = 2,
   inits = inits,
   modules = "glm",
   method= "parallel",
@@ -308,7 +320,7 @@ m1 <- run.jags(
 msum <- summary(m1)
 range(msum[,11])
 which(msum[,11]>1.1)
-round(summary(m1, vars = "alpha_mu"),2)
+round(summary(m2, vars = "alpha_mu"),2)
 
 
 yo <- do.call("rbind", m1$mcmc)
@@ -324,5 +336,51 @@ plot(yo[1:data_list$ncity,2] ~ rc$median)
 abline(a = 1.4, b = -0.16)
 plot(yo[,2] ~ g_val$gi)
 
+# make a prediction
 
 
+
+
+xx <- seq(0, 0.9, length.out = 400)
+
+my_mc <- do.call("rbind", m1$mcmc)
+
+my_mc <- split_mcmc(my_mc)
+
+
+
+
+# non-gentrifying
+p1 <- my_mc$alpha_mu %*% t(cbind(1,0,xx,0))
+p1 <- exp(p1)
+p1 <- apply(p1, 2, quantile, probs  = c(0.025,0.5,0.975))
+p1 <- t(p1)
+
+# gentrifying
+p2 <- my_mc$alpha_mu %*% t(cbind(1,1,xx,1*xx))
+p2 <- exp(p2)
+p2 <- apply(p2, 2, quantile, probs  = c(0.025,0.5,0.975))
+p2 <- t(p2)
+
+{
+bbplot::blank(ylim = c(0,10), xlim = c(0, 0.9), bty = "l",
+              xaxs = "i", yaxs = "i")
+bbplot::axis_blank(1)
+bbplot::axis_blank(2)
+bbplot::axis_text(side = 1, line = 0.8)
+bbplot::axis_text("Impervious cover (proportion)",1, line = 2)
+bbplot::axis_text(side = 2, line = 0.8, las = 1)
+bbplot::axis_text("Species richness",2, line = 2)
+
+
+bbplot::ribbon(x = xx, y = p2[,-2], col = "purple", alpha = 0.3)
+bbplot::ribbon(x = xx, y = p1[,-2], col = "brown", alpha = 0.3)
+lines(x = xx, y = p1[,2], col = "brown", lwd = 3, lty = 2)
+lines(x = xx, y = p2[,2], col = "purple", lwd = 3)
+legend(
+  "topright",
+  c("Non-gentrifying", "Gentrifying"),
+  col = c("brown","purple"),
+  bty = "n",
+  lwd = 4)
+}

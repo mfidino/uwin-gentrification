@@ -137,7 +137,7 @@ for(s in (nsamples_one+1):nsamples_two){
     city_prob[,
               data_list$species_idx[s],
               data_list$city_id[s]] * 
-      (1 - psi[s])
+      (1 - psi[,s])
   ) + numerator[,s]
   z_prob[,s] <- numerator[,s] / denominator[,s]
   z[,s] <- rbinom(nmcmc,1, z_prob[,s])

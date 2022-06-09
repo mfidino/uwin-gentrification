@@ -6,7 +6,7 @@
 #
 ####################################################
 
-analysis <- "beta"
+analysis <- "alpha"
 
 library(runjags)
 library(dplyr)
@@ -17,7 +17,7 @@ source("./R/prep_data_occupancy.R")
 cat("loading in run.jags file...\n")
 # Load in the occupancy model results
 mout <- readRDS(
-  "./results/occupancy_model_fit.RDS"
+  "./results/occupancy_model_fit_simpler.RDS"
 )
 
 cat("binding posterior simulations...\n")
@@ -173,6 +173,17 @@ if(analysis == "beta"){
 
 # and now we need to split the mcmc into pieces because we cannot store
 #  all of the results at once. Splitting into pieces of 1K.
+data_list$ncov_within <- 4
+data_list$ncov_det <- 4
+
+data_list$psi_covs <- cbind(
+  data_list$psi_covs,
+  data_list$psi_covs[,2] * data_list$psi_covs[,3]
+)
+data_list$rho_covs <- cbind(
+  data_list$rho_covs,
+  data_list$rho_covs[,2] * data_list$rho_covs[,3]
+)
 for(gr in 1:ngroup){
   cat(
     paste0("\ngroup ", gr, " of ", ngroup,"...\n")
@@ -192,7 +203,7 @@ if(analysis == "alpha"){
   sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
   write.csv(
     sp_rich,
-    "./results/alpha_for_stage_two.csv",
+    "./results/alpha_for_stage_two_simpler.csv",
     row.names = FALSE
   )
 }
