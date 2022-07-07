@@ -152,10 +152,16 @@ if(analysis == "alpha"){
   pb <- txtProgressBar(max = nmcmc)
   for(i in 1:nmcmc){
     setTxtProgressBar(pb, i)
-    site_info$z <- z[i,]  
+    site_info$z <- z[i,]
+    to_go <- which(
+      data_list$species_idx %in% 
+        species_map$Species_id[species_map$Species== species_to_drop
+      ]
+    )
+    new_si <- site_info[-to_go,]
     
     
-    sp_rich <- site_info %>% 
+    sp_rich <- new_si %>% 
       dplyr::group_by(Site, City, Season) %>% 
       dplyr::summarise(
         rich = sum(z),
@@ -174,7 +180,7 @@ if(analysis == "alpha"){
     sp_rich <- sp_rich[order(sp_rich$City, sp_rich$Season, sp_rich$Site),]
     sp_rich_mcmc[mc_loc[i],] <- sp_rich$rich
   }
-  rm(denominator, numerator, z, z_prob, psi, rho)
+  rm(denominator, numerator, z, z_prob, psi, rho, new_si)
   gc()
 }
 if(analysis == "beta"){
@@ -191,18 +197,21 @@ if(analysis == "beta"){
     # but our current format is long.
     sp_dat$z <- z[zi,]
     
+    
+    new_si <- sp_dat[-which(sp_dat$Species %in% species_to_drop),]
+    
     # going wide
     # need to go wide, but we have to split by city 
     #  and season first.
     sp_dat_list <- split(
-     sp_dat,
+     new_si,
      factor(
        paste0(
-         sp_dat$City,"-",sp_dat$Season
+         new_si$City,"-",new_si$Season
        ),
        levels = unique(
          paste0(
-           sp_dat$City,"-",sp_dat$Season
+           new_si$City,"-",new_si$Season
          )
        )
      )
@@ -223,7 +232,7 @@ if(analysis == "beta"){
       ]
        zlist[[j]] <- matrix(
          sp_dat_list[[j]]$z,
-         ncol = data_list$nspecies,
+         ncol = data_list$nspecies-1,
          nrow = length(
            unique(
              sp_dat_list[[j]]$Site

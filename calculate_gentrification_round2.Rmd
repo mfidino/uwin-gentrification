@@ -95,7 +95,7 @@ After cropping the census tracts to an area around a cities sampled location, I 
 
 # the buffer around which you want to explore whether a site
 #  is nearby a gentrifying area.
-my_buffer <- 1000
+my_buffer <- 500
 
 coords <- read.csv(
     "./data/gentri_all_coordinates.csv"
@@ -1421,7 +1421,8 @@ for(i in 1:length(citymed)){
       Site
     ) %>% 
     dplyr::summarise(
-      gentrifying = sum(gentrifying, na.rm = TRUE)>0
+      gentrifying = sum(gentrifying, na.rm = TRUE)>0,
+      vulnerable = sum(vulnerable, na.rm = TRUE)>0
     ) %>% 
     sf::st_intersection(
       .,
@@ -1452,11 +1453,10 @@ for(i in 1:length(citymed)){
   )
 }
 
-gent_prop <- bind_rows(gent_list_prop)
-write.csv(gent_prop, "gent_prop1k.csv", row.names = FALSE)
+
 gent_result <- dplyr::bind_rows(gent_list)
 
-aa <- table(gent_result$City, gent_result$gentrifying)
+aa <- table(gent_result$City, gent_result$vulnerable, gent_result$gentrifying, dnn = c("city", "vulnerable", "gentrifying"))
 row.names(aa) <- pretty_names
 
 to_save <- data.frame(gent_result)
@@ -1469,7 +1469,7 @@ to_save <- to_save[!duplicated(to_save[,c("Site","City")]),]
 imperv <- read.csv("./data/imperv.csv")
 
 to_save <- dplyr::inner_join(
-  to_save[,c("City", "Site", "gentrifying")],
+  to_save[,c("City", "Site", "gentrifying", "vulnerable")],
   imperv[,c("city", "site", "mean_19")],
   by = c("City" = "city", "Site" = "site")
 )
@@ -1545,6 +1545,152 @@ for(i in 1:length(citymed)){
     )
 }
 
+
+all_sites <- dplyr::bind_rows(gent_list)
+
+all_sites <- all_sites[,-4]
+
+all_tracts <- dplyr::bind_rows(gent_list_poly)
+
+sf::st_write(
+  all_sites,
+  "./sander_all_data/sites.shp"
+)
+
+sf::st_write(
+  all_tracts,
+  "./Sander_all_data/tracts/tracts.shp"
+)
+
+# Jackson
+dir.create("./gent_files/Jackson", recursive = TRUE)
+dir.create("./gent_files/Jackson/sites")
+dir.create("./gent_files/Jackson/tracts")
+
+tmp_sites <- all_sites[all_sites$City == "jams",]
+sf::st_write(
+  tmp_sites,
+  "./gent_files/Jackson/sites/sites.shp"
+)
+
+write.csv(as.data.frame(tmp_sites),
+          "./gent_files/Jackson/sites/sites_df.csv",
+          row.names = FALSE)
+
+tmp_tracts <- all_tracts[all_tracts$City == "jams",]
+sf::st_write(
+  tmp_tracts,
+  "./gent_files/Jackson/tracts/tracts.shp"
+)
+tiff("./gent_files/Jackson/map.tiff",
+     height = 6, width = 6, units = "in",
+     res = 600, compression = "lzw")
+plot(tmp_tracts["gentrifying"],reset = FALSE)
+gsites <- tmp_sites$gentrifying == TRUE
+points(sf::st_coordinates(tmp_sites)[gsites,], pch = 21, bg = "purple", cex = 1.2)
+points(sf::st_coordinates(tmp_sites)[!gsites,], pch = 21, bg = "white", cex = 1.2)
+dev.off()
+
+# seattle
+tc <- "Boston"
+tcc <- "boma"
+dir.create(
+  paste0(
+    "./gent_files/",
+    tc,
+    "/sites"
+  ),
+  recursive = TRUE
+)
+
+
+
+dir.create(
+  paste0(
+    "./gent_files/",
+    tc,
+    "/tracts"
+  ),
+  recursive = TRUE
+)
+
+tmp_sites <- all_sites[all_sites$City == tcc,]
+sf::st_write(
+  tmp_sites,
+  paste0(
+    "./gent_files/",
+    tc,
+    "/sites/sites.shp"
+  )
+)
+write.csv(
+  as.data.frame(tmp_sites),
+  paste0(
+    "./gent_files/",
+    tc,"/sites/sites_df.csv"
+  ),
+  row.names = FALSE
+)
+tmp_tracts <- all_tracts[all_tracts$City == tcc,]
+sf::st_write(
+  tmp_tracts,
+    paste0(
+    "./gent_files/",
+    tc,
+    "/tracts/tracts.shp"
+  )
+)
+tiff(
+  paste0(
+    "./gent_files/",
+    tc,
+    "/map.tiff"
+  ),
+     height = 6, width = 6, units = "in",
+     res = 600, compression = "lzw")
+plot(tmp_tracts["gentrifying"],reset = FALSE)
+gsites <- tmp_sites$gentrifying == TRUE
+points(sf::st_coordinates(tmp_sites)[gsites,], pch = 21, bg = "purple", cex = 1.2)
+points(sf::st_coordinates(tmp_sites)[!gsites,], pch = 21, bg = "white", cex = 1.2)
+dev.off()
+
+
+all_tracts$area <- sf::st_area(all_tracts)
+
+test <- all_tracts %>% 
+  dplyr::group_by(City, gentrifying) %>% 
+  dplyr::summarise(
+    ar = sum(area)
+  )
+
+test$gentrifying[is.na(test$gentrifying)] <- 2
+
+
+test <- all_tracts %>% 
+  dplyr::group_by(City) %>% 
+  #dplyr::filter(!is.na(gentrifying)) %>% 
+  dplyr::summarise(
+    prop = sum(gentrifying) / length(gentrifying)
+  ) %>% 
+  data.frame() %>% 
+  dplyr::select("City", "prop")
+
+
+test <- split(
+  test,
+  factor(test$City)
+)
+
+my_results <- data.frame(
+  City = names(test),
+  prop_gent = NA
+)
+for(i in 1:length(test)){
+  my_results$prop_gent[i] <- as.numeric(test[[i]]$ar[
+    test[[i]]$gentrifying == 1
+  ] /sum(test[[i]]$ar)) 
+    #sum(test[[i]]$ar[test[[i]]$gentrifying != 2]))
+}
 
 
 ```

@@ -6,7 +6,10 @@
 #
 ####################################################
 
-analysis <- "alpha"
+analysis <- "beta"
+
+# placeholder for now until I run the model without cougar
+species_to_drop <- "cougar"
 
 library(runjags)
 library(dplyr)
@@ -17,7 +20,7 @@ source("./R/prep_data_occupancy.R")
 cat("loading in run.jags file...\n")
 # Load in the occupancy model results
 mout <- readRDS(
-  "./results/occupancy_model_fit_simpler.RDS"
+  "./results/occupancy_model_fit_simpler2.RDS"
 )
 
 cat("binding posterior simulations...\n")
@@ -113,7 +116,7 @@ mcsamp_list <- vector(
   length = 10
 )
 
-my_groups <- rep(1:10, each = 1000)
+my_groups <- rep(1:10, each = my_samples/10)
 ngroup <- 10
 for(i in 1:10){
   mcsamp_list[[i]] <- split_mcmc(
@@ -203,10 +206,15 @@ if(analysis == "alpha"){
   sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
   write.csv(
     sp_rich,
-    "./results/alpha_for_stage_two_simpler.csv",
+    "./results/alpha_for_stage_two_nocougar.csv",
     row.names = FALSE
   )
 }
 
-
-
+if(analysis == "beta"){
+  all_beta_stuff <- list(
+    beta = beta_results,
+    dmat_site_ids = dmat_site_ids
+  )
+  saveRDS(all_beta_stuff, "./results/beta_stage_two.RDS")
+}
