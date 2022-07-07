@@ -275,6 +275,7 @@ if(analysis == "beta"){
       # grab each data.frame on it's own
       tmpsds <- sp_dat_beta[[i]]
       
+      
       # as well as the associated part of the z matrix
       tmpz <- zlist[[i]]
       
@@ -284,6 +285,17 @@ if(analysis == "beta"){
       # We'll want to group mean center before doing the 
       # spline matrix and whatnot.
       tmp_dm <- tmpsds[,-grep("_id|starter|rowID|last_sample_vec|X", colnames(tmpsds))]
+      tmp_dm <- dplyr::inner_join(
+          tmp_dm,
+          data.frame(
+            within_covs,
+            citysite = paste0(within_covs$City,"-",within_covs$Site)
+          ),
+          by = "citysite"
+        )
+      tmp_dm <- tmp_dm[,-which(colnames(tmp_dm) %in% c(
+        "vulnerable", "Site", "City", "gentrifying"
+      ))]
       ####################################################
       
       # make the spline matrix for each city season
@@ -300,21 +312,32 @@ if(analysis == "beta"){
     }
     # get all of the metadata we need
     if(zi == 1 & gr == 1){
-      tmplist <- vector("list", length = length(dm_long))
+      tmplist <-tmplist_dm <- vector("list", length = length(dm_long))
+      
       for(i in 1:length(tmplist)){
         tmplist[[i]] <- dm_long[[i]]$metadata
+        tmplist_dm[[i]] <- dm_long[[i]]$dmat
       }
       
       mdat <- do.call(
         "rbind",
         tmplist
-      )  
+      )
+      design_matrix_beta <- do.call(
+        "rbind",
+        tmplist_dm
+      )
       mdat$city_season <- names(sp_dat_list)
       #mdat <- mdat[!duplicated(mdat),]
       
       write.csv(
         mdat,
         "./mcmc_output/beta_output/knots.csv",
+        row.names = FALSE
+      )
+      write.csv(
+        design_matrix_beta,
+        "./mcmc_output/beta_output/spline_matrix.csv",
         row.names = FALSE
       )
     }
@@ -391,6 +414,7 @@ if(analysis == "beta"){
         siteB_id = tmp_b$id,
         City_id = tmp_a$City_id
       )
+      write.csv(dmat_site_ids, "./mcmc_output/beta_output/dmat_site_ids.csv", row.names = FALSE)
     }
   }
   rm(z)
