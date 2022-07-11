@@ -17,6 +17,8 @@ library(dplyr)
 # Prep the data for the model
 source("./R/prep_data_occupancy.R")
 
+source("./R/alpha_beta_functions.R")
+
 cat("loading in run.jags file...\n")
 # Load in the occupancy model results
 mout <- readRDS(
@@ -32,83 +34,11 @@ mcmc <- do.call(
 
 # take a random sample to iterate through
 set.seed(11556644)
-my_samples <- 10000
+my_samples <- ifelse(analysis == "beta", 5000, 10000)
 mcsamp <- mcmc[sample(1:nrow(mcmc), my_samples),]
 
 rm(mout, mcmc)
 gc()
-# function to split up mcsamp into a list with correctly shaped arrays
-split_mcmc <- function(x){
-  # get parameter names
-  pars <- colnames(x)
-  # unique parameters
-  unq_pars <- unique(
-    gsub(
-      "\\[.*\\]",
-      "",
-      pars
-    )
-  )
-  # make list object to store arrays in
-  result_list <- vector(
-    "list",
-    length = length(unq_pars)
-  )
-  names(result_list) <- unq_pars
-  # fill in the arrays
-  for(i in 1:length(result_list)){
-    # get just the parameters
-    tmp <- pars[grep(
-      paste0(
-        "^",unq_pars[i], "\\["
-      ),
-      pars
-    )]
-    if(length(tmp) == 0){
-      tmp <- pars[grep(
-          paste0("^",unq_pars[i],"$"),
-        pars
-      )]
-    }
-    # and then the array dimensions
-    arr_dim <- gsub(
-      paste0(
-        unq_pars[i],"\\[|\\]"
-      ),
-      "",
-      tmp
-    )
-    arr_dim <- strsplit(
-      arr_dim,
-      ","
-    )
-    ndim <- length(arr_dim[[1]])
-    npar <- length(arr_dim)
-    # make a matrix
-    arr_ind <- suppressWarnings(
-      matrix(
-       as.numeric(
-         unlist(arr_dim)
-        ),
-        ncol = ndim,
-        nrow = npar,
-        byrow = TRUE
-      )
-    )
-    if(nrow(arr_ind) == 1 & ncol(arr_ind) == 1){
-      arr_ind[1,1] <- 1
-    }
-    # get max index for each
-    max_ind <- apply(arr_ind, 2, max)
-    # and then fill in the array
-    result_list[[i]] <- array(
-      x[,tmp],
-      dim = c(nrow(x), max_ind)
-    )
-    
-  }
-  return(result_list)
-}
 # make pieces of this sample because we cannot iterate through
 #  the whole thing
 mcsamp_list <- vector(
@@ -212,9 +142,33 @@ if(analysis == "alpha"){
 }
 
 if(analysis == "beta"){
-  all_beta_stuff <- list(
-    beta = beta_results,
-    dmat_site_ids = dmat_site_ids
+  gc()
+  pb <- txtProgressBar(max = length(beta_results))
+  for(i in 1:length(beta_results)){
+    setTxtProgressBar(pb, i)
+    beta_results[[i]] <- data.frame(
+      dissim = beta_results[[i]][,1] / beta_results[[i]][,2],
+      rich = beta_results[[i]][,2],
+      loc = 1:nrow(beta_results[[i]])
+    )
+  }
+  beta_results <- do.call("rbind", beta_results)
+  gc()
+  beta_summary <- beta_results %>% 
+    dplyr::group_by(loc) %>% 
+    dplyr::summarise(
+      mu_beta = mean(dissim, na.rm = TRUE),
+      var_beta = sd(dissim, na.rm = TRUE)^2,
+      mu_rich = mean(rich),
+      var_rich = sd(rich)^2
+    )
+  rm(beta_results)
+  gc()
+  
+  write.csv(
+    beta_summary,
+    "./results/beta_summary_for_analysis.csv",
+    row.names = FALSE
   )
-  saveRDS(all_beta_stuff, "./results/beta_stage_two.RDS")
+
 }

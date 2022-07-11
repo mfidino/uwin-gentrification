@@ -280,10 +280,6 @@ if(analysis == "beta"){
       tmpz <- zlist[[i]]
       
       # temporary design matrix 
-      ####################################################
-      ### UPDATE THIS WHEN YOU HAVE THE CORRECT COVARIATES
-      # We'll want to group mean center before doing the 
-      # spline matrix and whatnot.
       tmp_dm <- tmpsds[,-grep("_id|starter|rowID|last_sample_vec|X", colnames(tmpsds))]
       tmp_dm <- dplyr::inner_join(
           tmp_dm,
