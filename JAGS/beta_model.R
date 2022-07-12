@@ -2,10 +2,10 @@ model{
   for(i in 1:ndata){
     # total unique species at each site pair, used for 
     #  variance term in model.
-    total_rich[i] ~ dlnorm(
-     log_mu[i],
-     log_tau[i]
-    )
+    # total_rich[i] ~ dlnorm(
+    #  log_mu[i],
+    #  log_tau[i]
+    # )
     # The 'intercept' of the model, basically the
     #  gentrification components.
     intercept[i] <- exp(

@@ -71,15 +71,16 @@ data_list <- list(
   # number of data points
   ndata = nrow(beta_est),
   # log mean for richness, used in log-normal in model.
-  log_mu = convert_to_logmean(
-    beta_est$mu_rich,
-    sqrt(beta_est$var_rich)
-  ),
-  # log precision for richness, used in log-normal in model.
-  log_tau = convert_to_logsd(
-    beta_est$mu_rich,
-    sqrt(beta_est$var_rich)
-  )^-2,
+  total_rich = beta_est$mu_rich,
+  # log_mu = convert_to_logmean(
+  #   beta_est$mu_rich,
+  #   sqrt(beta_est$var_rich)
+  # ),
+  # # log precision for richness, used in log-normal in model.
+  # log_tau = convert_to_logsd(
+  #   beta_est$mu_rich,
+  #   sqrt(beta_est$var_rich)
+  # )^-2,
   # gentrification design matrix
   gent_dm = gent_dm,
   # vectors to denote the site random effects
@@ -103,13 +104,13 @@ data_list <- list(
 inits <- function(chain){
   gen_list <- function(chain = chain){
     list( 
-      total_rich = abs(
-        rlnorm(
-          data_list$ndata,
-          mean(data_list$log_mu),
-          1 / mean(data_list$log_tau)
-        )
-      ),
+      # total_rich = abs(
+      #   rlnorm(
+      #     data_list$ndata,
+      #     mean(data_list$log_mu),
+      #     1 / mean(data_list$log_tau)
+      #   )
+      # ),
       gamma = matrix(
         rnorm(
           data_list$ncity * data_list$npar_gent,
@@ -172,6 +173,7 @@ mout <- run.jags(
   sample = 10000,
   n.chains = 3,
   modules = "glm",
-  method = "parallel"
+  method = "parallel",
+  jags.refresh = 60
 )
 
