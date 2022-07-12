@@ -14,15 +14,49 @@ site_ids <- read.csv(
   "./mcmc_output/beta_output/dmat_site_ids.csv"
 )
 
-# The spline matrix. 
-spline_dm <- read.csv(
-  "./mcmc_output/beta_output/spline_matrix.csv"
+# The site spline matrix. 
+site_spline <- read.csv(
+  "./mcmc_output/beta_output/site_splines.csv"
 )
 
 # the knots of the splines
 knots <- read.csv(
   "./mcmc_output/beta_output/knots.csv"
 )
+
+# First thing to do is make the spline design matrix.
+spline_dm <- matrix(
+  NA,
+  ncol = ncol(site_spline)-2,
+  nrow = nrow(beta_est)
+)
+
+site_columns <- which(colnames(site_spline) %in% c("siteA","siteB"))
+pb <- txtProgressBar(max = nrow(spline_dm))
+for(i in 1:nrow(site_ids)){
+  setTxtProgressBar(pb, i)
+  # they will either be in the siteA or siteB, so 
+  #  we'll need to check both and fill it in as we
+  #  go
+  loc1 <- which(
+    site_spline$siteA == site_ids$siteA[i]   &
+    site_spline$siteB == site_ids$siteB[i]
+  )
+  loc2 <- which(
+    site_spline$siteA == site_ids$siteB[i]   &
+    site_spline$siteB == site_ids$siteA[i]
+  )
+  if(length(loc1)>0 & length(loc2)>0){
+    stop("mixed up site ids, investigate")
+  }
+  if(length(loc1)>0 & length(loc2)==0){
+    spline_dm[i,] <- as.numeric(site_spline[loc1,-site_columns])
+  }
+  if(length(loc1)==0 & length(loc2)>0){
+    spline_dm[i,] <- as.numeric(site_spline[loc2,-site_columns])
+  }
+  
+}
 
 # Going to add the gentrification sites as dummy variables
 #  in their own design matrix. We are fitting those params
@@ -169,11 +203,13 @@ mout <- run.jags(
   data = data_list,
   inits = inits,
   adapt = 1000,
-  burnin = 25000,
+  burnin = 50000,
   sample = 10000,
-  n.chains = 3,
+  n.chains = 4,
+  thin = 3,
   modules = "glm",
   method = "parallel",
   jags.refresh = 60
 )
 
+saveRDS(mout, "./mcmc_output/beta_output/beta_results.RDS")

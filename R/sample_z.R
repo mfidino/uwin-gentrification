@@ -189,6 +189,79 @@ if(analysis == "beta"){
   # make unique site, as there may be some sites that
   #  share names among cities.
   sp_dat$citysite <- paste0(sp_dat$City,"-",sp_dat$Site)
+  
+  
+  # construct a spline matrix for all the covariates,
+  #  then we can join them back as needed for each 
+  #  element of sp_dat_list. We are doing this
+  #  so we can generate the splines for every
+  #  unique site for each city.
+  tmp_site_ll <- dplyr::distinct(sp_dat[,c("Long","Lat","citysite")])
+  
+  tmp_site_ll <- dplyr::inner_join(
+    tmp_site_ll,
+    data.frame(
+      mean_19 = within_covs$mean_19,
+      citysite = paste0(within_covs$City,"-",within_covs$Site),
+      city = within_covs$City
+    ),
+    by = "citysite"
+  )
+  tmp_site_ll <- split(
+    tmp_site_ll,
+    factor(tmp_site_ll$city)
+  )
+  for(j in 1:length(tmp_site_ll)){
+    tmp_site_ll[[j]] <- make_spline_matrix(
+      tmp_site_ll[[j]][,c("Long","Lat","citysite","mean_19")],
+      "citysite",
+      "Long",
+      "Lat"
+    )
+  }
+  city_knots <- do.call(
+    "rbind",
+    lapply(
+      tmp_site_ll,
+      "[[",
+      2
+    )
+  )
+
+  city_knots$City <- substr(
+    row.names(city_knots),
+    1,
+    4
+  )
+  # save the knots, which we will need for prediction
+  write.csv(
+    city_knots,
+    "./mcmc_output/beta_output/knots.csv",
+    row.names = FALSE
+  )
+  
+  # join distance matrix with site info
+  for(j in 1:length(tmp_site_ll)){
+    tmp_site_ll[[j]] <- dplyr::bind_cols(
+      tmp_site_ll[[j]]$dmat_site_ids[,c("siteA","siteB")],
+      tmp_site_ll[[j]]$dmat,
+      .name_repair = "minimal"
+    )
+  }
+  tmp_site_ll <- do.call(
+    "rbind",
+    tmp_site_ll
+  )
+  # save spline stuff, we will use it to contsruct the
+  #  spline matrix for the model in the script used
+  #  to fit the model.
+  write.csv(
+    tmp_site_ll,
+    "./mcmc_output/beta_output/site_splines.csv",
+    row.names = FALSE
+  )
+  
+  
   cat("\ncalculating pairwise dissimilarity...\n")
   pb <- txtProgressBar(max = nrow(z))
   for(zi in 1:nrow(z)){
@@ -220,7 +293,10 @@ if(analysis == "beta"){
     #  modeling
     zlist <- sp_dat_beta <- 
       vector("list", length = length(sp_dat_list))
-  
+
+    
+
+    
     # now make a z matrix for each sampling period.
     for(j in 1:length(sp_dat_list)){
       # reorder sp_dat_list
@@ -294,7 +370,10 @@ if(analysis == "beta"){
       ))]
       ####################################################
       
-      # make the spline matrix for each city season
+      # make the spline matrix for each city season, we will
+      #  overwrite the splines with what we generated above,
+      #  but this will ensure we are spinning up the
+      #  correct site vectors,
       dm_long[[i]] <- make_spline_matrix(tmp_dm, "citysite", "Long","Lat")
       # provide the season_city_id, which is just the iterator
       #dm_long[[i]]$dmat_site_ids$Season_city_id <- i
@@ -319,23 +398,9 @@ if(analysis == "beta"){
         "rbind",
         tmplist
       )
-      design_matrix_beta <- do.call(
-        "rbind",
-        tmplist_dm
-      )
       mdat$city_season <- names(sp_dat_list)
       #mdat <- mdat[!duplicated(mdat),]
       
-      write.csv(
-        mdat,
-        "./mcmc_output/beta_output/knots.csv",
-        row.names = FALSE
-      )
-      write.csv(
-        design_matrix_beta,
-        "./mcmc_output/beta_output/spline_matrix.csv",
-        row.names = FALSE
-      )
     }
     # combine into one large data.frame
     z_long <- do.call(
