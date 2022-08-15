@@ -273,21 +273,35 @@ if(analysis == "beta"){
     
     new_si <- sp_dat[-which(sp_dat$Species %in% species_to_drop),]
     
+    test <- new_si %>% 
+      dplyr::group_by(
+        Species, Site,City, citysite, Species_id,
+        Long,Lat,Crs,City_id
+      ) %>% dplyr::summarise(
+        z = as.numeric(sum(z)>0),
+        .groups = "drop_last"
+      )
+    new_si <- test[order(test$citysite,test$Species),]
+    
     # going wide
     # need to go wide, but we have to split by city 
     #  and season first.
+    # sp_dat_list <- split(
+    #  new_si,
+    #  factor(
+    #    paste0(
+    #      new_si$City,"-",new_si$Season
+    #    ),
+    #    levels = unique(
+    #      paste0(
+    #        new_si$City,"-",new_si$Season
+    #      )
+    #    )
+    #  )
+    # )
     sp_dat_list <- split(
-     new_si,
-     factor(
-       paste0(
-         new_si$City,"-",new_si$Season
-       ),
-       levels = unique(
-         paste0(
-           new_si$City,"-",new_si$Season
-         )
-       )
-     )
+      new_si,
+      factor(new_si$City)
     )
     # store z and the rest of the beta info for 
     #  modeling
@@ -308,7 +322,7 @@ if(analysis == "beta"){
       ]
        zlist[[j]] <- matrix(
          sp_dat_list[[j]]$z,
-         ncol = data_list$nspecies-1,
+         ncol = data_list$nspecies - 1,
          nrow = length(
            unique(
              sp_dat_list[[j]]$Site
@@ -374,7 +388,12 @@ if(analysis == "beta"){
       #  overwrite the splines with what we generated above,
       #  but this will ensure we are spinning up the
       #  correct site vectors,
-      dm_long[[i]] <- make_spline_matrix(tmp_dm, "citysite", "Long","Lat")
+      dm_long[[i]] <- make_spline_matrix(
+                        data.frame(tmp_dm),
+                        "citysite",
+                        "Long",
+                        "Lat"
+      )
       # provide the season_city_id, which is just the iterator
       #dm_long[[i]]$dmat_site_ids$Season_city_id <- i
       #dm_long[[i]]$metadata$City_id <- unique(tmp$City_id)
@@ -475,7 +494,11 @@ if(analysis == "beta"){
         siteB_id = tmp_b$id,
         City_id = tmp_a$City_id
       )
-      write.csv(dmat_site_ids, "./mcmc_output/beta_output/dmat_site_ids.csv", row.names = FALSE)
+      write.csv(
+        dmat_site_ids,
+        "./mcmc_output/beta_output/dmat_site_ids_collapsed.csv",
+        row.names = FALSE
+      )
     }
   }
   rm(z)
