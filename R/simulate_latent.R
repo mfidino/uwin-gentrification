@@ -6,7 +6,7 @@
 #
 ####################################################
 
-analysis <- "beta"
+analysis <- "alpha"
 
 # placeholder for now until I run the model without cougar
 species_to_drop <- "cougar"
@@ -97,6 +97,12 @@ if(analysis == "alpha"){
     ncol = nrow(unq_site_samps),
     nrow = nrow(mcsamp$a_among)
   )
+  sp_rich_mcmc <- matrix(
+    NA,
+    ncol = 999,
+    nrow = nrow(mcsamp$a_among)
+  )
+  
 }
 if(analysis == "beta"){
   sp_dat <- tmp
@@ -136,7 +142,7 @@ if(analysis == "alpha"){
   sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
   write.csv(
     sp_rich,
-    "./results/alpha_for_stage_two_nocougar.csv",
+    "./results/alpha_for_stage_two_collapsed.csv",
     row.names = FALSE
   )
 }
@@ -167,7 +173,7 @@ if(analysis == "beta"){
   
   write.csv(
     beta_summary,
-    "./results/beta_summary_for_analysis.csv",
+    "./results/beta_summary_for_analysis_collapsed.csv",
     row.names = FALSE
   )
 

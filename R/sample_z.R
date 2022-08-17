@@ -159,10 +159,19 @@ if(analysis == "alpha"){
       ]
     )
     new_si <- site_info[-to_go,]
+    new_si$species <- tmp$Species[-to_go]
     
+    tmp_si <- new_si %>% 
+      dplyr::group_by(Site,City,species) %>% 
+      dplyr::summarise(
+        z = as.numeric(sum(z)>0),
+        gentrifying = all(gentrifying),
+        mean_19 = unique(mean_19),
+        .groups = "drop_last"
+      ) %>% data.frame
     
-    sp_rich <- new_si %>% 
-      dplyr::group_by(Site, City, Season) %>% 
+    sp_rich <- tmp_si %>% 
+      dplyr::group_by(Site, City) %>% 
       dplyr::summarise(
         rich = sum(z),
         gentrifying = all(gentrifying),
@@ -171,13 +180,13 @@ if(analysis == "alpha"){
       ) %>% 
       data.frame()
     
-    sp_rich$Season <- factor(
-      sp_rich$Season,
-      levels = order_seasons(as.character(sp_rich$Season))
-    )
+    #sp_rich$Season <- factor(
+    #  sp_rich$Season,
+    #  levels = order_seasons(as.character(sp_rich$Season))
+    #)
     
     
-    sp_rich <- sp_rich[order(sp_rich$City, sp_rich$Season, sp_rich$Site),]
+    sp_rich <- sp_rich[order(sp_rich$City, sp_rich$Site),]
     sp_rich_mcmc[mc_loc[i],] <- sp_rich$rich
   }
   rm(denominator, numerator, z, z_prob, psi, rho, new_si)
