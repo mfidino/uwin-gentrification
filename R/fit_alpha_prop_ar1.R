@@ -1,7 +1,7 @@
 library(dplyr)
 library(runjags)
 
-sp_rich <- read.csv("./results/alpha_for_stage_two_nocougar.csv")
+sp_rich <- read.csv("./results/alpha_for_stage_two_collapsed.csv")
 
 cat("Loading functions...\n")
 # load functions used to clean data
@@ -211,6 +211,7 @@ convert_to_logsd <- function(mean, sd) {
   sqrt(log(1 + (sd^2 / mean^2)))
 }
 
+
 sp_rich$log_mu <- convert_to_logmean(
   sp_rich$mu,
   sp_rich$sd
@@ -226,22 +227,22 @@ bb <- scale(my_results$prop_gent)
 data_list <- list(
   alpha_z = sp_rich$mu,
   alpha_sd_known = sp_rich$sd,
-  last_sample_vec = sp_rich$last_sample_vec,
-  alpha_first = sum(sp_rich$starter),
-  alpha_resample = sum(!sp_rich$starter),
+  #last_sample_vec = sp_rich$last_sample_vec,
+  #alpha_first = sum(sp_rich$starter),
+  #alpha_resample = sum(!sp_rich$starter),
   city_vec_alpha = as.numeric(factor(sp_rich$City)),
   npar_alpha = 4,
-  npar_among = 2,
+  #npar_among = 2,
   design_matrix_alpha = cbind(
     1, sp_rich$gentrifying,  sp_rich$imp,
     sp_rich$gentrifying * sp_rich$imp),
-  design_matrix_among = cbind(
-    1, as.numeric(bb)
-  ),
+  #design_matrix_among = cbind(
+  #  1, as.numeric(bb)
+  #),
   ncity = length(unique(sp_rich$City)),
-  ndata_alpha = nrow(sp_rich),
-  log_mu = sp_rich$log_mu,
-  log_sd = sp_rich$log_sd
+  ndata_alpha = nrow(sp_rich)#,
+  #log_mu = sp_rich$log_mu,
+  #log_sd = sp_rich$log_sd
 )
 
 inits <- function(chain){
@@ -256,12 +257,12 @@ inits <- function(chain){
      theta = rnorm(data_list$ncity),
      theta_mu = rnorm(1),
      theta_tau = rgamma(1,1,1),
-    # alpha_mu = rnorm(data_list$npar_alpha),
-     alpha_mu = matrix(
-       rnorm(data_list$npar_alpha * data_list$npar_among),
-       nrow = data_list$npar_alpha,
-       ncol = data_list$npar_among
-     ),
+     alpha_mu = rnorm(data_list$npar_alpha),
+     #alpha_mu = matrix(
+     #  rnorm(data_list$npar_alpha * data_list$npar_among),
+     #  nrow = data_list$npar_alpha,
+     #  ncol = data_list$npar_among
+     #),
      alpha_tau = rgamma(data_list$npar_alpha,1,1),
      resid_tau = rgamma(1,1,1),
       .RNG.name = switch(chain,
@@ -290,12 +291,12 @@ inits <- function(chain){
 }
 
 m1 <- run.jags(
-  "./JAGS/impute_alpha_ar1.R",
+  "./JAGS/impute_alpha.R",
   monitor= c("alpha", "alpha_mu", "alpha_sd", "resid_sd",
              "theta", "theta_mu", "theta_sd"),
   n.chains = 4,
-  burnin = 6000,
-  sample = 6000,
+  burnin = 10000,
+  sample = 20000,
   adapt = 1000,
   thin = 2,
   inits = inits,
@@ -346,8 +347,10 @@ p1 <- t(p1)
 # gentrifying
 p2 <- my_mc$alpha_mu %*% t(cbind(1,1,xx,1*xx))
 p2 <- exp(p2)
-p2 <- apply(p2, 2, quantile, probs  = c(0.025,0.5,0.975))
+p2 <- apply(p2 - p1, 2, quantile, probs  = c(0.025,0.5,0.975))
 p2 <- t(p2)
+
+plot()
 
 
 city_gent <- city_ngent <- vector("list",
@@ -370,7 +373,7 @@ for(i in 1:data_list$ncity){
 
 
 {
-bbplot::blank(ylim = c(0,10), xlim = c(0, 1), bty = "l",
+bbplot::blank(ylim = c(-4,4), xlim = c(0, 1), bty = "l",
               xaxs = "i", yaxs = "i")
 bbplot::axis_blank(1)
 bbplot::axis_blank(2)
