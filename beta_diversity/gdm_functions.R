@@ -90,6 +90,7 @@ dospline <- function(dVal = NULL, my_knots = NULL){
 spline_pred <- function(
   knots,
   mcmc,
+  intercept,
   my_probs = c(0.025,0.5,0.975),
   predlength = 200
   ){
@@ -112,6 +113,7 @@ spline_pred <- function(
   # get splines again
   
   preds <- dospline(dVal = dVal, my_knots = knots) %*% mcmc
+  preds <- preds + intercept
   
   to_return <- list(
     x = xVal,

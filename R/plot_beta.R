@@ -1,10 +1,15 @@
 
 
 library(sf)
+sf::sf_use_s2(FALSE)
+
 library(runjags)
 library(dplyr)
 library(cli)
 library(MCMCvis)
+
+source("./beta_diversity/gdm_functions.R")
+source("./R/alpha_beta_functions.R")
 
 # read in the knots
 my_knots <- read.csv(
@@ -12,38 +17,46 @@ my_knots <- read.csv(
 )
 
 # read in the mcmc
-my_mcmc <- read.csv(
-  "./mcmc_output/beta_output/beta_mcmc.csv"
+my_mcmc <- readRDS(
+  "./mcmc_output/beta_output/beta_results_collapsed.RDS"
+)
+
+my_mcmc <- do.call(
+  "rbind",
+  my_mcmc$mcmc
 )
 
 # generate predictions along a gradient for
 #  each site
 ncity <- length(
   unique(
-    my_knots$City_id
+    my_knots$City
   )
 )
+mc <- split_mcmc(my_mcmc)
+
+cities <- unique(my_knots$City)
+
 city_pred <- vector("list", length = ncity)
 for(city in 1:ncity){
-  knots <- as.numeric(my_knots[city,c("min","median","max")])
-  tmp_mcmc <- grab(
-    my_mcmc,
-    paste0(
-      "beta_exp\\.",city,"\\."
-    )
-  )
+  knots <- as.numeric(my_knots[
+    my_knots$City == cities[city] &
+    my_knots$covariate == "mean_19",
+    c("min","median","max")])
+  tmp_mcmc <- mc$beta_exp[,city,]
   city_pred[[city]] <- spline_pred(
     knots = knots,
-    mcmc = tmp_mcmc,
-    intercept = grab(my_mcmc,paste0("b0\\.",city,"\\."))
+    mcmc = tmp_mcmc[,5:7],
+    intercept = tmp_mcmc[,1]
   )
   
 }
 
 
-plot(1~1, type = "n", ylim = c(-0,1), xlim = c(0,0.8),
-     xlab = "geographic distance",
-     ylab = "f(geographic distance)",
+
+plot(1~1, type = "n", ylim = c(-0,0.6), xlim = c(0,0.8),
+     xlab = "Impervious cover",
+     ylab = "f(Impervious cover)",
      bty = "l",
      las = 1
      )

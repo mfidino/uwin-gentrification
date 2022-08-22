@@ -6,12 +6,12 @@ library(dplyr)
 
 # beta diversity and richness
 beta_est <- read.csv(
-  "./results/beta_summary_for_analysis.csv"
+  "./results/beta_summary_for_analysis_collapsed.csv"
 )
 
 # site ids for each site comparison
 site_ids <- read.csv(
-  "./mcmc_output/beta_output/dmat_site_ids.csv"
+  "./mcmc_output/beta_output/dmat_site_ids_collapsed.csv"
 )
 
 # The site spline matrix. 
@@ -25,6 +25,7 @@ knots <- read.csv(
 )
 
 # First thing to do is make the spline design matrix.
+# -2 because two site columns
 spline_dm <- matrix(
   NA,
   ncol = ncol(site_spline)-2,
@@ -97,6 +98,9 @@ gent_dm <- cbind(
   rowSums(gent_dm[,c("gentA","gentB")]) == 2
 )
 
+# add that onto the spline
+spline_dm <- cbind(1,spline_dm, gent_dm[,2])
+
 data_list <- list(
   # estimated dissimilarity 
   dissim = beta_est$mu_beta,
@@ -116,10 +120,10 @@ data_list <- list(
   #   sqrt(beta_est$var_rich)
   # )^-2,
   # gentrification design matrix
-  gent_dm = gent_dm,
+  #gent_dm = gent_dm,
   # vectors to denote the site random effects
-  siteA_vec = site_ids$siteA_id,
-  siteB_vec = site_ids$siteB_id,
+  #siteA_vec = site_ids$siteA_id,
+  #siteB_vec = site_ids$siteB_id,
   # vector to denote city id
   city_vec = site_ids$City_id,
   # design matrix for spline terms
@@ -127,7 +131,7 @@ data_list <- list(
   # number of unique sites
   nsite = nrow(site_covs),
   # number of columns in gentrification design matrix
-  npar_gent = ncol(gent_dm),
+  #npar_gent = ncol(gent_dm),
   # number of columns in spline design matrix
   npar_spline = ncol(spline_dm),
   # number of cities
@@ -145,28 +149,26 @@ inits <- function(chain){
       #     1 / mean(data_list$log_tau)
       #   )
       # ),
-      gamma = matrix(
-        rnorm(
-          data_list$ncity * data_list$npar_gent,
-          -3
-        ),
-        nrow = data_list$ncity,
-        ncol = data_list$npar_gent
-      ),
-      site_mu = rnorm(1, -5),
-      site_tau = 1 / rgamma(1,1,1),
-      site_re = rnorm(data_list$nsite,-5),
+      #gamma = matrix(
+      #  rnorm(
+      #    data_list$ncity * data_list$npar_gent,
+      #    -3
+      #  ),
+      #  nrow = data_list$ncity,
+      #  ncol = data_list$npar_gent
+      #),
+      #site_mu = rnorm(1, -5),
+      #site_tau = 1 / rgamma(1,1,1),
+      #site_re = rnorm(data_list$nsite,-5),
       beta = matrix(
         rnorm(
           data_list$ncity * data_list$npar_spline,
-          -3
+          -3,0.5
         ),
         nrow = data_list$ncity,
         ncol = data_list$npar_spline
       ),
-      gamma_mu = rnorm(data_list$npar_gent,-3),
-      gamma_tau = 1 / rgamma(data_list$npar_gent,1,1),
-      beta_mu = rnorm(data_list$npar_spline,-3),
+      beta_mu = rnorm(data_list$npar_spline,-3,0.5),
       beta_tau = 1 / rgamma(data_list$npar_spline,1,1),
       .RNG.name = switch(chain,
                          "1" = "base::Wichmann-Hill",
@@ -194,16 +196,15 @@ inits <- function(chain){
 }
 
 mout <- run.jags(
-  model = "./JAGS/beta_model.R",
+  model = "./JAGS/beta_model_collapsed.R",
   monitor = c(
-    "gamma_mu", "beta_mu", "gamma", "beta_exp",
-    "site_re", "site_mu", "site_sd",
-    "gamma_sd", "beta_sd"
+    "beta_mu", "beta_exp",
+    "beta_sd"
   ),
   data = data_list,
   inits = inits,
   adapt = 1000,
-  burnin = 50000,
+  burnin = 30000,
   sample = 10000,
   n.chains = 4,
   thin = 3,
@@ -212,4 +213,12 @@ mout <- run.jags(
   jags.refresh = 60
 )
 
-saveRDS(mout, "./mcmc_output/beta_output/beta_results.RDS")
+saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed.RDS")
+
+
+msum <- summary(mout)
+
+range(msum[,11])
+
+round(exp(msum[1:8,1:3]),2)
+round(tail(msum, 50),2)
