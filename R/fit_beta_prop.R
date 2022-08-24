@@ -161,16 +161,18 @@ inits <- function(chain){
       #site_mu = rnorm(1, -5),
       #site_tau = 1 / rgamma(1,1,1),
       #site_re = rnorm(data_list$nsite,-5),
-      beta = matrix(
-        rnorm(
+      beta_exp = matrix(
+        rgamma(
           data_list$ncity * data_list$npar_spline,
-          -3,0.5
+          1,1
         ),
         nrow = data_list$ncity,
         ncol = data_list$npar_spline
       ),
-      beta_mu = rnorm(data_list$npar_spline,-3,0.5),
-      beta_tau = 1 / rgamma(data_list$npar_spline,1,1),
+      beta_a = rgamma(data_list$npar_spline,1,1),
+      beta_b = rgamma(data_list$npar_spline,1,1),
+      #beta_mu = rnorm(data_list$npar_spline,-3,0.5),
+      #beta_tau = 1 / rgamma(data_list$npar_spline,1,1),
       .RNG.name = switch(chain,
                          "1" = "base::Wichmann-Hill",
                          "2" = "base::Marsaglia-Multicarry",
@@ -197,16 +199,16 @@ inits <- function(chain){
 }
 
 mout <- run.jags(
-  model = "./JAGS/beta_model_collapsed.R",
+  model = "./JAGS/beta_model_collapsed_gamma.R",
   monitor = c(
     "beta_mu", "beta_exp",
-    "beta_sd"
+    "beta_sd","beta_a","beta_b"
   ),
   data = data_list,
   inits = inits,
   adapt = 1000,
   burnin = 30000,
-  sample = 10000,
+  sample = 20000,
   n.chains = 4,
   thin = 3,
   modules = "glm",
@@ -214,7 +216,7 @@ mout <- run.jags(
   jags.refresh = 60
 )
 
-saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed.RDS")
+saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed_gamma.RDS")
 
 
 msum <- summary(mout)
