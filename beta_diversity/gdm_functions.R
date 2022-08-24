@@ -90,7 +90,7 @@ dospline <- function(dVal = NULL, my_knots = NULL){
 spline_pred <- function(
   knots,
   mcmc,
-  intercept,
+  #intercept,
   my_probs = c(0.025,0.5,0.975),
   predlength = 200
   ){
@@ -113,7 +113,7 @@ spline_pred <- function(
   # get splines again
   
   preds <- dospline(dVal = dVal, my_knots = knots) %*% mcmc
-  preds <- preds + intercept
+  #preds <- preds #+ rep(intercept, each = nrow(preds))
   
   to_return <- list(
     x = xVal,
@@ -329,40 +329,84 @@ ed_pred <- function(
   # 1. Come up with the prediction based on all of the
   #  data
   
-  all_preds <- cbind(1, my_splines) %*% t(mcmc_mat)
+  all_preds <- my_splines %*% t(mcmc_mat)
   #all_preds <- 1 - exp(-all_preds)
   
-  median(all_min)
   
   # ged median estimate
-  tmp <- apply(
-    all_preds,
-    1,
-    quantile,
-    probs = c(0.025,0.5,0.975)
+  tmp <- t(
+      apply(
+      all_preds,
+      1,
+      quantile,
+      probs = c(0.025,0.5,0.975)
+    )
   )
-  #tmp <- 1 - exp(-tmp)
-    #plogis(tmp)
+  over_x <- apply(
+    all_preds,
+    2,
+    function(x){
+      seq(min(x), max(x), length.out = predlength)
+    }
+  )
+  over_x <- t(
+    apply(
+      over_x,
+      1,
+      quantile,
+      probs = c(0.025,0.5,0.975)
+    )
+  )
   
-  # 2. get min and max of distances and do something like this
-  overlayX <- seq(from = min(tmp[2,]), to = max(tmp[2,]), 
-                  length = predlength)
+  test <- cut(
+    tmp[,2],
+    breaks = 8
+  )
+  test2 <- split(
+    my_data,
+    test
+  )
+  test2 <- sapply(
+    test2,
+    mean
+  )
+  my_points <- levels(test)
+  my_points <- gsub(
+    "\\(|\\]",
+    "",
+    my_points
+  )
+  my_points <- strsplit(
+    my_points,
+    ","
+  )
+  my_points <- sapply(
+    my_points,
+    function(x) mean(as.numeric(x))
+  )
   
-  
-  
-  
-  plot(my_data ~ tmp[2,],
+  plot(my_data ~ tmp[,2],
     #c(my_data[,1]/my_data[,2]) ~ tmp[2,],
-       ylim = c(0,0.7),
+       ylim = c(0,0.8),
        #xlim = c(0,0.7),
        ylab = "Observed dissimilarity",
        xlab = "Predicted ecological distance",
        bty = "l",
-       las = 1
+       las = 1,
+       pch = 19,
+       col = scales::alpha("black", 0.1)
        )
-  abline(a=0, b = 1, col = "red", lwd = 3)
-  overlayY <-  1 - exp(-overlayX) # use logit instead
-  lines(overlayY ~ overlayX, col = "blue", lwd = 8)
+  #abline(a=0, b = 1, col = "red", lwd = 3)
+  overlayY <-  1 - exp(-over_x) # use logit instead
+  
+  bbplot::ribbon(
+    x = over_x[,2],
+    y = overlayY[,-2],
+    col = "purple",
+    alpha  = 0.5
+  )
+  lines(overlayY[,2] ~ over_x[,2], col = "blue", lwd = 1)
+  points(x = my_points, y = test2, pch = 19, col = "cyan")
   
   # 3. Modify the above stuff to allow for 95% CI
   

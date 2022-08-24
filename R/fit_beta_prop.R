@@ -138,6 +138,7 @@ data_list <- list(
   ncity = max(site_ids$City_id)
 )
 
+saveRDS(data_list, "./mcmc_output/beta_output/data_list.RDS")
 # function for initial values
 inits <- function(chain){
   gen_list <- function(chain = chain){
