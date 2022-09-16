@@ -33,16 +33,17 @@ model{
 
   # city-specific parameters for splines
   for(j in 1:npar_spline){
-    beta_a[j] ~ dgamma(1, 1)
-    beta_b[j] ~ dgamma(1, 1)
+    beta_mu[j] ~ dnorm(0, 0.1)T(0,)
+    tau[j] ~ dgamma(1, 1)
     # use moment of methods to get mean and sd
     #  for each spline.
-    beta_mu[j] <- beta_a[j] / beta_b[j]
-    beta_sd[j] <- sqrt(beta_a[j] / (beta_b[j]^2))
+    #beta_mu[j] <- beta_a[j] / beta_b[j]
+    beta_sd[j] <- 1 / sqrt(tau[j])
     for(k in 1:ncity){
       # need to add a small value to the scale parameter or else
       #  we get stuck at infinite density.
-      beta_exp[k,j] ~ dgamma(beta_a[j] + 1.0E-3, beta_b[j])
+      beta_exp[k,j] ~ dnorm(beta_mu[j], tau[j])T(0,)
+     # beta_exp[k,j] ~ dgamma(beta_a[j] + 1.0E-3, beta_b[j])
     }
   }
 }

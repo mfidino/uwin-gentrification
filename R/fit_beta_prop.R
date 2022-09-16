@@ -169,10 +169,10 @@ inits <- function(chain){
         nrow = data_list$ncity,
         ncol = data_list$npar_spline
       ),
-      beta_a = rgamma(data_list$npar_spline,1,1),
-      beta_b = rgamma(data_list$npar_spline,1,1),
-      #beta_mu = rnorm(data_list$npar_spline,-3,0.5),
-      #beta_tau = 1 / rgamma(data_list$npar_spline,1,1),
+      #beta_a = rgamma(data_list$npar_spline,1,1),
+      #beta_b = rgamma(data_list$npar_spline,1,1),
+      beta_mu = abs(rnorm(data_list$npar_spline,0,0.5)),
+      tau = 1 / rgamma(data_list$npar_spline,1,1),
       .RNG.name = switch(chain,
                          "1" = "base::Wichmann-Hill",
                          "2" = "base::Marsaglia-Multicarry",
@@ -199,15 +199,15 @@ inits <- function(chain){
 }
 
 mout <- run.jags(
-  model = "./JAGS/beta_model_collapsed_gamma.R",
+  model = "./JAGS/beta_model_collapsed_norm.R",
   monitor = c(
     "beta_mu", "beta_exp",
-    "beta_sd","beta_a","beta_b"
+    "beta_sd"#,"beta_a","beta_b"
   ),
   data = data_list,
   inits = inits,
   adapt = 1000,
-  burnin = 30000,
+  burnin = 2000, #20000,
   sample = 20000,
   n.chains = 4,
   thin = 3,
@@ -216,12 +216,42 @@ mout <- run.jags(
   jags.refresh = 60
 )
 
-saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed_gamma.RDS")
+saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS")
+
+msum<- summary(mout)
 
 
-msum <- summary(mout)
-
+round(summary(mout, vars = "beta_mu" ),2)
 range(msum[,11])
+
+which(msum[,11]>1.1)
 
 round(exp(msum[1:8,1:3]),2)
 round(tail(msum, 50),2)
+
+my_mc <- mout$mcmc
+
+cnames <- row.names(msum)
+for( i in 1:200){
+  
+  my_range <- lapply(
+    my_mc,
+    function(x) range(x[,i])
+  )
+  my_range <- range(unlist(my_range))
+  jpeg(
+    paste0(
+      "./mcmc_plots/",
+      cnames[i],".jpg"
+    )
+  )
+  plot(as.numeric(my_mc[[1]][,i]), ylim = my_range, type = "l",
+       xlab = "mcmc step", ylab = "value", main = 
+         paste0(cnames[i], ifelse(msum[i,11]<1.1, " converged", " NO CONVERGE")),
+       col = scales::alpha("black", 0.25))
+  lines(as.numeric(my_mc[[2]][,i]), col =scales::alpha("red", 0.25))
+  lines(as.numeric(my_mc[[3]][,i]), col =scales::alpha("blue", 0.25))
+  lines(as.numeric(my_mc[[4]][,i]), col =scales::alpha("green", 0.25))
+  dev.off()
+}
+
