@@ -90,7 +90,6 @@ dospline <- function(dVal = NULL, my_knots = NULL){
 spline_pred <- function(
   knots,
   mcmc,
-  #intercept,
   my_probs = c(0.025,0.5,0.975),
   predlength = 200
   ){
@@ -111,9 +110,7 @@ spline_pred <- function(
     mcmc <- t(mcmc)
   }
   # get splines again
-  
   preds <- dospline(dVal = dVal, my_knots = knots) %*% mcmc
-  #preds <- preds #+ rep(intercept, each = nrow(preds))
   
   to_return <- list(
     x = xVal,
@@ -125,6 +122,60 @@ spline_pred <- function(
             probs = my_probs
           )
         )
+  )
+  
+  return(to_return)
+}
+
+
+
+spline_pred_gradient <- function(
+    knots,
+    mcmc,
+    #intercept,
+    my_probs = c(0.025,0.5,0.975),
+    predlength = 200
+){
+  dVal <- xVal <- seq(
+    0,#knots[1],
+    knots[3],
+    length.out = predlength
+  )
+  if(is.matrix(mcmc)){
+    if(ncol(mcmc)!=3){
+      stop("mcmc needs 3 columns (one for each spline).")
+    }
+  }
+  if(!is.matrix(mcmc)){
+    mcmc <- as.matrix(mcmc)
+  }
+  if(nrow(mcmc) != 3){
+    mcmc <- t(mcmc)
+  }
+  # get splines again
+  sp <- dospline(dVal = dVal, my_knots = knots)
+  sp <- cbind(
+    model_splines[1],
+    model_splines[2],
+    model_splines[3],
+    model_splines[4],
+    sp,
+    model_splines[8]
+  )
+  
+  preds <- sp %*% mcmc
+  #preds <- preds + rep(intercept, each = nrow(preds))
+  
+  to_return <- list(
+    x = xVal,
+    y = t(
+      apply(
+        1 - exp(-preds),
+        1,
+        quantile,
+        probs = my_probs
+      )
+    )
   )
   
   return(to_return)
@@ -330,8 +381,6 @@ ed_pred <- function(
   #  data
   
   all_preds <- my_splines %*% t(mcmc_mat)
-  #all_preds <- 1 - exp(-all_preds)
-  
   
   # ged median estimate
   tmp <- t(
