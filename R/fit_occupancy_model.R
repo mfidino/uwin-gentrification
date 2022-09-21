@@ -15,17 +15,7 @@ library(runjags)
 
 source("./R/prep_data_occupancy.R")
 
-data_list$ncov_within <- 4
-data_list$ncov_det <- 4
 
-data_list$psi_covs <- cbind(
-  data_list$psi_covs,
-  data_list$psi_covs[,2] * data_list$psi_covs[,3]
-)
-data_list$rho_covs <- cbind(
-  data_list$rho_covs,
-  data_list$rho_covs[,2] * data_list$rho_covs[,3]
-)
 
 
 my_start <- Sys.time()

@@ -26,6 +26,14 @@ city_data <- read.csv(
 # drop J01-NOR1
 city_data <- city_data[-which(city_data$Site == "J01-NOR1"),]
 
+
+# keep the species that have sufficient data
+
+city_covs <- read.csv(
+  "./data/cleaned_data/covariates/dist_city_to_species_edge.csv",
+  row.names = 1
+)
+
 # There are A LOT of NA's in this sampling array 
 #  prop.table(table(city_data$J > 0))
 #  FALSE  TRUE 
@@ -49,6 +57,12 @@ reduce_species <- table(
 min_dets <- 25
 
 first_species <- reduce_species[which(reduce_species[,2] >= min_dets),]
+
+# remove cougar as well, as the model does not converge for them.
+
+first_species <- first_species[-which(row.names(reduce_species)=="cougar"),]
+first_species <- first_species[-which(row.names(reduce_species)=="north_american_river_otter"),]
+first_species <- first_species[-which(row.names(reduce_species)=="black_bear"),]
 
 cdet <- city_data %>% group_by(Species, City) %>% 
   summarise(cdet = any(Y>0), .groups = "drop_last") %>% 
@@ -82,8 +96,15 @@ if(exists("my_species")){
 
 # get just these species for now
 tmp <- city_data[
-  which(city_data$Species %in% row.names(first_species)),
-  ]
+  which(city_data$Species %in% row.names(city_covs)),
+]
+# remove cougar, model does not converge for them.
+tmp <- tmp[-which(tmp$Species == "cougar"),]
+city_covs <- city_covs[-which(row.names(city_covs) == "cougar"),]
+
+# tmp <- city_data[
+#   which(city_data$Species %in% row.names(first_species)),
+#   ]
 
 
 # these data.frames will help us connect the model output back to 
@@ -283,10 +304,10 @@ tmp <- left_join(tmp,
 #  within a given city. This is for the top level part of the model
 #  which helps determine the species pool of a given city (along with
 #  the spatial coordinates of a city).
-city_covs <- read.csv(
-  "./data/cleaned_data/covariates/dist_city_to_species_edge.csv",
-  row.names = 1
-)
+# city_covs <- read.csv(
+#   "./data/cleaned_data/covariates/dist_city_to_species_edge.csv",
+#   row.names = 1
+# )
 
 # reduce down to the species we can model, order it in the 
 #  same way as species map (i.e., alphabetically), and then convert to 
@@ -524,7 +545,10 @@ for(i in 1:nrow(within_covs_centered)){
 cat("Creating design matrices...\n")
 # tmp covs is ordered like tmp, so we should be good to go with this
 #  for psi, we are going to use all of the covariates
-# -3 columns for site, season, and city. +1 column for intercept (i.e., -2)
+# -3 columns for site, season, and city. +1 column for intercept
+#  and interaction term (i.e., -2)
+tmp_covs$gentrifying <- as.numeric(tmp_covs$gentrifying)
+tmp_covs$inxs <- tmp_covs$gentrifying * tmp_covs$mean_19
 psi_covs <- matrix(
   1,
   ncol = ncol(tmp_covs) - 2,
@@ -548,9 +572,12 @@ rho_covs[,-1] <- as.matrix(
     colnames(tmp_covs) %in% c("Site", "Season", "City")
   )]
 )
-  
+ 
   
 cat("Creating data_list and inits() function...\n")
+
+tmp$Y[tmp$City == "mela" & tmp$Species == "white_tailed_deer"] <- 0
+
 data_list <- list(
   # detection data
   y = tmp$Y,
