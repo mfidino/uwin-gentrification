@@ -1,8 +1,5 @@
-
-
 library(sf)
 sf::sf_use_s2(FALSE)
-
 library(runjags)
 library(dplyr)
 library(cli)
@@ -34,6 +31,7 @@ covs <- read.csv(
   "./data/cleaned_data/covariates/site_covariates.csv"
 )
 
+# match site names to dmat
 covs$Site <- paste0(
   covs$City,"-",covs$Site
 )
@@ -56,11 +54,6 @@ dcovs$imp_diff <- abs(
   dcovs$mean_19.x - dcovs$mean_19.y
 )
 
-# read in spline design matrix too
-spline_mat <- read.csv(
- "./mcmc_output/beta_output/site_splines.csv"
-)
-
 cities <- sapply(
   strsplit(
     dmat$siteA,
@@ -73,7 +66,7 @@ city_map <- data.frame(
   city = unique(cities)
 )
 
-
+# pretty names for each city
 city_map$pname <- c(
   "Athens, GA",
   "Bay Area, CA",
@@ -111,10 +104,6 @@ ncity <- length(
     my_knots$City
   )
 )
-
-
-
-
 
 mc <- split_mcmc(my_mcmc)
 cc <- c("intercept", "geo1", "geo2","geo3", "imp1", "imp2", "imp3","gent")
