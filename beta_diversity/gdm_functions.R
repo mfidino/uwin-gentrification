@@ -136,38 +136,31 @@ spline_pred_gradient <- function(
     my_probs = c(0.025,0.5,0.975),
     predlength = 200
 ){
+  
   dVal <- xVal <- seq(
-    0,#knots[1],
-    knots[3],
+    0,
+    knots[2,3],
     length.out = predlength
   )
-  if(is.matrix(mcmc)){
-    if(ncol(mcmc)!=3){
-      stop("mcmc needs 3 columns (one for each spline).")
-    }
-  }
   if(!is.matrix(mcmc)){
     mcmc <- as.matrix(mcmc)
   }
-  if(nrow(mcmc) != 3){
-    mcmc <- t(mcmc)
-  }
   # get splines again
-  sp <- dospline(dVal = dVal, my_knots = knots)
-  sp <- cbind(
-    model_splines[1],
-    model_splines[2],
-    model_splines[3],
-    model_splines[4],
-    sp,
-    model_splines[8]
+  geo_sp <- dospline(
+    dVal = knots$median[1],
+    my_knots = as.numeric(knots[1,])
   )
+  geo_sp <- geo_sp[rep(1, predlength *2),]
+  sp <- dospline(dVal = dVal, my_knots =as.numeric(knots[2,]))
   
-  preds <- sp %*% mcmc
+  
+  sp <- cbind(1, geo_sp, rbind(sp, sp), rep(c(0,1), each =predlength))
+  
+  preds <- sp %*% t(mcmc)
   #preds <- preds + rep(intercept, each = nrow(preds))
   
   to_return <- list(
-    x = xVal,
+    x = rep(xVal,2),
     y = t(
       apply(
         1 - exp(-preds),
@@ -175,7 +168,8 @@ spline_pred_gradient <- function(
         quantile,
         probs = my_probs
       )
-    )
+    ),
+    gent = rep(c(FALSE,TRUE), each = predlength)
   )
   
   return(to_return)

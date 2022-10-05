@@ -391,19 +391,154 @@ for(city in 1:ncity){
   
 }
 
-
+city_pred <- vector(
+  "list",
+  length = ncity
+)
 for(city in 1:ncity){
-  knots <- as.numeric(my_knots[
-    my_knots$City == cities[city] &
-      my_knots$covariate == "mean_19",
-    c("min","median","max")])
+  knots <- my_knots[
+    my_knots$City == cities[city],
+    c("min","median","max")]
   tmp_mcmc <- mc$beta_exp[,city,]
 
-  city_pred[[city]] <- spline_pred(
+  city_pred[[city]] <- spline_pred_gradient(
     knots = knots,
-    mcmc = tmp_mcmc[,5:7]
+    mcmc = tmp_mcmc
   )
   
+}
+
+
+my_cities <- c(
+  'chil' = 4,
+  'naca' = 13,
+  'mela' = 12
+)
+
+city_examples <- city_pred[my_cities]
+
+
+windows(8,3)
+
+{
+  tiff(
+    "./plots/beta_examples.tiff",
+    height = 3,
+    width = 8,
+    units = "in",
+    res = 1200,
+    compression = "lzw"
+  )
+  par(mar = c(1,1,1,1), oma = c(4,4,0,0))
+  m <- matrix(1:3, ncol = 3)
+  ribbon_cols <- pals::brewer.seqseq2(9)[c(6,8)]
+  layout(m)
+  
+  sub_names <- c(
+    "A) Chicago, IL",
+    "B) National capital",
+    "C) Metro LA, CA"
+  )
+  for(i in 1:3){
+    bbplot::blank(xlim = c(0,0.8), ylim = c(0.1,0.5), bty = "l")
+    u <- par("usr")
+    bbplot::axis_blank(1)
+    bbplot::axis_blank(2)
+    if(i == 1){
+      bbplot::axis_text(side = 2, line = 0.7, las = 1)
+    }
+    text(
+      x = u[1] + 0.04,
+      y = u[4] - 0.02, pos = 4,
+      labels = sub_names[i],
+      cex = 1.5
+    )
+    bbplot::axis_text(side = 1, line = 0.7)
+    if(i == 2){
+      bbplot::axis_text(
+        "Impervious cover (proportion)",
+        1,
+        outer = TRUE,
+        at = NA,
+        line = 2,
+        cex = 1.5
+      )
+      bbplot::axis_text(
+        "Beta diversity",
+        2,
+        outer = TRUE,
+        at = NA,
+        line = 2,
+        cex = 1.5
+      )
+    }
+    non_gent <- cbind(
+      city_examples[[i]]$x[1:200],
+      city_examples[[i]]$y[1:200,]
+    )
+    gent <- cbind(
+      city_examples[[i]]$x[-c(1:200)],
+      city_examples[[i]]$y[-c(1:200),]
+    )
+    bbplot::ribbon(
+      x = gent[,1],
+      y = gent[,c(2,4)],
+      col = ribbon_cols[1],
+      alpha = 0.5
+    )
+    bbplot::ribbon(
+      x = non_gent[,1],
+      y = non_gent[,c(2,4)],
+      col = ribbon_cols[2],
+      alpha = 0.5
+    )
+    lines(
+      x = gent[,1],
+      y = gent[,3],
+      col = ribbon_cols[1],
+      lwd = 3
+    )
+    lines(
+      x = non_gent[,1],
+      y = non_gent[,3],
+      col = ribbon_cols[2],
+      lwd = 3
+    )
+    
+    
+  }
+  
+  my_legend(
+    x = 0.2,
+    y = 0.25,
+    legend = c("Gentrifying", "Non-gentrifying"),
+    text.col = "white",
+    fill = c(
+      scales::alpha(ribbon_cols[1], 0.5),
+      scales::alpha(ribbon_cols[2], 0.5)
+    ),
+    cex = 1.5,
+    box.cex = c(1.25,1.25),
+    y.intersp = 1.25,
+    border = c(
+      scales::alpha(ribbon_cols[1], 0.5),
+      scales::alpha(ribbon_cols[2], 0.5)
+    ),
+    bty = "n"
+  )
+  my_legend(
+    x = 0.2,
+    y = 0.25,
+    legend = c("Gentrifying", "Non-gentrifying"),
+    lty = c(1,1),
+    lwd = 3,
+    col = ribbon_cols,
+    cex = 1.5,
+    y.intersp = 1.25,
+    bty = "n",
+    seg.len = 1.25
+  )
+  dev.off()
 }
 
 windows(12,8)
