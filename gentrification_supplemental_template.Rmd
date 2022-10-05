@@ -1,0 +1,46 @@
+---
+title: "Gentrification maps & city-specific responses"
+output: pdf_document
+author: Mason Fidino
+header-includes:
+   - \usepackage{bm}
+editor_options: 
+  chunk_output_type: console
+classoption: a3paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+
+```
+
+
+```{r, do_plot, echo = FALSE, include = FALSE}
+
+plot_func <- function(){
+  m <- matrix(c(1,1,1,1,2,2,3,3,3,4,4,4), ncol = 6, nrow = 2, byrow = TRUE)
+  layout(m)
+  print(plot(1~1))
+  print(plot(1~1))
+  print(plot(1~1))
+  print(plot(1~1))
+  #par(oma = c(0,0,5,0))
+}
+
+```
+
+```{r, read_data, echo = FALSE, results = 'asis'}
+
+for(i in 1:5){
+  # Figure out all the vulnerable census tracts across a city
+  #print("<div style='page-break-before: always;'></div>")
+  #plot_func()
+  print("this is a test\n")
+
+
+  cat('\\newpage')
+   
+}
+
+```

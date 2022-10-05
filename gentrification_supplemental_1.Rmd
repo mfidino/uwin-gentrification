@@ -18,6 +18,7 @@ library(viridis)
 library(raster)
 library(sf)
 library(runjags)
+library(prettymapr)
 source("./R/census_functions.R")
 source("./beta_diversity/gdm_functions.R")
 source("./R/alpha_beta_functions.R")
@@ -33,6 +34,14 @@ sf::sf_use_s2(FALSE)
   )
   gent_list_poly <- readRDS(
     "./data/census_data/gent_census_tracts.rds"
+  )
+  
+  imp_census <- read.csv(
+    "./data/cleaned_data/covariates/census_tract_imperv_cover.csv"
+  )
+  imp_census <- split(
+    imp_census,
+    factor(imp_census$city)
   )
 pretty_names <- c(
   "Athens, GA",
@@ -118,6 +127,11 @@ sp_rich <-  dplyr::inner_join(
 city_map <- data.frame(
   city = unique(sp_rich$City)
 )
+
+my_site <- split(
+  my_site,
+  factor(my_site$City)
+)
 # pretty name
 city_map$pname <- c(
   "Athens, GA",
@@ -183,14 +197,40 @@ for(i in 1:length(gent_list_poly)){
     qwrap
   )
 }
-roundUpNice <- function(x, nice=c(1,2,4,5,6,8,10)) {
+roundUpNice <- function(x, nice=c(1,2,3,4,5,6,7,8,9,10)) {
   if(length(x) != 1) stop("'x' must be of length 1")
   10^floor(log10(x)) * nice[[which(x <= 10^floor(log10(x)) * nice)[[1]]]]
 }
 
+gamma_samples <- read.csv(
+  "./results/city_gamma_samples.csv"
+)
+
+windows(12, 10)
+
+
+
 for(i in 1:length(gent_list_poly)){
+  tiff(
+    paste0(
+      "./supp_plots/supp_1/",cities[i], ".tiff"
+    ),
+      height = 10,
+      width = 12,
+      units = "in",
+      res = 1200,
+      compression = "lzw"
+  )
   # Figure out all the vulnerable census tracts across a city
-     m <- matrix(c(1,1,1,1,2,2,3,3,3,4,4,4), ncol = 6, nrow = 2, byrow = TRUE)
+     m <- matrix(
+       c(1,1,1,1,1,1,1,1,
+         1,1,1,1,1,1,1,1,
+         1,1,1,1,1,1,1,1,
+         2,2,2,2,2,2,2,2,
+         3,3,3,3,4,4,4,4,
+         3,3,3,3,4,4,4,4,
+         5,5,5,5,6,6,6,6,
+         5,5,5,5,6,6,6,6), ncol = 8, nrow = 8, byrow = TRUE)
      layout(m)
      par(oma = c(0,0,5,0))
    # get impervious cover range from this city
@@ -226,25 +266,48 @@ for(i in 1:length(gent_list_poly)){
      cex = 2,
      bg = my_bgs,
    )
-   par(mar = c(0,0,0,0))
-   blank()
+   sf::st_crs(gent_list_poly[[i]])
+   prettymapr::addnortharrow(pos = "topleft", padin = c(1.1,0.19), scale = 0.7)
+   prettymapr::addscalebar(plotepsg = 4326, style = "ticks",
+            padin =c(0.25, 0.00), lwd = 2, label.cex = 1)
+   par(mar = c(0,0,0,0), xpd = NA)
+   blank(xlim = c(1,10), ylim = c(1,10), xaxs = "i")
      
+   points(
+     x = 2.5,
+     y = 7.5,
+     pch = 15,
+     col = scales::alpha(ribbon_cols,0.5)[1],
+     cex = 5
+   )
+   text(x = 2.65, y = 7.5, labels ="gentrifying census tract", pos = 4, cex = 1.8)
+     points(
+     x = 5.5,
+     y = 7.5,
+     pch = 15,
+     col = scales::alpha(ribbon_cols,0.5)[2],
+     cex = 5
+   )
+   text(x = 5.65, y = 7.5, labels ="non-gentrifying census tract", pos = 4, cex = 1.8)
+   
+    points(
+     x = 2.5,
+     y = 3.5,
+     pch = 21,
+     bg = "black",
+     cex = 5
+   )
+   text(x = 2.65, y = 3.5, labels ="site < 500m of gentrifying census tract", pos = 4, cex = 1.8)
+    points(
+     x = 5.5,
+     y = 3.5,
+     pch = 21,
+     bg = "white",
+     cex = 5
+   )
+   text(x = 5.65, y = 3.5, labels ="site > 500m of gentrifying census tract", pos = 4, cex = 1.8)
   
-   legend(
-     "center",
-     c(
-       "gentrifying census tract",
-       "non-gentrifying census tract",
-       "site < 500m of gentrifying census tract",
-       "site > 500m of gentrifying census tract"
-      ),
-     pch = c(15,15,21,21),
-     col = c(scales::alpha(ribbon_cols,0.5), "black", "black"),
-     pt.bg = c(NA, NA, "black", "white"),
-     bty = "n", pt.cex = 2.2,
-     title = ""
-    )
-   par(mar = c(6,6,0,1))
+   par(mar = c(6,6,0,1), xpd = TRUE)
    # alpha diversity plot
    bbplot::blank(xlim = c(0,my_range), ylim = c(0,20), bty = "l")
   
@@ -266,27 +329,28 @@ for(i in 1:length(gent_list_poly)){
     line = 3.5,
     cex = 1.5
   )
+  to_keep <- which(xx <= my_range)
   bbplot::ribbon(
-    x = xx,
-    y = t(alpha_examples[[i]]$gent)[,-2],
+    x = xx[to_keep],
+    y = t(alpha_examples[[i]]$gent)[to_keep,-2],
     col = ribbon_cols[1],
     alpha = 0.5
   )
   bbplot::ribbon(
-    x = xx,
-    y = t(alpha_examples[[i]]$non_gent)[,-2],
+    x = xx[to_keep],
+    y = t(alpha_examples[[i]]$non_gent)[to_keep,-2],
     col = ribbon_cols[2],
     alpha = 0.5
   )
   lines(
-    x = xx,
-    y = alpha_examples[[i]]$gent[2,],
+    x = xx[to_keep],
+    y = alpha_examples[[i]]$gent[2,to_keep],
     col = ribbon_cols[1],
     lwd = 3
   )
   lines(
-    x = xx,
-    y = alpha_examples[[i]]$non_gent[2,],
+    x = xx[to_keep],
+    y = alpha_examples[[i]]$non_gent[2,to_keep],
     col = ribbon_cols[2],
     lwd = 3
   )
@@ -373,8 +437,107 @@ for(i in 1:length(gent_list_poly)){
     bty = "n",
     seg.len = 1.25
   )
-    
-   
+  hist_data <- my_site[[i]]
+  hist_data$mean_19 <- hist_data$mean_19 / 100
+  
+  yo1 <- hist(
+    hist_data$mean_19[
+      hist_data$gent == 1
+    ],
+    plot = FALSE
+  )
+  yo2 <- hist(
+        hist_data$mean_19[
+      hist_data$gent == 0
+    ],
+    plot = FALSE
+  )
+  y_range <- c(0, max(yo1$counts, yo2$counts))
+  x_range <- c(0, max(yo1$breaks, yo2$breaks))
+  u <- par("usr")
+  bbplot::blank(
+    ylim = y_range,
+    xlim = x_range,
+    bty = "l"
+  )
+  plot(yo2, add = TRUE, col = scales::alpha(ribbon_cols[2], 0.5))
+  plot(yo1, add = TRUE, col = scales::alpha(ribbon_cols[1], 0.5))
+  
+  bbplot::axis_blank(1)
+  bbplot::axis_blank(2)
+      bbplot::axis_text(side = 2, line = 0.7, las = 1)
+    bbplot::axis_text(side = 1, line = 0.7)
+  bbplot::axis_text(
+   "Impervious cover (proportion)",
+   1,
+   line = 3.5,
+   cex = 1.5
+  )
+  bbplot::axis_text(
+    "Site frequency",
+    2,
+    at = NA,
+    line = 3.5,
+    cex = 1.5
+  )
+  rich_samples <- gamma_samples[,i]
+  rich_samples <- prop.table(table(rich_samples))
+  bbplot::blank(
+    xlim = c(0,21),
+    ylim = c(0,1),
+    bty ="l"
+  )
+  bbplot::axis_blank(1)
+  bbplot::axis_blank(2)
+  bbplot::axis_text(side = 2, line = 0.7, las = 1)
+  bbplot::axis_text(side = 1, line = 0.7)
+  bbplot::axis_text(
+   "Overall richness",
+   1,
+   line = 3.5,
+   cex = 1.5
+  )
+  bbplot::axis_text(
+    "Probability",
+    2,
+    at = NA,
+    line = 3.5,
+    cex = 1.5
+  )
+  rich_plot <- data.frame(
+    x = 0:21,
+    y = 0
+  )
+  rich_plot$y[rich_plot$x %in% as.numeric(names(rich_samples))] <- rich_samples
+  lines(
+    x = rich_plot$x,
+    y = rich_plot$y,
+    lwd = 3,
+    col = "gray40"
+  )
+  points(
+    x = rich_plot$x,
+    y = rich_plot$y,
+    pch = 19,
+    col  = "white",
+    cex = 2
+  )
+  points(
+    x = rich_plot$x,
+    y = rich_plot$y,
+    pch = 19,
+    col  = "gray40",
+    cex = 1.6
+  )
+  points(
+    x = rich_plot$x,
+    y = rich_plot$y,
+    pch = 19,
+    col = "black",
+    cex = 1.2
+  )
+  
+  dev.off()
 }
 
 ```
