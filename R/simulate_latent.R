@@ -6,7 +6,7 @@
 #
 ####################################################
 
-analysis <- "alpha"
+analysis <- "beta"
 
 # placeholder for now until I run the model without cougar
 species_to_drop <- "cougar"
@@ -153,9 +153,9 @@ if(analysis == "beta"){
   for(i in 1:length(beta_results)){
     setTxtProgressBar(pb, i)
     beta_results[[i]] <- data.frame(
-      dissim = beta_results[[i]][,1] / beta_results[[i]][,2],
+      dissim = beta_results[[i]][,1],
       rich = beta_results[[i]][,2],
-      loc = 1:nrow(beta_results[[i]])
+      loc = as.character(1:nrow(beta_results[[i]]))
     )
   }
   beta_results <- do.call("rbind", beta_results)
@@ -165,15 +165,16 @@ if(analysis == "beta"){
     dplyr::summarise(
       mu_beta = mean(dissim, na.rm = TRUE),
       var_beta = sd(dissim, na.rm = TRUE)^2,
-      mu_rich = mean(rich),
-      var_rich = sd(rich)^2
+      mu_rich = mean(rich, na.rm = TRUE),
+      var_rich = sd(rich, na.rm = TRUE)^2,
+      na_count = sum(is.na(dissim))
     )
   rm(beta_results)
   gc()
   
   write.csv(
     beta_summary,
-    "./results/beta_summary_for_analysis_collapsed.csv",
+    "./results/beta_summary_for_analysis_collapsed_vegan.csv",
     row.names = FALSE
   )
 

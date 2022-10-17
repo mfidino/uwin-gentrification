@@ -469,23 +469,32 @@ zmat_long <- function(x, site_ids){
   } else {
     ids <- site_ids
   }
-  to_return <- matrix(
-    NA,
-    ncol = 2,
-    nrow = nrow(ids)
-  )
+  to_return <- matrix(NA, nrow = nrow(ids), ncol = 2)
   # fill this matrix.
   for(i in 1:nrow(to_return)){
     # get number of dissimilar species in site pair
-    to_return[i,1] <- sum(
-      (1 - x[ids$siteA_id[i],]) *
-           x[ids$siteB_id[i],]
-      )
-    # and then the total number of unique species in site pair
+    if(
+      sum(x[ids$siteA_id[i],]) > 0 &
+      sum(x[ids$siteB_id[i],]) > 0
+    ){
+      
+    
+    to_return[i,1] <- as.numeric(
+      vegan::vegdist(
+      x[
+        c(
+          ids$siteA_id[i],
+          ids$siteB_id[i]
+        ),
+      ],
+      binary = TRUE
+    )
+    )
     to_return[i,2] <- ncol(x) - sum(
       (1 - x[ids$siteA_id[i],]) *
-      (1 - x[ids$siteB_id[i],])
+        (1 - x[ids$siteB_id[i],])
     )
+    }
   }
   return(to_return)
 }
