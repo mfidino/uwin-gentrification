@@ -153,14 +153,15 @@ if(analysis == "alpha"){
   for(i in 1:nmcmc){
     setTxtProgressBar(pb, i)
     site_info$z <- z[i,]
-    to_go <- which(
-      data_list$species_idx %in% 
-        species_map$Species_id[species_map$Species== species_to_drop
-      ]
-    )
-    new_si <- site_info[-to_go,]
-    new_si$species <- tmp$Species[-to_go]
-    
+    #to_go <- which(
+    #  data_list$species_idx %in% 
+    #    species_map$Species_id[species_map$Species== species_to_drop
+    #  ]
+    #)
+    #new_si <- site_info[-to_go,]
+    #new_si$species <- tmp$Species[-to_go]
+    new_si <- site_info
+    new_si$species <- tmp$Species
     tmp_si <- new_si %>% 
       dplyr::group_by(Site,City,species) %>% 
       dplyr::summarise(

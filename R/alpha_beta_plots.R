@@ -26,9 +26,8 @@ alpha_mc <- split_mcmc(
 )
 
 # and beta diversity analysis
-
 beta_mc <- readRDS(
-  "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS"
+  "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
 
 data_list <- readRDS(

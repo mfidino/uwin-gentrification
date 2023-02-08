@@ -43,7 +43,6 @@ model{
       # need to add a small value to the scale parameter or else
       #  we get stuck at infinite density.
       beta_exp[k,j] ~ dnorm(beta_mu[j], tau[j])T(0,)
-     # beta_exp[k,j] ~ dgamma(beta_a[j] + 1.0E-3, beta_b[j])
     }
   }
 }

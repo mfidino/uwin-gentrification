@@ -70,6 +70,15 @@ my_mc <- split_mcmc(
   my_mc
 )
 
+# get average
+
+alpha_mu <- apply(
+  my_mc$alpha_mu,
+  2,
+  quantile,
+  probs = c(0.025,0.05,0.5,0.95,0.975)
+)
+
 xx <- seq(0, 0.8, length.out = 300)
 
 # get the average across the study, but set it up as the 
@@ -83,7 +92,44 @@ p2 <- my_mc$alpha_mu %*% t(cbind(1,1,xx,xx))
 p2 <- exp(p2)
 # difference
 p2 <- apply(p2 - p1, 2, quantile, probs  = c(0.025,0.5,0.975))
-,mu_diff <- t(p2)
+
+# get overall average (added to the results section)
+p3 <- my_mc$alpha_mu %*% t(cbind(1,0.5,xx,xx * 0.5))
+p3 <- exp(p3)
+# difference
+p3 <- quantile(p3[,1] - p3[,ncol(p3)],probs  = c(0.025, 0.05,0.5,0.95,0.975))
+
+# do the above at an average site
+a1 <- my_mc$alpha_mu %*% t(cbind(1,0,0.05,0)) 
+
+a2 <- my_mc$alpha_mu %*% t(cbind(1,1,0.05,0.05)) 
+
+prop_diff <- a2 / a1
+a1 <- round(
+  quantile(
+    exp(a1), 
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+
+# gentrifying
+
+a2 <- round(
+  quantile(
+    exp(a2), 
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+# difference
+prop_diff <- round(
+  quantile(
+    prop_diff,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ), 2
+)
+
+
+a2 <- apply(a2 - a1, 2, quantile, probs  = c(0.025,0.5,0.975))
 
 
 
@@ -111,10 +157,17 @@ for(i in 1:nrow(city_map)){
       (pp2 * prop_gent[1]) + (pp * prop_gent[2]),
       2,
       quantile,
-      probs = c(0.025,0.5,0.975)
+      probs = c(0.025, 0.5, 0.975)
     )
   )
 }
+
+
+round(quantile(
+  abs(my_mc$alpha_mu[,3])/
+    abs(my_mc$alpha_mu[,2]),
+  probs = c(0.025,0.05,0.5,0.95,0.975)
+),2)
 
 # get which cities we found a difference
 gent_1 <- t(
@@ -122,9 +175,26 @@ gent_1 <- t(
     my_mc$alpha[,,2],
     2,
     quantile, 
-    probs = c(0.025,0.975)
+    probs = c(0.025, 0.5, 0.975)
   )
 )
+gent_imp <- t(
+  apply(
+    my_mc$alpha[,,4],
+    2,
+    quantile, 
+    probs = c(0.025, 0.5, 0.975)
+  )
+)
+
+yo <- t(
+  apply(
+    my_mc$alpha[,,4],
+    2,
+    function(x) mean(x>0)
+  )
+)
+sort(round(yo,2))
 
 # sig effect
 gent_1 <- apply(

@@ -6,10 +6,11 @@
 #
 ####################################################
 
-analysis <- "beta"
+analysis <- "alpha"
 
 # placeholder for now until I run the model without cougar
-species_to_drop <- "cougar"
+#species_to_drop <- "cougar"
+species_to_drop <- NA
 
 library(runjags)
 library(dplyr)
@@ -22,7 +23,7 @@ source("./R/alpha_beta_functions.R")
 cat("loading in run.jags file...\n")
 # Load in the occupancy model results
 mout <- readRDS(
-  "./results/occupancy_model_fit_simpler2.RDS"
+  "./results/occupancy_model_fit_simpler3.RDS"
 )
 
 cat("binding posterior simulations...\n")
@@ -34,7 +35,7 @@ mcmc <- do.call(
 
 # take a random sample to iterate through
 set.seed(11556644)
-my_samples <- ifelse(analysis == "beta", 5000, 10000)
+my_samples <- ifelse(analysis == "beta", 5000, 5000)
 mcsamp <- mcmc[sample(1:nrow(mcmc), my_samples),]
 
 rm(mout, mcmc)
@@ -140,9 +141,10 @@ if(analysis == "alpha"){
   sp_rich$mu <- apply(sp_rich_mcmc, 2, mean)
   sp_rich$sd <- apply(sp_rich_mcmc, 2, sd)
   sp_rich <- sp_rich[,-which(colnames(sp_rich) == "rich")]
+  
   write.csv(
     sp_rich,
-    "./results/alpha_for_stage_two_collapsed.csv",
+    "./results/alpha_for_stage_two_collapsed_2.csv",
     row.names = FALSE
   )
 }

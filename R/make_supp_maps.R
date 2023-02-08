@@ -60,7 +60,7 @@ my_knots <- read.csv(
 
 # read in the mcmc
 my_mcmc <- readRDS(
-  "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS"
+  "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
 my_mcmc <- do.call(
   "rbind",

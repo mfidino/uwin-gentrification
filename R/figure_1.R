@@ -80,28 +80,40 @@ gplot <- function(){
   lines(x = c(5.25, 9.75), y = c(2.25,2.25), lwd = 2)
 }
 
-windows(6,4)
+windows(3,6)
 m <- matrix(
-  c(1,1,5,6,
-    2,2,7,8,
-    3,3,9,10,
-    4,4,11,12),
-  ncol = 4,
-  nrow = 4,
+  c(
+    1,2,3,4,5,5
+  ), 
+  ncol = 1,
+  nrow = 6,
   byrow = TRUE
 )
-tiff("tester.tiff", height = 4, width = 6, units = "in",
+# m <- matrix(
+#   c(1,1,5,
+#     2,2,6,
+#     3,3,7,
+#     4,4,8),
+#   ncol = 3,
+#   nrow = 4,
+#   byrow = TRUE
+# )
+tiff("draft_fig_1_gentrification.tiff", height = 6, width = 3, units = "in",
      res = 1200, compression = "lzw")
-layout(m)
+{layout(m)
 par(
   mar = c(0.5,0.5,0.5,0.5),
   xpd = NA
 )
 
+plot_titles <- paste0(
+  LETTERS[1:4],")", c(" Enhanced", " Shifted", " Nested", " No change")
+)
+
 for(i in 1:4){
   gplot()
   u <- par("usr")
-  text(x = 0.25, y = 9.75, paste0(LETTERS[i],")"))
+  text(x = 0.15, y = 9.75, plot_titles[i], pos = 4, cex = 1.1)
   g1 <- sp_loc(cmats[[i]])
   g1[[1]][,1] <- g1[[1]][,1] + 2.5 
   g1[[2]][,1] <- g1[[2]][,1] + 7.5
@@ -134,58 +146,70 @@ for(i in 1:4){
     text(7.5, y = 2, "Gentrified", pos = 1, cex = 1.5)
   }
 }
+}
+par(mar = c(3.5,5.5,1.5,3.5))
+
+bbplot::blank(xlim = c(-0.1, 2), ylim = c(-0.1, 1.2), bty = 'n',
+              xaxs = "i", yaxs= "i")
+box(which = "plot", bty = "l", lwd = 2)
+
+bbplot::axis_blank(
+  side = 1,
+  minor = FALSE,
+  lwd = 2
+)
+
+bbplot::axis_text(
+  text = c(0,2),
+  side = 1,
+  at = c(0,2),
+  line = 0.75
+)
+bbplot::axis_text(
+  text = c(0,1),
+  side = 2,
+  at = c(0,1),
+  line = 0.75,
+  las = 1
+)
+bbplot::axis_blank(
+  at = c(0,0.5,1),
+  side = 2,
+  lwd = 2,
+  minor = FALSE,
+  tck = -0.03
+)
+
+bbplot::axis_text(
+  text = bquote(Delta ~"alpha"),
+  side = 1,
+  line = 2.25,
+  cex = 1.3
+)
+
+bbplot::axis_text(
+  text ="beta",
+  side = 2,
+  line = 2.25,
+  cex = 1.3
+)
+
+
+plot_titles2 <- c("Enhanced", "Shifted", "Nested", "No change")
+for(i in 1:4){
+  text(
+    LETTERS[i],
+    x = ab_vals[[i]][1],
+    y = ab_vals[[i]][2],
+    adj = 0.5,
+    cex = 1.1
+  )
+  text(
+    plot_titles2[i],
+    x = ab_vals[[i]][1] + c(0, 0.025, 0, 0.025)[i],
+    y = ab_vals[[i]][2] + c(0.025,0,0.025, 0)[i],
+    pos = c(3,4,3,4)[i],
+    cex = 1.1
+  )
+}
 dev.off()
-tp1 <- ab()
-
-
-
-#centre points
-centre_x = 5
-centre_y = 5
-#radius
-r = 2.25
-
-deg2rad <- function(d){
-  return((d*pi)/180)
-} #Converts Degrees to radians
-X_coord <- function(r=2.25,centre_x=2.5,angle) #Finds Xcoordinate on the circumference 
-{
-  return(r*cos(deg2rad(angle)) + centre_x)
-}
-Y_coord <- function(r=2.25,centre_y=2.5,angle) #Finds Ycoordinate on the circumference 
-{
-  return(r*sin(deg2rad(angle)) + centre_x)
-}
-
-# series of angles after dividing the circle in to 5 
-angles <- list()
-for(i in 1:5)
-{
-  angles[i] <- 72*i
-}
-angles <- unlist(angles) #flattening the list 
-
-for(i in seq_along(angles)){
-  print(i)
-  print(angles[i])
-  if(i == 1)
-  {
-    coordinates <- 
-      cbind(c(
-        x = X_coord(angle = angles[i]),
-        y = Y_coord(angle = angles[i]))
-      )
-  }
-  else{
-    coordinates <- cbind(coordinates,cbind(c(
-      x = X_coord(angle = angles[i]),
-      y = Y_coord(angle = angles[i]))))
-  }
-}
-plot(xlim = c(0,30), ylim = c(0,30),x = coordinates[1,], y=coordinates[2,], asp  =1)
-
-polygon(x = coordinates[1,c(1,3,5,2,4,1)],                           
-        y=coordinates[2,c(1,3,5,2,4,1)],                             
-        col = "#1b98e0",                                             
-        border = "red",                                              
-        lwd = 5)

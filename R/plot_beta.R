@@ -15,7 +15,7 @@ my_knots <- read.csv(
 
 # read in the mcmc
 my_mcmc <- readRDS(
-  "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS"
+  "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
 
 data_list <- readRDS(
@@ -130,8 +130,42 @@ city_pred <- vector("list", length = ncity)
 # compare nearby sites vs those gentrifying
 mu_1 <-(1 - exp(-mc$beta_mu[,1]))
 mu_2 <-(1 - exp(-rowSums(mc$beta_mu[,c(1,8)])))
-mu_1 <- quantile(mu_2 - mu_1, probs = c(0.025,0.5,0.975))
+quantile(mu_1)
 
+mu_diff <- quantile(mu_2 - mu_1, probs = c(0.025, 0.05, 0.5,0.95, 0.975))
+round(mu_diff,2)
+
+# get the same bit of info for some west coast cities
+la_1 <-(1 - exp(-mc$beta_exp[,12,1]))
+la_2 <-(1 - exp(-rowSums(mc$beta_exp[,12,c(1,8)])))
+quantile(mu_1)
+
+la_diff <- quantile(la_2 - la_1, probs = c(0.025, 0.05, 0.5,0.95, 0.975))
+round(la_diff,2)
+round(
+  quantile(
+    la_2,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+round(
+  quantile(
+    la_1,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+round(
+  quantile(
+    la_2 / la_1,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+round(
+  quantile(
+    (la_2 / la_1) / (mu_2 / mu_1),
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
 
 city_mu1 <- matrix(
   ncol = 3,
@@ -236,8 +270,11 @@ overall_effects <- data.frame(
   city = rep(city_map$city,each = 3),
   parm = rep(c("geo","imp","gent"), data_list$ncity),
   lo = NA,
+  lo2 = NA,
   est = NA,
+  hi2 = NA,
   hi= NA
+  
 )
 for(city in 1:ncity){
   geo_tmp <- rowSums(
@@ -246,30 +283,53 @@ for(city in 1:ncity){
   imp_tmp <- rowSums(
     mc$beta_exp[,city,5:7]
   )
-  geo_tmp <- quantile(geo_tmp, probs = c(0.025,0.5,0.975))
-  imp_tmp <- quantile(imp_tmp, probs = c(0.025,0.5,0.975))
-  gen_tmp <- quantile(mc$beta_exp[,city,8], probs = c(0.025,0.5,0.975))
+  geo_tmp <- quantile(geo_tmp, probs = c(0.025,0.05,0.5,0.95,0.975))
+  imp_tmp <- quantile(imp_tmp, probs = c(0.025,0.05,0.5,0.95,0.975))
+  gen_tmp <- quantile(mc$beta_exp[,city,8], probs = c(0.025,0.05,0.5,0.95,0.975))
   to_send <- rbind(geo_tmp, imp_tmp, gen_tmp)
   overall_effects[
     overall_effects$city == city_map$city[city],
-    c("lo","est","hi")
+    c("lo","lo2","est","hi2","hi")
   ] <- to_send
     
 }
 
+overall_effects <- overall_effects %>% 
+  dplyr::mutate(
+    dplyr::across(
+      .cols = where(is.numeric),
+      .fns = function(x) round(x,2)
+    )
+  )
+
+gent <- overall_effects[overall_effects$parm == "gent",]
+gent <- gent[order(gent$est),]
+
+imp <- overall_effects[overall_effects$parm == "imp",]
+imp <- imp[order(imp$est),]
 # get global average as well
 overall_mean <- data.frame(
   parm = c("geo","imp","gent")
 )
+
 geo_tmp <- rowSums(
     mc$beta_mu[,2:4]
 )
 imp_tmp <- rowSums(
     mc$beta_mu[,5:7]
 )
+
+median(imp_tmp / mc$beta_mu[,8])
+
 geo_tmp <- quantile(geo_tmp, probs = c(0.025,0.5,0.975))
 imp_tmp <- quantile(imp_tmp, probs = c(0.025,0.5,0.975))
 gen_tmp <- quantile(mc$beta_mu[,8], probs = c(0.025,0.5,0.975))
+to_send <- rbind(geo_tmp, imp_tmp, gen_tmp)
+
+
+geo_tmp <- quantile(geo_tmp, probs = c(0.025,0.05, 0.5,0.95, 0.975))
+imp_tmp <- quantile(imp_tmp, probs = c(0.025,0.05, 0.5,0.95, 0.975))
+gen_tmp <- quantile(mc$beta_mu[,8], probs = c(0.025,0.5,0.5,0.95,0.975))
 to_send <- rbind(geo_tmp, imp_tmp, gen_tmp)
 
 overall_mean <- cbind(overall_mean,to_send)
@@ -303,6 +363,8 @@ bbplot::axis_text(
   line = 2.2
 )
 
+a1 <- -log(1 - 0.75)
+1 - exp(-a1)
 
 bbplot::axis_text(
   c(
@@ -372,24 +434,139 @@ legend(
 )
 dev.off()
 
-city_pred <- vector("list", length = ncity)
-for(city in 1:ncity){
-  knots <- as.numeric(my_knots[
-    my_knots$City == cities[city] &
-    my_knots$covariate == "mean_19",
-    c("min","median","max")])
-  tmp_mcmc <- mc$beta_exp[,city,]
-  model_splines <- data_list$spline_matrix[
-    dcovs$City.x == "naca",
-  ]
-  model_splines <- colMeans(model_splines)
-  
-  city_pred[[city]] <- spline_pred(
-    knots = knots,
-    mcmc = tmp_mcmc
+# get average response
+
+  knots <- my_knots %>% 
+    dplyr::group_by(covariate) %>% 
+    dplyr::summarise(
+      min = mean(min),
+      median = mean(median),
+      max = mean(max)
+    )
+  imp_knots <- data.frame(knots[,-1])
+  # change max imp to 0.8 for comparison purposes
+  imp_knots$max[2] <- 0.8
+  tmp_mcmc <- mc$beta_mu
+  predlength = 200
+  dVal <- xVal <- seq(
+    0,
+    imp_knots[2,3],
+    length.out = predlength
   )
+  # get splines again
+  geo_sp <- dospline(
+    dVal = imp_knots$median[1],
+    my_knots = as.numeric(imp_knots[1,])
+  )
+  geo_sp <- geo_sp[rep(1, predlength),]
+  sp <- dospline(dVal = dVal, my_knots =as.numeric(imp_knots[2,]))
   
-}
+  
+  sp <- cbind(1, geo_sp, sp, 0.5)
+  
+  preds <- sp %*% t(tmp_mcmc)
+  
+  # compare first and last
+  flast <- preds[200,] - preds[1,]
+  #preds <- preds + rep(intercept, each = nrow(preds))
+
+  avg_resp <- list(
+    x = xVal,
+    y = t(
+      apply(
+        1 - exp(-preds),
+        1,
+        quantile,
+        probs = c(0.025,0.05,0.5,0.95,0.975)
+      )
+    )
+  )
+  round(avg_resp$y[1,],2)
+  round(avg_resp$y[200,],2)
+  
+  # do the same just for phoenix, where we see the largest 
+  #  impervious cover effect
+  knots <- my_knots[my_knots$City == "phaz",]
+  imp_knots <- data.frame(knots[,c("min", "median", "max")])
+  # change max imp to 0.8 for comparison purposes
+  imp_knots$max[2] <- 0.8
+  tmp_mcmc <- mc$beta_exp[,14,]
+  predlength = 200
+  dVal <- xVal <- seq(
+    0,
+    imp_knots[2,3],
+    length.out = predlength
+  )
+  # get splines again
+  geo_sp <- dospline(
+    dVal = imp_knots$median[1],
+    my_knots = as.numeric(imp_knots[1,])
+  )
+  geo_sp <- geo_sp[rep(1, predlength),]
+  sp <- dospline(dVal = dVal, my_knots =as.numeric(imp_knots[2,]))
+  
+  
+  sp <- cbind(1, geo_sp, sp, 0.5)
+  
+  preds <- sp %*% t(tmp_mcmc)
+  preds <- 1 - exp(-preds)
+  # compare first and last
+  flast <- preds[200,] - preds[1,]
+  #preds <- preds + rep(intercept, each = nrow(preds))
+  
+  phaz_resp <- list(
+    x = xVal,
+    y = t(
+      apply(
+        preds,
+        1,
+        quantile,
+        probs = c(0.025,0.05,0.5,0.95,0.975)
+      )
+    )
+  )
+
+# and then Indianapolis, the smallest effect
+  knots <- my_knots[my_knots$City == "inin",]
+  imp_knots <- data.frame(knots[,c("min", "median", "max")])
+  # change max imp to 0.8 for comparison purposes
+  imp_knots$max[2] <- 0.8
+  tmp_mcmc <- mc$beta_exp[,7,]
+  predlength = 200
+  dVal <- xVal <- seq(
+    0,
+    imp_knots[2,3],
+    length.out = predlength
+  )
+  # get splines again
+  geo_sp <- dospline(
+    dVal = imp_knots$median[1],
+    my_knots = as.numeric(imp_knots[1,])
+  )
+  geo_sp <- geo_sp[rep(1, predlength),]
+  sp <- dospline(dVal = dVal, my_knots =as.numeric(imp_knots[2,]))
+  
+  
+  sp <- cbind(1, geo_sp, sp, 0.5)
+  
+  preds <- sp %*% t(tmp_mcmc)
+  preds <- 1 - exp(-preds)
+  # compare first and last
+  flast <- preds[200,] - preds[1,]
+  #preds <- preds + rep(intercept, each = nrow(preds))
+  
+  inin_resp <- list(
+    x = xVal,
+    y = t(
+      apply(
+        preds,
+        1,
+        quantile,
+        probs = c(0.025,0.05,0.5,0.95,0.975)
+      )
+    )
+  )
+round(inin_resp$y[c(1,200),],2)
 
 city_pred <- vector(
   "list",

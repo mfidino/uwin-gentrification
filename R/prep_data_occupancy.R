@@ -43,9 +43,8 @@ reduce_species <- table(
   city_data$Species,
   city_data$Y > 0
 )
-#reduce_species[order(reduce_species[,2]),]\
 
-min_dets <- 25
+min_dets <- 75
 
 first_species <- reduce_species[which(reduce_species[,2] >= min_dets),]
 
