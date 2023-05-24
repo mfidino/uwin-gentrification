@@ -119,8 +119,42 @@ city_pred <- vector("list", length = ncity)
 # compare nearby sites vs those gentrifying
 mu_1 <-(1 - exp(-mc$beta_mu[,1]))
 mu_2 <-(1 - exp(-rowSums(mc$beta_mu[,c(1,8)])))
-mu_1 <- quantile(mu_2 - mu_1, probs = c(0.025,0.5,0.975))
+quantile(mu_1)
 
+mu_diff <- quantile(mu_2 - mu_1, probs = c(0.025, 0.05, 0.5,0.95, 0.975))
+round(mu_diff,2)
+
+# get the same bit of info for some west coast cities
+la_1 <-(1 - exp(-mc$beta_exp[,12,1]))
+la_2 <-(1 - exp(-rowSums(mc$beta_exp[,12,c(1,8)])))
+quantile(mu_1)
+
+la_diff <- quantile(la_2 - la_1, probs = c(0.025, 0.05, 0.5,0.95, 0.975))
+round(la_diff,2)
+round(
+  quantile(
+    la_2,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+round(
+  quantile(
+    la_1,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+round(
+  quantile(
+    la_2 / la_1,
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
+round(
+  quantile(
+    (la_2 / la_1) / (mu_2 / mu_1),
+    probs = c(0.025, 0.05, 0.5,0.95, 0.975)
+  ),2
+)
 
 city_mu1 <- matrix(
   ncol = 3,
@@ -220,8 +254,6 @@ legend(
 )
 
 dev.off()
-
-
 
 city_pred <- vector(
   "list",

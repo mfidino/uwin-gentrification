@@ -6,6 +6,7 @@ library(cli)
 library(MCMCvis)
 library(pals)
 
+
 source("./beta_diversity/gdm_functions.R")
 source("./R/alpha_beta_functions.R")
 
@@ -26,7 +27,6 @@ alpha_mc <- split_mcmc(
 )
 
 # and beta diversity analysis
-
 beta_mc <- readRDS(
   "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
@@ -559,4 +559,244 @@ points(
 }
 dev.off()
 
+# expected alpha beta plots
 
+
+# get mean covariate values for beta diversity
+mu_beta_dm <- split(
+  data.frame(data_list$spline_matrix),
+  factor(data_list$city_vec)
+)
+mu_beta_dm <- lapply(
+  mu_beta_dm,
+  colMeans
+)
+mu_beta_dm <- dplyr::bind_rows(
+  mu_beta_dm
+)
+mu_beta_dm$X8 <- 1
+
+tmp_mcmc <- vector(
+  "list",
+  length = nrow(mu_beta_dm)
+)
+for(i in 1:length(tmp_mcmc)){
+  tmp_mcmc[[i]] <- beta_mc$beta_exp[,i,] %*% t(mu_beta_dm[i,])
+  tmp_mcmc[[i]] <- 1 - exp(-tmp_mcmc[[i]])
+  tmp_mcmc[[i]] <- quantile(
+    tmp_mcmc[[i]],
+    probs = c(0.025,0.05,0.5,0.95,0.975)
+  )
+}
+beta_mean <- do.call(
+  "rbind",
+  tmp_mcmc
+)
+
+
+# do same for alpha diversity
+my_site <- read.csv("./data/cleaned_data/covariates/site_covariates.csv")
+
+
+my_site$imp <- my_site$mean_19 / 100
+
+
+my_site <- my_site %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise(imp = mean(imp))
+
+tmp_mcmc <- vector(
+  "list",
+  length = nrow(mu_beta_dm)
+)
+for(i in 1:length(tmp_mcmc)){
+  gent_rich <- alpha_mc$alpha[,i,] %*% cbind(
+    c(
+      1, 1, my_site$imp[i],my_site$imp[i]
+    )
+  )
+  ngent_rich <- alpha_mc$alpha[,i,] %*% cbind(
+    c(
+      1, 0, my_site$imp[i],0
+    )
+  )
+  tmp_mcmc[[i]] <- quantile(
+    exp(gent_rich) - exp(ngent_rich),
+    probs = c(0.025,0.05,0.5,0.95,0.975)
+  )
+}
+alpha_mean <- do.call(
+  "rbind",
+  tmp_mcmc
+)
+
+# read in site coordinates
+coords <- read.csv(
+  "./data/gentri_all_coordinates.csv"
+)
+
+coords <- coords %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise(
+    Long = mean(Long),
+    Lat = mean(Lat)
+  )
+
+coords$num <- abs(floor(coords$Long))
+coords$num <- coords$num - min(coords$num) + 1
+
+my_pal <- pals::viridis(max(coords$num))
+windows(4,4)
+m <- cbind(c(1,1,1,1,2))
+layout(
+  m
+)
+# svg(
+#   "./plots/alpha_beta_expected.svg",
+#   width = 4,
+#   height = 4
+# )
+
+cmats <- list(
+  plot1  = matrix(
+    c(0,0,1,0,1,
+      1,1,0,1,1),
+    ncol = 5,
+    nrow = 2, 
+    byrow = TRUE
+  ),
+  plot2 = matrix(
+    c(0,1,1,0,0,
+      0,0,0,1,1),
+    ncol = 5,
+    nrow = 2,byrow = TRUE
+  ),
+  plot3 = matrix(
+    c(0,0,1,1,1,
+      1,1,1,1,1),
+    ncol = 5,
+    nrow = 2,
+    byrow = TRUE
+  ),
+  plot4 = matrix(
+    c(1,0,1,0,1,
+      1,0,1,0,1),
+    ncol = 5,
+    nrow = 2,
+    byrow = TRUE
+  )
+)
+
+ab <- function(x){
+  alpha <- diff(rowSums(x))
+  
+  beta <- vegan::vegdist(
+    x,
+    binary =TRUE
+  )
+  return(c('alpha' = alpha, 'beta' = beta))
+}
+
+ab_vals <- lapply(
+  cmats,
+  ab
+)
+
+
+tiff(
+  "./plots/alpha_beta_expected.tiff",
+  height = 4,
+  width = 4,
+  units = "in",
+  res = 600,
+  compression = "lzw"
+)
+
+{par(mar= c(4, 4, 1, 1) + 0.1)
+  bbplot::blank(xlim = c(-1, 3), ylim = c(0, 1), bty = 'n',
+              xaxs = "i", yaxs= "i")
+box(which = "plot", bty = "l", lwd = 2)
+
+bbplot::axis_blank(
+  side = 1,
+  minor = FALSE,
+  lwd = 2
+)
+
+bbplot::axis_text(
+  text = c(0,3),
+  side = 1,
+  at = c(0,3),
+  line = 0.75
+)
+bbplot::axis_text(
+  text = c(0,1),
+  side = 2,
+  at = c(0,1),
+  line = 0.75,
+  las = 1
+)
+bbplot::axis_blank(
+  at = c(0,0.5,1),
+  side = 2,
+  lwd = 2,
+  minor = FALSE,
+  tck = -0.03
+)
+
+bbplot::axis_text(
+  text = bquote(Delta ~"alpha"),
+  side = 1,
+  line = 2.25,
+  cex = 1.3
+)
+
+bbplot::axis_text(
+  text ="beta",
+  side = 2,
+  line = 2.25,
+  cex = 1.3
+)
+points(
+  x = alpha_mean[,3],
+  y = beta_mean[,3],
+  pch = 21,
+  bg =  "black",
+  cex =2.25
+)
+points(
+  x = alpha_mean[,3],
+  y = beta_mean[,3],
+  pch = 21,
+  bg =  my_pal[coords$num],
+  cex =2
+)
+
+
+legend_image <- as.raster(matrix(rev(my_pal), nrow=1))
+#par(mar = c(1,2,1,2))
+#plot(c(0,0.5),c(0,0.5),type = 'n', axes = F,xlab = '', ylab = '', main = 'Longitude')
+text(
+  y=0.8,
+  x = seq(-1,2,l=3) + 0.5,
+  labels = seq(-123,-72,length.out = 3),
+  cex = 0.9
+)
+rasterImage(legend_image, -0.5, 0.85, 2.5,0.92)
+rect( -0.5, 0.85, 2.5,0.92, border = "black", lwd = 2)
+for(i in 1:5){
+  lines(
+    x = rep( seq(-1,2,l=5)[i] + 0.5,2),
+    y = c(0.85, 0.83),
+    lwd = 2
+  )
+}
+text(
+  x = 1,
+  y = 0.96,
+  labels = "City longitude"
+)
+
+
+}
+dev.off()
