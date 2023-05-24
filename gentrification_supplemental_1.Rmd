@@ -37,7 +37,7 @@ pretty_names <- c(
   "Little Rock, AR",
   "Madison, WI",
   "Metro LA, CA",
-  "National Capital",
+  "Washington D.C.",
   "Phoenix, AZ",
   "Portland, Oregon",
   "Rochester, NY",

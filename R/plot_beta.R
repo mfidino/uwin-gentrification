@@ -15,7 +15,7 @@ my_knots <- read.csv(
 
 # read in the mcmc
 my_mcmc <- readRDS(
-  "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS"
+  "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
 
 data_list <- readRDS(
@@ -80,7 +80,7 @@ city_map$pname <- c(
   "Little Rock, AR",
   "Madison, WI",
   "Metro LA, CA",
-  "National Capital",
+  "Washington D.C.",
   "Phoenix, AZ",
   "Portland, OR",
   "Rochester, NY",
@@ -106,20 +106,9 @@ ncity <- length(
 )
 
 mc <- split_mcmc(my_mcmc)
+
+# order of parameters
 cc <- c("intercept", "geo1", "geo2","geo3", "imp1", "imp2", "imp3","gent")
-pdf("./plots/mc_hist_exp.pdf")
-for(i in 1:23){
-  for(j in 1:8){
-   hist(
-     mc$beta_exp[,i,j],
-     main = paste0(
-       city_map$pname[i], ": ",
-       cc[j]
-     )
-   ) 
-  }
-}
-dev.off()
 
 
 cities <- unique(my_knots$City)
@@ -144,7 +133,7 @@ for(i in 1:data_list$ncity){
   city_mu1[i,] <- quantile(tmp_mu_2 - tmp_mu_1, probs = c(0.025,0.5,0.975))
 }
 
-windows(4,6)
+
 tiff(
   "./plots/beta_avg_gentrification.tiff",
   width = 4,
@@ -231,165 +220,8 @@ legend(
 )
 
 dev.off()
-# get biggest effect across each covariate per city
-overall_effects <- data.frame(
-  city = rep(city_map$city,each = 3),
-  parm = rep(c("geo","imp","gent"), data_list$ncity),
-  lo = NA,
-  est = NA,
-  hi= NA
-)
-for(city in 1:ncity){
-  geo_tmp <- rowSums(
-    mc$beta_exp[,city,2:4]
-  )
-  imp_tmp <- rowSums(
-    mc$beta_exp[,city,5:7]
-  )
-  geo_tmp <- quantile(geo_tmp, probs = c(0.025,0.5,0.975))
-  imp_tmp <- quantile(imp_tmp, probs = c(0.025,0.5,0.975))
-  gen_tmp <- quantile(mc$beta_exp[,city,8], probs = c(0.025,0.5,0.975))
-  to_send <- rbind(geo_tmp, imp_tmp, gen_tmp)
-  overall_effects[
-    overall_effects$city == city_map$city[city],
-    c("lo","est","hi")
-  ] <- to_send
-    
-}
-
-# get global average as well
-overall_mean <- data.frame(
-  parm = c("geo","imp","gent")
-)
-geo_tmp <- rowSums(
-    mc$beta_mu[,2:4]
-)
-imp_tmp <- rowSums(
-    mc$beta_mu[,5:7]
-)
-geo_tmp <- quantile(geo_tmp, probs = c(0.025,0.5,0.975))
-imp_tmp <- quantile(imp_tmp, probs = c(0.025,0.5,0.975))
-gen_tmp <- quantile(mc$beta_mu[,8], probs = c(0.025,0.5,0.975))
-to_send <- rbind(geo_tmp, imp_tmp, gen_tmp)
-
-overall_mean <- cbind(overall_mean,to_send)
-colnames(overall_mean) <- colnames(overall_effects)[-1]
-
-overall_effects <- split(
-  overall_effects,
-  factor(overall_effects$parm)
-)
-windows(6,3.5)
-set.seed(888)
-lshift <- jitter(rep(0, data_list$ncity), factor = 12 )
-tiff(
-  "./plots/overall_beta_effects.tiff",
-  height = 3.5,
-  width = 6,
-  units = "in",
-  res = 600,
-  compression = "lzw"
-)
-
-par(mar = c(4,6,0.2,0.2))
-{
-bbplot::blank(xlim = c(0,0.5), ylim = c(0.5,3.5))
-bbplot::axis_blank(1)
-bbplot::axis_text(side = 1, line = 0.75)
-
-bbplot::axis_text(
-  "Sum of spline coefficients",
-  side = 1,
-  line = 2.2
-)
 
 
-bbplot::axis_text(
-  c(
-    "Gentrification",
-    "Geographic\ndistance",
-    "Impervious\ncover"
-  ),
-  at = c(1:3),
-  line = 0,
-  side = 2,
-  las = 1
-)
-
-for(i in 1:3){
-  
-  for(city in 1:data_list$ncity){
-    lines(
-      x = unlist(overall_effects[[i]][city,c("lo","hi")]),
-      y = rep(i + lshift[city],2),
-      col = scales::alpha("black", 0.5)
-    )
-  }
-  
-  points(
-    x = overall_effects[[i]]$est,
-    y = i + lshift,
-    pch = 19,
-    col = scales::alpha("black", 0.3)
-  )
-  
-}
-
-
-overall_mean <- overall_mean[order(overall_mean$parm),]
-for(i in 1:3){
-  lines(
-    x = unlist(overall_mean[i,c("lo","hi")]),
-    y = rep(i ,2),
-    lwd = 4
-  )
-}
-  points(
-    x = overall_mean$est,
-    y = c(1:3),
-    pch = 21,
-    bg = "#00AADE",
-    cex = 2
-  )
-}
-
-legend(
-  "bottomright",
-  legend = c(
-    "Among-city average and 95% CI",
-    "City average and 95% CI"
-  ),
-  lty = c(1,1),
-  lwd = c(3,1),
-  pch = c(21,21),
-  pt.cex = c(2,1),
-  pt.bg = c("#00AADE", scales::alpha("black",0.3)),
-  col = c("black", scales::alpha("black",0.5)),
-  bty = "n",
-  pt.lwd = 1,
-  cex = 0.9
-  
-)
-dev.off()
-
-city_pred <- vector("list", length = ncity)
-for(city in 1:ncity){
-  knots <- as.numeric(my_knots[
-    my_knots$City == cities[city] &
-    my_knots$covariate == "mean_19",
-    c("min","median","max")])
-  tmp_mcmc <- mc$beta_exp[,city,]
-  model_splines <- data_list$spline_matrix[
-    dcovs$City.x == "naca",
-  ]
-  model_splines <- colMeans(model_splines)
-  
-  city_pred[[city]] <- spline_pred(
-    knots = knots,
-    mcmc = tmp_mcmc
-  )
-  
-}
 
 city_pred <- vector(
   "list",
@@ -410,16 +242,13 @@ for(city in 1:ncity){
 
 
 my_cities <- c(
-  'chil' = 4,
+  'mela' = 12,
   'naca' = 13,
-  'mela' = 12
+  'phaz' = 14
 )
 
 city_examples <- city_pred[my_cities]
-
-
 windows(8,3)
-
 {
   tiff(
     "./plots/beta_examples.tiff",
@@ -435,12 +264,12 @@ windows(8,3)
   layout(m)
   
   sub_names <- c(
-    "A) Chicago, IL",
-    "B) National capital",
-    "C) Metro LA, CA"
+    "A) Metro LA, CA",
+    "B) Washington D.C.",
+    "C) Phoenix, AZ"
   )
   for(i in 1:3){
-    bbplot::blank(xlim = c(0,0.8), ylim = c(0.1,0.5), bty = "l")
+    bbplot::blank(xlim = c(0,0.8), ylim = c(0.1,0.8), bty = "l")
     u <- par("usr")
     bbplot::axis_blank(1)
     bbplot::axis_blank(2)
@@ -449,7 +278,7 @@ windows(8,3)
     }
     text(
       x = u[1] + 0.04,
-      y = u[4] - 0.02, pos = 4,
+      y = u[4] - 0.04, pos = 4,
       labels = sub_names[i],
       cex = 1.5
     )
@@ -476,10 +305,12 @@ windows(8,3)
       city_examples[[i]]$x[1:200],
       city_examples[[i]]$y[1:200,]
     )
+    non_gent <- non_gent[non_gent[,1]<=0.8,]
     gent <- cbind(
       city_examples[[i]]$x[-c(1:200)],
       city_examples[[i]]$y[-c(1:200),]
     )
+    gent <- gent[gent[,1] <=0.8,]
     bbplot::ribbon(
       x = gent[,1],
       y = gent[,c(2,4)],
@@ -496,13 +327,15 @@ windows(8,3)
       x = gent[,1],
       y = gent[,3],
       col = ribbon_cols[1],
-      lwd = 3
+      lwd = 3,
+      lend = 2
     )
     lines(
       x = non_gent[,1],
       y = non_gent[,3],
       col = ribbon_cols[2],
-      lwd = 3
+      lwd = 3,
+      lend = 2
     )
     
     
@@ -510,7 +343,7 @@ windows(8,3)
   
   my_legend(
     x = 0.2,
-    y = 0.25,
+    y = 0.35,
     legend = c("Gentrifying", "Non-gentrifying"),
     text.col = "white",
     fill = c(
@@ -528,8 +361,8 @@ windows(8,3)
   )
   my_legend(
     x = 0.2,
-    y = 0.25,
-    legend = c("Gentrifying", "Non-gentrifying"),
+    y = 0.35,
+    legend = c("Gentrified", "Not gentrified"),
     lty = c(1,1),
     lwd = 3,
     col = ribbon_cols,
@@ -539,6 +372,23 @@ windows(8,3)
     seg.len = 1.25
   )
   dev.off()
+}
+
+
+
+city_pred <- vector("list", length = ncity)
+for(city in 1:ncity){
+  knots <- as.numeric(my_knots[
+    my_knots$City == cities[city] &
+      my_knots$covariate == "mean_19",
+    c("min","median","max")])
+  tmp_mcmc <- mc$beta_exp[,city,]
+  
+  city_pred[[city]] <- spline_pred(
+    knots = knots,
+    mcmc = tmp_mcmc[,c(5:7)]
+  )
+  
 }
 
 windows(12,8)
@@ -618,7 +468,7 @@ svg("./plots/beta_impervious.svg",
     my_city <- city_map$city[my_order[i]]
     
     
-    bbplot::blank(ylim = c(0,0.5), xlim = c(0, 0.8), bty = "l",
+    bbplot::blank(ylim = c(0,1), xlim = c(0, 1), bty = "l",
                   main = city_map$pname[my_order[i]])
     bbplot::axis_blank(1)
     bbplot::axis_blank(2)
@@ -724,45 +574,10 @@ for(city in 1:ncity){
   mcmc_mat <- tmp_mcmc
   
   city_ed[[city]] <- ed_pred(
-    mcmc = tmp_mcmc[,5:7]#,
+    my_splines = tmp_spline,
+    mcmc_mat = tmp_mcmc,
+    my_data = tmp_dissm
     #intercept = tmp_mcmc[,1]
   )
   
 }
-
-plot(1~1, type = "n", ylim = c(-0,0.6), xlim = c(0,0.8),
-     xlab = "Impervious cover",
-     ylab = "f(Impervious cover)",
-     bty = "l",
-     las = 1
-     )
-
-
-for(city in 1:ncity){
-  lines(
-    city_pred[[city]]$y[,2] ~ city_pred[[city]]$x,
-    col = scales::alpha("black", 0.8),
-    lwd = 1
-  )
-  
-}
-
-bbplot::ribbon(
-  city_pred[[4]]$x,
-  city_pred[[4]]$y[,-2],
-  col = "purple",
-  alpha = 0.7
-)
-lines(
-  city_pred[[4]]$x,
-  city_pred[[4]]$y[,2],
-  lwd = 2
-)
-
-
-legend(
-  "topleft",
-  unique(sp_dat$City)[c(4,3,5,1,2,6)],
-  col = tmpcol[c(4,3,5,1,2,6)], lwd = 5,
-  bty = "n"
-  )

@@ -39,7 +39,7 @@ pretty_names <- c(
   "Little Rock, AR",
   "Madison, WI",
   "Metro LA, CA",
-  "National Capital",
+  "Washington D.C.",
   "Phoenix, AZ",
   "Portland, Oregon",
   "Rochester, NY",
@@ -60,7 +60,7 @@ my_knots <- read.csv(
 
 # read in the mcmc
 my_mcmc <- readRDS(
-  "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS"
+  "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
 my_mcmc <- do.call(
   "rbind",
@@ -129,7 +129,7 @@ city_map$pname <- c(
   "Little Rock, AR",
   "Madison, WI",
   "Metro LA, CA",
-  "National Capital",
+  "Washington D.C.",
   "Phoenix, AZ",
   "Portland, OR",
   "Rochester, NY",
@@ -260,7 +260,7 @@ for(i in 1:length(gent_list_poly)){
     col = scales::alpha(ribbon_cols,0.5)[1],
     cex = 5
   )
-  text(x = 2.65, y = 7.5, labels ="gentrifying", pos = 4, cex = 1.8)
+  text(x = 2.65, y = 7.5, labels ="gentrified", pos = 4, cex = 1.8)
   points(
     x = 5.5,
     y = 7.5,
@@ -268,7 +268,7 @@ for(i in 1:length(gent_list_poly)){
     col = scales::alpha(ribbon_cols,0.5)[2],
     cex = 5
   )
-  text(x = 5.65, y = 7.5, labels ="not gentrifying", pos = 4, cex = 1.8)
+  text(x = 5.65, y = 7.5, labels ="not gentrified", pos = 4, cex = 1.8)
   
   points(
     x = 2.5,
@@ -277,7 +277,7 @@ for(i in 1:length(gent_list_poly)){
     bg = "black",
     cex = 5
   )
-  text(x = 2.65, y = 3.5, labels ="site < 500m of gentrifying census tract", pos = 4, cex = 1.8)
+  text(x = 2.65, y = 3.5, labels ="site < 500m of gentrified census tract", pos = 4, cex = 1.8)
   points(
     x = 5.5,
     y = 3.5,
@@ -285,7 +285,7 @@ for(i in 1:length(gent_list_poly)){
     bg = "white",
     cex = 5
   )
-  text(x = 5.65, y = 3.5, labels ="site > 500m of gentrifying census tract", pos = 4, cex = 1.8)
+  text(x = 5.65, y = 3.5, labels ="site > 500m of gentrified census tract", pos = 4, cex = 1.8)
   
   par(mar = c(6,6,0,1), xpd = TRUE)
   # alpha diversity plot

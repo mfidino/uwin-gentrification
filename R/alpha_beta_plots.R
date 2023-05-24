@@ -28,7 +28,7 @@ alpha_mc <- split_mcmc(
 # and beta diversity analysis
 
 beta_mc <- readRDS(
-  "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS"
+  "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
 
 data_list <- readRDS(
@@ -159,7 +159,7 @@ bbplot::axis_text(
   c(
     "Gentrification",
     "Impervious  ",
-    "Impervious x\nGentrification"
+    "Gentrification\nx Impervious"
   ),
   2,
   line = 0.1,
@@ -225,7 +225,7 @@ bbplot::axis_text(
 # and the same for beta diversity
 
 set.seed(2222)
-bbplot::blank( xlim = c(0, 0.4), ylim = c(0.25,3.25), xaxs = "i", yaxs = "i")
+bbplot::blank( xlim = c(0, 0.6), ylim = c(0.25,3.25), xaxs = "i", yaxs = "i")
 bbplot::axis_blank(1, tck = -0.03)
 bbplot::axis_text(side = 1, line = 0.35)
 
@@ -322,7 +322,7 @@ dev.off()
 # map of all the study cities and try to show their overall alpha and beta effects?
 
 counties <- sf::read_sf(
-  "D:/GIS/counties/cb_2020_us_county_500k"
+  "D:/GIS/counties/cb_2020_us_county_500k.shp"
 )
 
 # Only keep contiguous US
