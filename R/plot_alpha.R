@@ -42,7 +42,7 @@ city_map$pname <- c(
   "Little Rock, AR",
   "Madison, WI",
   "Metro LA, CA",
-  "National Capital",
+  "Washington D.C.",
   "Phoenix, AZ",
   "Portland, OR",
   "Rochester, NY",
@@ -414,7 +414,7 @@ dev.off()
 my_cities <- c(
   'chil' = 4,
   'naca' = 13,
-  'mela' = 12
+  'jams' = 9
 )
 
 city_examples <- vector(
@@ -459,8 +459,8 @@ layout(m)
 
 sub_names <- c(
   "A) Chicago, IL",
-  "B) National capital",
-  "C) Metro LA, CA"
+  "B) Washington D.C.",
+  "C) Jackson, M.S."
 )
 for(i in 1:3){
   bbplot::blank(xlim = c(0,0.8), ylim = c(0,20), bty = "l")
@@ -511,13 +511,15 @@ for(i in 1:3){
     x = xx,
     y = city_examples[[i]]$gent[2,],
     col = ribbon_cols[1],
-    lwd = 3
+    lwd = 3,
+    lend = 2
   )
   lines(
     x = xx,
     y = city_examples[[i]]$non_gent[2,],
     col = ribbon_cols[2],
-    lwd = 3
+    lwd = 3,
+    lend = 2
   )
 
   
@@ -526,7 +528,7 @@ for(i in 1:3){
 my_legend(
   x = 0.2,
   y = 19,
-  legend = c("Gentrifying", "Non-gentrifying"),
+  legend = c("Gentrified", "Not gentrified"),
   text.col = "white",
   fill = c(
     scales::alpha(ribbon_cols[1], 0.5),
@@ -544,7 +546,7 @@ my_legend(
 my_legend(
   x = 0.2,
   y = 19,
-  legend = c("Gentrifying", "Non-gentrifying"),
+  legend = c("Gentrified", "Not gentrified"),
   lty = c(1,1),
   lwd = 3,
   col = ribbon_cols,

@@ -1,13 +1,17 @@
 library(runjags)
 library(dplyr)
+library(gtools)
 
 # There are quite a few files that got spun up when we imputed the beta
 #  diversity stuff
 
 # beta diversity and richness
 beta_est <- read.csv(
-  "./results/beta_summary_for_analysis_collapsed.csv"
+  "./results/beta_summary_for_analysis_collapsed_vegan.csv"
 )
+beta_est <- beta_est[
+  gtools::mixedorder(beta_est$loc),
+]
 
 # site ids for each site comparison
 site_ids <- read.csv(
@@ -137,7 +141,6 @@ data_list <- list(
   # number of cities
   ncity = max(site_ids$City_id)
 )
-
 saveRDS(data_list, "./mcmc_output/beta_output/data_list.RDS")
 # function for initial values
 inits <- function(chain){
@@ -216,7 +219,7 @@ mout <- run.jags(
   jags.refresh = 60
 )
 
-saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed_norm.RDS")
+saveRDS(mout, "./mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS")
 
 msum<- summary(mout)
 

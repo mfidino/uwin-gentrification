@@ -48,7 +48,7 @@ m1 <- runjags::run.jags(
   data = data_list,
   n.chains = 4,
   adapt =  1000,
-  burnin = 125000,
+  burnin = 200000,
   sample = 30000,
   thin = 3,
   modules = "glm",
@@ -61,7 +61,7 @@ parallel::stopCluster(cl)
 
 
 
-saveRDS(m1, "./results/occupancy_model_fit_simpler2.RDS")
+saveRDS(m1, "./results/occupancy_model_fit_simpler3.RDS")
 # and then move it to the cloud
 #googledrive::drive_upload(
 #  "./results/occupancy_model_fit.RDS",
@@ -91,7 +91,7 @@ for(i in 1:length(my_pars)){
 summary_list <- do.call("rbind", summary_list)
 
 
-saveRDS(summary_list, "./results/occupancy_model_fit_simpler_summary2.RDS")
+saveRDS(summary_list, "./results/occupancy_model_fit_simpler_summary3.RDS")
 
 # sample z
 
