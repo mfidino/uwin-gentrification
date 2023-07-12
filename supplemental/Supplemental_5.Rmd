@@ -1,0 +1,31 @@
+---
+title: "Supplemental material 5"
+output: pdf_document
+date: '2023-06-30'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The multi-city multi-species autologistic occupancy model
+
+
+This model is almost exactly the same model as we had used in Magle et al. (2022). For $s$ in $1,...,S$ species and $c$ in $1,...,C$ cities, $\pi_{sc}$ is the probability species $s$ is within city $c$. Futher, let $x_{sc}$ be a Bernoulli random variable that equals 1 if the species is within that city (and is otherwise zero), such that $x_{sc} \sim \text{Bernoulli}(\pi_{sc})$. We made $\pi[i_{sc}$ a function of one covariate--the distance a city is from the known edge of a species extent--using the logit link. This covariate was positive if a city was within a species extent and negative if it was outside. We compiled range information from IUCN red list data (IUCN, 2020).
+
+As the first level of the model estimates a species presence at the city-level, the next level estimates species presence within cities (conditional on their presence at the city-level). Given that the number of sites and sampling periods varies across cities, we add a city subscript to define $i_c$ in $1,...,I_c$ sites  and $t_c$ in $1,...,T_c$ sampling periods. However, for simplicity we drop this specific subscripting while we explain the model. Additionally, let $z_{scit}$ be a Bernoulli random variable and $\psi_{scit}$ be the probability of occupancy. As such, $z_{scit} \sim \text{Bernoulli}(\psi_{scit})$. As with the previous level of the model, $\psi_{scit}$ can be made a function of covariates via the logit link. As a depature from the Magle et al. (2022) parameterization, we added a first-order autologistic term to account for any temporal dependence in occupancy status between adjacent sampling periods within a city. Thus, for the first time period in a city, the logit-linear predictor was
+
+$$
+\begin{equation}
+\text{logit}()
+
+\end{equation}
+$$
+
+
+
+
+## References
+Magle et al (2022)
+IUCN (2020)
+$

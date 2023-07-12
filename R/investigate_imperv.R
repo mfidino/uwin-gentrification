@@ -9,6 +9,36 @@ cc <- read.csv(
   "./data/imperv.csv"
 )
 
+cc$diff <- (cc$mean_19 - cc$mean_11) / 100
+
+median(cc$diff )
+sd(cc$diff)
+city_diff <- cc %>% 
+  dplyr::group_by(city) %>% 
+  dplyr::summarise(
+    mu = median(diff),
+    sd = sd(diff),
+    low = min(mean_19),
+    hi = max(mean_19)
+    )
+
+jj <- read.csv("./data/cleaned_data/covariates/site_covariates.csv")
+
+jj <- jj %>% 
+  dplyr::group_by(City, gentrifying) %>% 
+  dplyr::summarise(
+    min = min(mean_19),
+    max = max(mean_19)
+  ) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::group_by(gentrifying) %>% 
+  dplyr::summarise(
+    min = median(min),
+    max = median(max)
+  )
+
+
+
 nsite <- nrow(cc)
 yrs <- c(1,4,6,8,11,16,19) - 1
 yrs <- as.numeric(scale(yrs))

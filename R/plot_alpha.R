@@ -79,17 +79,48 @@ alpha_mu <- apply(
   probs = c(0.025,0.05,0.5,0.95,0.975)
 )
 
-xx <- seq(0, 0.8, length.out = 300)
+# get average min and max of imp
 
+amm <- my_site %>% 
+  dplyr::group_by(City, gentrifying) %>% 
+  dplyr::summarise(
+    min = min(imp),
+    max = max(imp)
+  ) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::group_by(gentrifying) %>% 
+  dplyr::summarise(
+    mu_min = mean(min),
+    mu_max = mean(max)
+  )
+
+# average min impervioius gent
+xx <- 0.225
 # get the average across the study, but set it up as the 
 #  difference
 # non-gentrifying
 p1 <- my_mc$alpha_mu %*% t(cbind(1,0,xx,0)) 
 p1 <- exp(p1)
-
+quantile(p1, probs = c(0.025,0.05, 0.5,0.95,0.975))
 # gentrifying
 p2 <- my_mc$alpha_mu %*% t(cbind(1,1,xx,xx))
 p2 <- exp(p2)
+round(quantile(p2, probs = c(0.025,0.05, 0.5,0.95,0.975)),2)
+
+# over range
+xx <- seq(0, 0.8, length.out = 300)
+# average min impervioius gent
+xx <- 0.225
+# get the average across the study, but set it up as the 
+#  difference
+# non-gentrifying
+p1 <- my_mc$alpha_mu %*% t(cbind(1,0,xx,0)) 
+p1 <- exp(p1)
+quantile(p1, probs = c(0.025,0.05, 0.5,0.95,0.975))
+# gentrifying
+p2 <- my_mc$alpha_mu %*% t(cbind(1,1,xx,xx))
+p2 <- exp(p2)
+round(quantile(p2, probs = c(0.025,0.05, 0.5,0.95,0.975)),2)
 # difference
 p2 <- apply(p2 - p1, 2, quantile, probs  = c(0.025,0.5,0.975))
 

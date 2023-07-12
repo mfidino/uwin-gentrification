@@ -320,7 +320,7 @@ dev.off()
 # pp2 <- icl(pp)
 
 # map of all the study cities and try to show their overall alpha and beta effects?
-
+#### state map ####
 counties <- sf::read_sf(
   "D:/GIS/counties/cb_2020_us_county_500k"
 )
@@ -444,6 +444,8 @@ scale_names <- paste0(
 # the colors
 scale_vals <- pals::brewer.seqseq2()
 
+pals::brewer.seqseq2()[c(6:7, 5)]
+
 # make group names to match with scale_names
 bb$group <- paste0(
   as.numeric(bb$alpha_cat)," - ", as.numeric(bb$beta_cat)
@@ -470,14 +472,27 @@ get.asp <-
     return(asp)
   }
 
-tiff(
-  "./plots/gentrification_map.tiff",
-  height = 6,
-  width = 8,
-  units = "in",
-  res = 1200,
-  compression = "lzw"
-)
+figure_map <- TRUE
+
+if(figure_map){
+  tiff(
+    "./plots/gentrification_map.tiff",
+    height = 6,
+    width = 8,
+    units = "in",
+    res = 1200,
+    compression = "lzw"
+  )
+} else {
+  svg(
+    "./plots/gentrification_supp_map.svg",
+    height = 6,
+    width = 8
+  )
+}
+
+
+
 par(mar = c(2,1,0,0), xpd = NA)
 # plot out counties real quick
 bb$x <- coords[,1]
@@ -510,10 +525,11 @@ my_y <- seq(22, 22 * my_asp, length.out = ncat)
 image(
   my_x,
   my_y,
-  z =matrix(1:9, nrow=3),
+  z =matrix(c(1,4,7,2,5,8,3,6,9), nrow=3, byrow = FALSE),
   add = TRUE,
   col = pals::brewer.seqseq2()
 )
+
 text(
   x = mean(my_x),
   y = max(my_y) + 3.75,
@@ -523,9 +539,10 @@ text(
 text(
   x = min(my_x) - 4.5,
   y = mean(my_y),
-  labels = "Alpha diversity",
+  labels = "Beta diversity",
   srt = 90
 )
+
 arrows(
   x0 = min(my_x)-2.8,
   y0 = min(my_y) - 1,
@@ -538,7 +555,7 @@ arrows(
 text(
   x = mean(my_x),
   y = min(my_y) - 3.5,
-  labels = "Beta diversity"
+  labels = "Alpha diversity"
 )
 arrows(
   x0 = min(my_x)-1.6,
@@ -552,14 +569,14 @@ points(
   bb$x,
   bb$y,
   pch = 21,
-  cex = 2,
+  cex = 3,
   bg = bb$color
 )
 
 }
 dev.off()
 
-# expected alpha beta plots
+#### expected alpha beta plots ####
 
 
 # get mean covariate values for beta diversity
@@ -645,62 +662,21 @@ coords <- coords %>%
 coords$num <- abs(floor(coords$Long))
 coords$num <- coords$num - min(coords$num) + 1
 
-my_pal <- pals::viridis(max(coords$num))
-windows(4,4)
-m <- cbind(c(1,1,1,1,2))
-layout(
-  m
-)
+
+
+
+my_pal <- colorRampPalette(
+  c("#376387", "#b3b3b3", "#f3b300")
+  )(max(coords$num))
+
+#windows(4,4)
+
 # svg(
 #   "./plots/alpha_beta_expected.svg",
 #   width = 4,
 #   height = 4
 # )
 
-cmats <- list(
-  plot1  = matrix(
-    c(0,0,1,0,1,
-      1,1,0,1,1),
-    ncol = 5,
-    nrow = 2, 
-    byrow = TRUE
-  ),
-  plot2 = matrix(
-    c(0,1,1,0,0,
-      0,0,0,1,1),
-    ncol = 5,
-    nrow = 2,byrow = TRUE
-  ),
-  plot3 = matrix(
-    c(0,0,1,1,1,
-      1,1,1,1,1),
-    ncol = 5,
-    nrow = 2,
-    byrow = TRUE
-  ),
-  plot4 = matrix(
-    c(1,0,1,0,1,
-      1,0,1,0,1),
-    ncol = 5,
-    nrow = 2,
-    byrow = TRUE
-  )
-)
-
-ab <- function(x){
-  alpha <- diff(rowSums(x))
-  
-  beta <- vegan::vegdist(
-    x,
-    binary =TRUE
-  )
-  return(c('alpha' = alpha, 'beta' = beta))
-}
-
-ab_vals <- lapply(
-  cmats,
-  ab
-)
 
 
 tiff(
