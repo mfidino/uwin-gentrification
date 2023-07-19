@@ -1,0 +1,294 @@
+---
+title: "Supplementary Materials for"
+output: pdf_document
+date: ""
+header-includes:
+- \usepackage{titling}
+- \pretitle{\begin{center}\LARGE\includegraphics[width=12cm]{science_logo.png}\\[\bigskipamount]}
+- \posttitle{\end{center}}
+- \setlength\parindent{24pt}
+- \usepackage{indentfirst}
+- \usepackage{caption}
+- \DeclareCaptionLabelFormat{nospace}{#1#2}
+- \captionsetup[figure]{labelformat=nospace}
+- \captionsetup[table]{labelformat=nospace}
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pander)
+library(dplyr)
+library(bbplot)
+library(viridis)
+library(raster)
+library(data.table)
+library(sf)
+library(knitr)
+library(kableExtra)
+source("../R/census_functions.R")
+sf::sf_use_s2(FALSE)
+```
+\def\figurename{Figure S}
+\def\tablename{Table S}
+
+\vspace{-15truemm}
+\begin{center}
+\textbf{\Large{Gentrification drives patterns of alpha and beta diversity in cities}}\\
+\vspace{5truemm}
+\large{Mason Fidino \textit{et al.}}\\
+\vspace{5truemm}
+Corresponding author: Mason Fidino, mfidino@lpzoo.org
+\end{center}
+
+
+
+## The PDF file includes:
+\begin{itemize}
+  \vspace{-0.2cm}\item[] Methods
+  \vspace{-0.2cm}\item[] Occupancy, alpha, and beta diversity models
+  \vspace{-0.2cm}\item[] Quantifying gentrification (Tables S1 to Sx)
+  \vspace{-0.2cm}\item[] Map of cities (Fig Sx)
+  \vspace{-0.2cm}\item[] References (x - y)
+\end{itemize}
+
+\newpage
+
+## Methods
+
+### *Biological sampling*
+
+
+We used data from 23 UWIN cities in the United States (U.S.)  for this study. Each city followed the same systematic study design, placing motion-triggered camera traps in urban greenspace along an urbanization gradient (see Magle et al. 2019 for details). Mammal data for this study came from 12 distinct sampling periods between 2019 and 2021. Camera deployments in each sampling period were about 35 days (sd = 13.01) and began on the first of January, April, July, or October of each year. Because UWIN cities joined the network at different times, the number of sampling periods among cities varied (median = 7, minimum = 2, maximum = 12). The median number of unique camera-trapping sites per city was 35 (minimum = 23, maximum = 104). 
+
+Mammals in camera trap images were identified to species by trained experts. However, flying squirrel, gray squirrel, and cottontail rabbit species were summarized to either the subgenus or genus level given challenges in identifying them to the species level from camera trap images (Kays et al. 2022). For each camera deployment we counted the number of days each species was detected and the number of operational camera days, which were then used to estimate species occupancy and detectability within our multi-city multi-species occupancy model (Sutherland et al. 2016, Magle et al. 2021). 
+
+Overall, 48 mammal species were photographed but our multi-city, multi-species occupancy model converged when limited to the 21 species that were most frequently detected (a minimum of 75 detection days across at least 3 cities). Gray squirrels (Sciurus carolinensis or Sciurus griseus) were detected most often (~41,300 detection days) while flying squirrels (Glaucomys sp.) were detected the least (79 detection days). See Table S1 for a summary of species detected across cities.
+
+```{r table s1, echo = FALSE, message = FALSE, warning = FALSE}
+dat <- data.table::fread(
+  "../data/detection_data.csv",
+  data.table = FALSE
+)
+dat <- dat[dat$Y>0,]
+dat <- dat %>% 
+  dplyr::group_by(City, Species) %>% 
+  dplyr::summarise(
+    nsite = length(unique(Site)),
+    ndets = sum(Y)
+  ) %>% 
+  data.frame()
+unq_places <- unique(dat$City)
+
+pretty_names <- c(
+  "Athens, GA",
+  "Bay Area, CA",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Houston, TX",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "Metro LA, CA",
+  "National Capital",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Sanford, FL",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+for(i in 1:length(unq_places)){
+  dat$City[dat$City == unq_places[i]] <- pretty_names[i]
+}
+
+dat$Species <- gsub("_", " ", dat$Species)
+colnames(dat) <- c("City", "Species", "Sites detected", "Days detected")
+
+dat %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r","r"),
+    caption = "The number of sites species were detected and number of detections per city.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+
+```
+
+### *Social-environmental variables*
+
+We calculated two independent variables and included both in all models. First, to represent a gradient of urban intensity we calculated the percent impervious cover within 1 km of each site from the 2019 National Land Cover Database imperviousness dataset (Dewitz and U.S. Geological Survey, 2021). Second, we determined if each site was within 500 m of a gentrifying Census tract. To quantify gentrification across a wide range of cities we modified a two-step process described by Chapple et al. (2017). For the first step, we identified Census tracts that were vulnerable to gentrification in 2010 as tracts with at least 500 residents and two of these three qualities: 1) a median income less than the city’s average income, 2) a proportion of college-educated residents less than the city average, and 3) a proportion of nonwhite residents greater than the city average. To calculate gentrification vulnerability we used the 2010 US decennial Census data via the tidycensus package in R v 4.2.0 (Walker 2022, R Core Team 2022). For the second step, we used the 2019 American Community Survey (U.S. Census Bureau 2012) data to determine if a vulnerable Census tract became gentrified. Here, vulnerable tracts from the first step were identified as gentrified if they experienced a greater increase in median income between 2010 and 2019 than the average change across a city–after correcting for inflation–as well as one of two qualities: a change in college-educated residents or a change in the proportion of non-Hispanic white residents between 2010 and 2019 that exceeded the average change across the city. For additional details and summaries regarding this gentrification metric see the quantifying gentrification section of the supplemental material.
+
+### *Associations between gentrification and our social-environmental variables*
+
+Among cities, on average, 25% (sd = 11%) of camera sites were within 500m of a gentrified Census tract. At sites near gentrified Census tracts, 46% (sd = 20%) of land cover was impervious, on average, while sites not near gentrified Census tracts had an average of 25% (sd = 21%) impervious cover. Within cities, Urbana, Illinois had the lowest percent of sites within 500m of a gentrified Census tract (3%) and Phoenix, Arizona had the highest (50%). See Supplemental Material X1 for additional information on within-city variation in impervious cover and maps of gentrified and non-gentrified Census tracts.
+
+With respect to the 2019 distribution of the variables we used to quantify gentrification across cities, the median per capita income of gentrified Census tracts (mean = \$68,785, sd = \$28,193) was roughly \$30,000 less than non-gentrified Census tracts (mean = \$98,678, sd = \$50,777). The proportion of non-Hispanic white residents living in gentrified Census tracts (mean = 0.28, sd = 0.26) was lower than non-gentrified Census tracts (mean = 0.48, sd = 0.30), and the proportion of people with a college degree in gentrified Census tracts (mean = 0.34, sd = 0.18) was slightly lower than non-gentrified Census tracts (mean = 0.48, sd = 0.23). Thus, gentrified Census Tracts still have lower incomes, fewer non-Hispanic white residents, and fewer college educated residents than non-gentrified Census Tracts. However, gentrified Census tracts saw greater than average shifts in these variables over time, such that the residents living there have become whiter, richer, and more educated. 
+
+Gentrification may also be associated with an increase in urban greenspace. As such, we quantified whether gentrified Census tracts had a greater increase in the proportion of greenspace (i.e., developed, open space from NLCD data) over the same time frame we used to quantify gentrification (i.e., 2010 to 2019). We did not find this to be true. After averaging the proportional increase in urban greenspace across gentrified and not-gentrified census tracts in each city, the among-city range in both types of Census tracts was effectively zero (min = -0.01, max = 0.00). 
+
+### *Brief overview of Statistical modeling*
+
+We used a meta-analytic approach to quantify associations between gentrification and impervious cover and patterns of alpha and beta diversity across U.S. cities, using a Bayesian approach for all models (see following sections for more thorough explanation of our three statistical models). However, unlike more-common meta-analyses, which must contend with issues of publication bias that can distort results (Nakagawa et al. 2022), our analysis used all available UWIN data to parameterize both alpha- and beta diversity models, resulting in a more unbiased and data-driven evaluation of our hypothesis. 
+
+To do so, we first fitted a Bayesian multi-city, multi-species occupancy model that included a first-order autoregressive term to account for repeat sampling across primary sampling periods within each city (Sutherland et al. 2016, Royle and Dorazio 2008, Magle et al. 2021). This model had three separate logit-linear predictors: one to indicate a species presence within a city’s species pool, one for site-level occupancy, and one for site-level detection probability. Following Magle et al. (2021), we included the distance of each city to the known margin of a species’ geographic range  in the first linear predictor, with positive and negative numbers respectively indicating cities within and outside a species range. Range data came from IUCN red list data (IUCN 2020). For site-level occupancy and detection, we included impervious cover, gentrification, and the interaction between the two as slope terms in the model. All species-level parameters shared information among species and cities via their random effect structure. Following a 1,000 step adaptation phase and a 125,000 step burn-in, we sampled the posterior 120,000 times across 4 chains. We thinned chains by 3 for a total of 40,000 posterior samples. We assessed model convergence through a visual inspection of traceplots and ensured Gelman-Rubin diagnostics were < 1.10 (Gelman et al., 2013). Following model convergence, we simulated species occupancy at each site across the entire study area from 5000 random samples of the occupancy model’s posterior distribution. 
+
+For the alpha diversity model we calculated 1) the expected species richness at each site and 2) the standard deviation in this estimate across the 5,000 posterior samples. To limit the effect of individual years on these estimates we calculated species richness at a site across all possible sampling periods. This resulted in one estimate per site across cities. We then fitted a varying intercept, varying slope log-linear model to these data, which treated species richness as the response variable but also incorporated the associated uncertainty in this estimate (Kery and Royle citation). Intercept and slope terms were treated as city-level random effects. We included impervious cover, gentrification, and the interaction between the two as covariates. 
+
+For the beta diversity model we calculated 1) pairwise community dissimilarity between pairs of sites within each city (i.e., Sørensen’s dissimilarity index) and 2) the standard deviation in this estimate across the 5,000 posterior samples (Legendre & Legendre 2012). Like the alpha diversity model, beta diversity estimates were made across all primary sampling periods. We then fitted a varying intercept, varying slope generalized dissimilarity model to these data, which treated pairwise dissimilarity as the response variable (GDM CITATION). This model used a clog link function and had an inverse link function of $1 - \text{exp}(-\mu)$, where $\mu$ is the linear predictor for one data point. Similar to the alpha diversity model, the beta diversity model incorporated the associated uncertainty in the beta diversity estimate. Intercepts and slopes were treated as city-level random effects. Because community composition may be more similar in nearby sites, we controlled for geographic distance between site pairs by including it as a covariate. We also included differences in impervious cover and gentrification between sites as covariates. However, because this model uses I-spline basis functions to incorporate possible non-linear responses we could not include an interaction between gentrification and impervious cover in this model (GDM CITATION). See the occupancy, alpha and beta diversity models section of the supplemental material.
+
+
+### *The multi-city multi-species autologistic occupancy model*
+
+
+This model is almost exactly the same model as we had used in Magle et al. (2022). For $s$ in $1,...,S$ species and $c$ in $1,...,C$ cities, $\pi_{sc}$ is the probability species $s$ is within city $c$. Futher, let $x_{sc}$ be a Bernoulli random variable that equals 1 if the species is within that city and is otherwise zero such that $x_{sc} \sim \text{Bernoulli}(\pi_{sc})$. We made $\pi_{sc}$ a function of one covariate--the distance a city is from the known edge of a species extent--using the logit link. This covariate was positive if a city was within a species extent and negative if it was outside. We compiled range information from IUCN red list data (IUCN, 2020). Thus the linear predictor for this level of the model was
+
+$$
+\text{logit}(\pi_{sc}) = \pmb{d}_s\pmb{h}_c
+$$
+where $\pmb{d}_s$ is a vector of species-specific covariates while $\pmb{h}_c$ is a vector of conformable regression coefficients where the leading element is 1 to accomodate the model intercept.
+
+As the first level of the model estimates a species presence at the city-level, the next level estimates species presence within cities conditional on their presence in a city. Given that the number of sites and sampling periods varies across cities, we add a city subscript to define $i_c$ in $1,...,I_c$ sites  and $t_c$ in $1,...,T_c$ sampling periods. However, for simplicity we drop these specific subscripts while we explain the model. Additionally, let $z_{scit}$ be a Bernoulli random variable and $\psi_{scit}$ be the probability of occupancy. As such, $z_{scit} \sim \text{Bernoulli}(\psi_{scit}x_{sc})$. As with the previous level of the model, $\psi_{scit}$ can be made a function of covariates via the logit link. As a depature from the Magle et al. (2022) parameterization, we added a first-order autologistic term to account for any temporal dependence in occupancy status between adjacent sampling periods within a city. Thus, for the first time period in a city, the logit-linear predictor was
+
+$$
+\text{logit}(\psi_{scit=1}) = \pmb{\beta}_{sc}\pmb{f}_{ci}
+$$
+where $\pmb{\beta}_{sc}$ is a vector of species and city-specific parameters and $\pmb{f}_{ci}$ is a vector of conformable covariates whose first value is 1 for the model intercept. After the first sampling season, we added our autologistic term
+
+$$
+\text{logit}(\psi_{scit}) = \pmb{\beta}_{sc}\pmb{f}_{ci} + \theta_{sc}z_{scit-1} \text{, for t > 1.}
+$$
+
+For the data model, $y_{scit}$ was the number of days species $s$ was detected at city $c$ and site $i$ on sampling season $t$. Given $j_{cit}$ days of sampling, we assumed $y_{scit}$ is a binomial random variable conditional on species presence
+
+$$
+y_{scit} | z_{scit} \sim \text{Binomial}(j_{cit},\rho_{scit}z_{scit} )
+$$
+
+where $\rho_{scit}$ is the daily probability of detection that can be made a function of covariates with the logit link, 
+
+$$
+\text{logit}(\rho_{scit}) = \pmb{\alpha}_{sc}\pmb{g}_{ci}
+$$
+where $\pmb{\alpha}_{sc}$ is a vector of parameters and $\pmb{g}_{ci}$ is a vector of conformable covariates where the leading value is 1 to accommodate the intercept.
+
+Given that some species occur across multiple cities, there are multiple levels in which species could partially share information. At the top-level of the model we have the simplest hierarchical parameterization for parameters associated to $\pi_{sc}$, namely that there is a community mean for each parameter of which species-level coefficients vary around. We show this for the model intercept with the understanding that the same parameterization applies to all logit-scale covariates in this part of the model.
+
+
+\begin{equation}
+\begin{aligned}
+\bar{d}_{0s}   &\sim \text{Cauchy}(0, 2.5)\nonumber \\
+\sigma_{d_0} &\sim \text{Inv-Gamma}(1,1)\nonumber \\
+d_{0s}   &\sim \text{Normal}(\bar{d}_{0s}, \sigma_{d_0})\nonumber
+\end{aligned}
+\end{equation}
+
+For the rest of the latent state model we add an additional hierarchical level to the model. However, this parameterization also aligns with the data model, and as such so we only describe it here once for the model intercept of the latent-state model. For example, for the model intercepts we begin with a community-level average among species and cities ($\bar{\beta}_0$). This parameter partially informs a species-level average among cities ($\bar{\beta}_{0s}$), which then informs species-specific coefficients in all cities ($\beta_{0sc}$). 
+
+\begin{equation}
+\begin{aligned}
+\bar{\beta}_0   &\sim \text{Cauchy}(0, 2.5)\nonumber \\
+\sigma_{\beta_0} &\sim \text{Inv-Gamma}(1,1)\nonumber \\
+\bar{\beta}_{0s} &\sim \text{Normal}(\bar{\beta}_0, \sigma_{\beta_0}) \\
+a_{\beta_0} &\sim \text{Uniform}(0,10) \\
+b_{\beta_0} &\sim \text{Uniform}(0,10) \\
+\sigma_{\beta_{0s}} &\sim \text{Inv-Gamma}(a_{\beta_0}, b_{\beta_0}) \\
+\beta_{0sc} &\sim \text{Normal}(\bar{\beta}_{0s},\sigma_{\beta_{0s}} )
+\end{aligned}
+\end{equation}
+
+We added the hyperparameters for the shape ($a_{\beta_0}$) and rate ($b_{\beta_0}$) of the Inv-Gamma distribution to account for the fact that some cities may only have one sampling period of data. Note that the above parameterization also applies to the autologistic term of the model ($\theta_{sc}$).
+
+Finally, the latent state and data model included one other set of parameters to account for variation in occupancy or detectability across sampling seasons. As we have already added hierarchical structure via the centered parameterization of the other model parameters, we usd a non-centered parameterization here for this level of variability. Again, we show this for the latent state, but with a swapping of subscripts this could readily be applied to the data model as well.
+
+\begin{equation}
+\begin{aligned}
+a_{\psi} &\sim \text{Uniform}(0,10) \\
+b_{\psi} &\sim \text{Uniform}(0,10) \\
+\sigma_{\psi c} &\sim \text{Inv-Gamma}(a_{\psi}, b_{\psi}) \\
+\beta_{sct} &\sim \text{Normal}(0, \sigma_{\psi c})
+\end{aligned}
+\end{equation}
+
+With this parameterization, $\beta_{sct}$ is a difference term that represents the logit-scale difference in occupancy for species $s$ at city $c$ from their average $\beta_{0sc}$ (i.e., the model intercept). Again, like with the other parameters in this part of the model, we used hyperparameters for the Inv-Gamma distribution because not every city had more than one season of data.
+
+### *The alpha diversity meta-analytic model*
+
+From our occupancy model we created a posterior distribution for the latent state of each species at each site across all cities ($z_{scit}$). From this, we derived two quantities for this model:
+
+1. The mean expected species richness at each site across all sampling periods ($r_{ci}$). To do so, we calculated the number of unique species detected in city $c$ and site $i$ across the $t$ sampling seasons and took the median across 5000 posterior samples.
+2. The standard deviation of the first quantity across those 5000 posterior samples ($\sigma_{ci}$). This quantifies our level of uncertainty with the first estimate.
+
+Following this, let $\pmb{\beta}_c$ be a vector of city-specific regression coefficients and $\pmb{x}_{ci}$ be a vector of city and site specific covariates where the leading element is 1 to account for the intercept. Within the linear predictor we also added an additional residual variation term, $\epsilon_{ci}$, which was given a $\sim \text{Inv-Gamma}(1,1)$ prior. Thus, the log-linear predictor was
+
+$$
+\text{log}(\mu_{sci}) = \pmb{\beta}_c\pmb{x_{ci}} + \epsilon_{ci}
+$$
+and following Kery and Royle (YEAR), we accounted for variability in the response variable with an additional level of the model
+
+$$
+r_{ci} \sim \text{Normal}(\mu_{sci}, \sigma_{ci})
+$$
+We treated the intercept and slope terms as city-level random effects. For example, the prior for the model intercept was
+
+\begin{equation}
+\begin{aligned}
+\bar{\beta}_0 & \sim \text{Cauchy}(0, 2.5)\nonumber \\
+\sigma_{\beta_0} & \sim \text{Inv-Gamma}(1,1) \\
+\beta_{0c} & \sim \text{Normal}(\bar{\beta}_0,\sigma_{\beta_0}) \\
+\end{aligned}
+\end{equation}
+
+and the same specification was also applied to the slope terms as well (though not described here).
+
+### *The beta diversity meta-analytic model*
+
+From our occupancy model, we created a posterior distribution for the latent state of each species at each site across all cities ($z_{scit}$). From this, we derived three quantities:
+
+1. The mean pairwise Sorensen dissimilarity between pairs of sites within each city across all sampling periods ($v_{cik}$, where the subscript k denotes one of the sites in city $c$ that is not the $ith$ site). To do so, we calculated the number of unique species detected in city $c$ and site $i$ across the $t$ sampling seasons. Following this, we calculated the Sorensen dissimilarity metric among all pairs of sites within each city using `vegan` in `R` across 5000 posterior samples. Finally,  we took the median across all posterior samples for each site-pair
+2. The standard deviation of the first quantity across those 5000 posterior samples ($\sigma_{cik}$). This quantifies our level of uncertainty with the first estimate.
+3. The mean expected number of unique species between a site-pair ($w_{cik}$). 
+
+To estimate pairwise dissimilarity as a function of covariates we modified a generalized dissimilarity model to account for parametetric uncertainity of the response variable $v_{cik}$ (GDM citation). To do so, GDMs estimate the relationship between dissimilarity and environmental or spatial differences between pairs of sites with a clog link (Mokany et al. 2022):
+
+$$
+d_{cik} = 1 - \text{exp}(-\eta_{cik})
+$$
+where $d_{cik}$ is the biological dissimilarity between sites $i$ and $k$ within city $c$ and $\eta_{cik}$ is the predicted ecological distance between (i.e., the linear predictor). Given $p$ in 1,..,$P$ covariates, the ecological distance between sites is
+
+$$
+\eta_{cik} = b_0 + \sum_{p=1}^{P}|f_p(x_{cip}) - f_p(x_{ckp})|
+$$
+where $b_0$ is the model intercept (i.e., the expected pairwise dissimilarity between sites with identical environments). Covariates are further transformed within GDMs which 1) uses I-spline basis functions (Ramsay, 1988) and 2) constrains slope terms to be non-negative. Doing so allows the effect of each covariate to non-linearly vary while also ensuring that beta diversity increases monotonically as sites are more different from one another (a core assumption of this model). More specifically, the I-spline basis function for predictor $p$ with 3 basis functions (the default used for GDMs) is
+
+$$
+fp(x_{cip}) = \sum_{j = 1}^3a_{cpj}I_{pj}(x_{cip})
+$$
+where $a_{cpj}$ is a non-negative coefficient for the $jth$ I-spline and $I_{pj}$ is the $jth$ I-spline of the covariate $x_{cip}$. For our own model, the binary gentrification status of site-pairs was not sent through an I-spline basis function. Instead, we used a dummy variable that took the value of 1 if a pair of sites differed in their gentrification status and was otherwise 0. Regardless, all slope terms were constrained to be non-negative. Thus, given $\eta_{cik}$ and the total number of species between site pairs ($w_{cik}$), the first level of our model is
+
+\begin{equation}
+\begin{aligned}
+d_{cik} &= 1 - \text{exp}(-\eta_{cik}) \\
+\sigma_{cik} &= \sqrt{\frac{d_{cik} - (1 - d_{cik})}{w_{cik}}} \\
+\mu_{cik} &\sim \text{Half-Normal}(d_{cik}, \sigma_{cik})
+\end{aligned}
+\end{equation}
+
+where $\sigma_{cik}$ is the binomial variance function (Mokany et al. 2022) and the half-Normal is constrained to be non-negative. Following this, we account for variation in the measurement of our response variable
+
+$$
+v_{cik} \sim \text{Half-Normal}(\mu_{cik}, \sigma_{cik})
+$$
+where again $\sigma_{cik}$ is measured based on the output of the occupancy model and provided as data to this model.
+
+We treated all coefficients in the linear predictor as city-level random effects. For example for the model intercept the prior specification would be  $b_c \sim \text{Half-Normal}(\bar{b}, \sigma_b)$ where $b \sim \text{Half-Normal}(0, 10)$ and $sigma_b \sim \text{Inv-Gamma}(1,1)$. The Half-Normal distributions ensure that the coefficients will be non-negative.
+
+
+
