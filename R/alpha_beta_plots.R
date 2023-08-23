@@ -161,7 +161,7 @@ bbplot::axis_text(
     "Impervious  ",
     "Gentrification\nx Impervious"
   ),
-  2,
+  side = 2,
   line = 0.1,
   at = rev(1:3),
   las = 1
@@ -235,7 +235,7 @@ bbplot::axis_text(
     "Impervious",
     "Geographic\ndistance  "
   ),
-  2,
+  side = 2,
   line = 0.1,
   at = rev(1:3),
   las = 1
@@ -420,6 +420,8 @@ bb$city_names <- c(
   "Urbana, IL",
   "Wilmington, DE"
 )
+
+
 
 # break each response into groups of 3
 bb <- bb %>% 
@@ -666,10 +668,10 @@ coords$num <- coords$num - min(coords$num) + 1
 
 
 my_pal <- colorRampPalette(
-  c("#376387", "#b3b3b3", "#f3b300")
+  c("#f3b300", "#b3b3b3", "#376387")
   )(max(coords$num))
 
-#windows(4,4)
+windows(4,4)
 
 # svg(
 #   "./plots/alpha_beta_expected.svg",
