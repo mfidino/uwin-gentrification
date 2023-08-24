@@ -161,7 +161,7 @@ bbplot::axis_text(
     "Impervious  ",
     "Gentrification\nx Impervious"
   ),
-  2,
+  side = 2,
   line = 0.1,
   at = rev(1:3),
   las = 1
@@ -235,7 +235,7 @@ bbplot::axis_text(
     "Impervious",
     "Geographic\ndistance  "
   ),
-  2,
+  side = 2,
   line = 0.1,
   at = rev(1:3),
   las = 1
@@ -321,6 +321,72 @@ dev.off()
 
 # map of all the study cities and try to show their overall alpha and beta effects?
 #### state map ####
+mu_beta_dm <- split(
+  data.frame(data_list$spline_matrix),
+  factor(data_list$city_vec)
+)
+mu_beta_dm <- lapply(
+  mu_beta_dm,
+  colMeans
+)
+mu_beta_dm <- dplyr::bind_rows(
+  mu_beta_dm
+)
+mu_beta_dm$X8 <- 1
+
+tmp_mcmc <- vector(
+  "list",
+  length = nrow(mu_beta_dm)
+)
+for(i in 1:length(tmp_mcmc)){
+  tmp_mcmc[[i]] <- beta_mc$beta_exp[,i,] %*% t(mu_beta_dm[i,])
+  tmp_mcmc[[i]] <- 1 - exp(-tmp_mcmc[[i]])
+  tmp_mcmc[[i]] <- median(
+    tmp_mcmc[[i]]
+  )
+}
+beta_mean <- do.call(
+  "rbind",
+  tmp_mcmc
+)
+
+
+# do same for alpha diversity
+my_site <- read.csv("./data/cleaned_data/covariates/site_covariates.csv")
+
+
+my_site$imp <- my_site$mean_19 / 100
+
+
+my_site <- my_site %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise(imp = mean(imp))
+
+tmp_mcmc <- vector(
+  "list",
+  length = nrow(mu_beta_dm)
+)
+for(i in 1:length(tmp_mcmc)){
+  gent_rich <- alpha_mc$alpha[,i,] %*% cbind(
+    c(
+      1, 1, my_site$imp[i],my_site$imp[i]
+    )
+  )
+  ngent_rich <- alpha_mc$alpha[,i,] %*% cbind(
+    c(
+      1, 0, my_site$imp[i],0
+    )
+  )
+  tmp_mcmc[[i]] <- median(
+    exp(gent_rich) - exp(ngent_rich)
+  )
+}
+alpha_mean <- do.call(
+  "rbind",
+  tmp_mcmc
+)
+
+
 counties <- sf::read_sf(
   "D:/GIS/counties/cb_2020_us_county_500k.shp"
 )
@@ -373,26 +439,13 @@ coords <- sf::st_coordinates(
   coords
 )
 
-# get E(increase) in species richness, alpha diversity
-e_alpha <- exp(alpha_city[2,,2])
-
-# and calculate difference in beta diversity in gentrifying vs non-gentrifying
-city_mu1 <- matrix(
-  ncol = 3,
-  nrow = data_list$ncity
-)
 
 
-for(i in 1:data_list$ncity){
-  tmp_mu_1 <-(1 - exp(-beta_mc$beta_exp[,i,1]))
-  tmp_mu_2 <-( 1 - exp(-rowSums(beta_mc$beta_exp[,i,c(1,8)])))
-  city_mu1[i,] <- quantile(tmp_mu_2 - tmp_mu_1, probs = c(0.025,0.5,0.975))
-}
 
 # combine both for plotting purposes
 bb <- data.frame(
-  alpha = e_alpha,
-  beta = city_mu1[,2]
+  alpha = alpha_mean,
+  beta = beta_mean
 )
 # adding city names to switch seattle and tacoma for plotting
 bb$city_names <- c(
@@ -420,6 +473,8 @@ bb$city_names <- c(
   "Urbana, IL",
   "Wilmington, DE"
 )
+
+
 
 # break each response into groups of 3
 bb <- bb %>% 
@@ -497,83 +552,75 @@ par(mar = c(2,1,0,0), xpd = NA)
 # plot out counties real quick
 bb$x <- coords[,1]
 bb$y <- coords[,2]
-# flip tacoma and seattle so seattle is on top
-tmp <- bb[
-  grep("Seattle", bb$city_names),
-]
-bb[
-  grep("Seattle", bb$city_names),
-] <- bb[grep("Tacoma", bb$city_names),]
-bb[
-  grep("Tacoma", bb$city_names)[2],
-] <- tmp
+
 
 {
-plot(counties, lwd = 2, reset = FALSE)
-u <- par("usr")
-# get aspect ratio (ratio of width to height)
-
-my_asp <- get.asp()
-my_x <- seq(
-  -120,
-  -113,
-  length.out = ncat
-)
-my_diff <- my_x[length(my_x)] - my_x[1]
-my_y <- seq(22, 22 * my_asp, length.out = ncat)
-
-image(
-  my_x,
-  my_y,
-  z =matrix(c(1,4,7,2,5,8,3,6,9), nrow=3, byrow = FALSE),
-  add = TRUE,
-  col = pals::brewer.seqseq2()
-)
-
-text(
-  x = mean(my_x),
-  y = max(my_y) + 3.75,
-  labels = "Relative strength of gentrification on...",
-  pos = 1
-)
-text(
-  x = min(my_x) - 4.5,
-  y = mean(my_y),
-  labels = "Beta diversity",
-  srt = 90
-)
-
-arrows(
-  x0 = min(my_x)-2.8,
-  y0 = min(my_y) - 1,
-  y1 = max(my_y) + 1,
-  length = 0.1,
-  angle = 30,
-  lwd = 1.5
-)
-
-text(
-  x = mean(my_x),
-  y = min(my_y) - 3.5,
-  labels = "Alpha diversity"
-)
-arrows(
-  x0 = min(my_x)-1.6,
-  x1 = max(my_x) + 1.6,
-  y0 = min(my_y) - 2.5,
-  length = 0.1,
-  angle = 30,
-  lwd = 1.5
-)
-points(
-  bb$x,
-  bb$y,
-  pch = 21,
-  cex = 3,
-  bg = bb$color
-)
-
+  plot(counties, lwd = 2, reset = FALSE)
+  u <- par("usr")
+  # get aspect ratio (ratio of width to height)
+  
+  my_asp <- get.asp()
+  my_x <- seq(
+    -120,
+    -113,
+    length.out = ncat
+  )
+  my_diff <- my_x[length(my_x)] - my_x[1]
+  my_y <- seq(22, 22 * my_asp, length.out = ncat)
+  
+  image(
+    my_x,
+    my_y,
+    z =matrix(c(1,4,7,2,5,8,3,6,9), nrow=3, byrow = FALSE),
+    add = TRUE,
+    col = pals::brewer.seqseq2()
+  )
+  
+  text(
+    x = mean(my_x),
+    y = max(my_y) + 3.75,
+    labels = "Relative strength of gentrification on...",
+    pos = 1
+  )
+  text(
+    x = min(my_x) - 4.5,
+    y = mean(my_y),
+    labels = "Beta diversity",
+    srt = 90
+  )
+  
+  arrows(
+    x0 = min(my_x)-2.8,
+    y0 = min(my_y) - 1,
+    y1 = max(my_y) + 1,
+    length = 0.1,
+    angle = 30,
+    lwd = 1.5
+  )
+  
+  text(
+    x = mean(my_x),
+    y = min(my_y) - 3.5,
+    labels = "Alpha diversity"
+  )
+  arrows(
+    x0 = min(my_x)-1.6,
+    x1 = max(my_x) + 1.6,
+    y0 = min(my_y) - 2.5,
+    length = 0.1,
+    angle = 30,
+    lwd = 1.5
+  )
+  points(
+    bb$x,
+    bb$y,
+    pch = 21,
+    cex = 3,
+    bg = bb$color
+  )
+  
 }
+
 dev.off()
 
 #### expected alpha beta plots ####
@@ -666,10 +713,10 @@ coords$num <- coords$num - min(coords$num) + 1
 
 
 my_pal <- colorRampPalette(
-  c("#376387", "#b3b3b3", "#f3b300")
+  c("#f3b300", "#b3b3b3", "#376387")
   )(max(coords$num))
 
-#windows(4,4)
+windows(4,4)
 
 # svg(
 #   "./plots/alpha_beta_expected.svg",

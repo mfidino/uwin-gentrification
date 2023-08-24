@@ -124,7 +124,7 @@ bbplot::axis_text(
 )
 
 test <- pals::coolwarm(4)
-gent_colors <- c("#352A87", "#9d8ec3", "#e0827b", "#B40426")
+gent_colors <- c("#130A51", "#9d8ec3", "#e0827b", "#6C0015")
 lines(
   x = c(0,0),
   y = u[3:4],
