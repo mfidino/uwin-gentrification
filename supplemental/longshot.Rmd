@@ -25,6 +25,7 @@ library(sf)
 library(knitr)
 library(kableExtra)
 source("../R/census_functions.R")
+source("../R/alpha_beta_functions.R")
 sf::sf_use_s2(FALSE)
 ```
 \def\figurename{Figure S}
@@ -46,9 +47,11 @@ Corresponding author: Mason Fidino, mfidino@lpzoo.org
 \begin{itemize}
   \vspace{-0.2cm}\item[] Methods (Table S1)
   \vspace{-0.2cm}\item[] Additional gentrification metric details (Tables S2 to S9)
-  \vspace{-0.2cm}\item[] Map of cities (Fig S1)
-  \vspace{-0.2cm}\item[] City-specific alpha and beta diversity results (Fig S2 - SX)
-  \vspace{-0.2cm}\item[] References (x - y)
+  \vspace{-0.2cm}\item[] Map of cities (Fig. S1)
+  \vspace{-0.2cm}\item[] City-specific alpha and beta diversity results (Fig. S2 - S24)
+  \vspace{-0.2cm}\item[] Alpha diversity model estimates (Table S10 - S12)
+  \vspace{-0.2cm}\item[] Beta diversity model estimates (Table S13 - S15)
+  \vspace{-0.2cm}\item[] Occupancy model estimates (Tables )
 \end{itemize}
 
 \newpage
@@ -1781,5 +1784,396 @@ aa %>%
     booktabs = TRUE
   ) %>% 
   kableExtra::kable_styling()
+
+```
+
+
+## Map of cities
+
+```{r supp_map, echo = FALSE,out.width = '97%', fig.cap = " Figure S1. Data from 23 cities were used to assess differences in mammal communities among gentrified and non-gentrified parts of a city. Cities are represented by dots. Dot color illustrates the relative effect of gentrification on alpha and beta diversity at average sites in each city that only vary in their gentrification status. Gentrification had a more pronounced effect on alpha diversity overall. However, gentrification in West Coast cities had a stronger effect on beta diversity, central U.S. cities had a mixture, and East Cost cities had a stronger alpha diversity effect."}
+
+knitr::include_graphics("../plots/gentrification_supp_map.png")
+
+```
+
+## City-specific alpha and beta diversity results
+```{r, list_files, echo = FALSE}
+my_images <- list.files(
+  "../supp_plots/supp_1/",
+  pattern = "pdf$",
+  full.names = TRUE
+)
+
+pretty_names <- c(
+  "Athens, GA",
+  "Bay Area, CA",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Houston, TX",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "Metro LA, CA",
+  "Washington D.C.",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Sanford, FL",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+
+# make the figure legend.
+
+figure_legends <- vector("list", length = length(pretty_names))
+for(i in 1:length(figure_legends)){
+  figure_legends[[i]] <- paste0(
+    "The distribution of gentrifying ",
+    "and non-gentrifying census tracts for ",
+    pretty_names[i], " as well as the camera trap locations ",
+    "for this city. Below the map are city specific estimates ",
+    "for how alpha diversity (species richness) and beta diversity ",
+    "(Bray-Curtis distance) varies at gentrifying and ",
+    "non-gentrifying sites along a gradient of impervious cover. ",
+    "The lower left histogram shows the proportion of impervious ",
+    "cover at gentrifying and non-gentrifying camera trap locations ",
+    "for ", pretty_names[i],". Finally, the lower right plot shows the ",
+    " estimate for total species richness of medium to large mammals ",
+    "for the city (i.e., gamma diversity)."
+  )
+}
+```
+
+
+```{r, results = "asis", echo = FALSE}
+for(i in 1:length(pretty_names)) {
+  cat("\\fontsize{15}{15}")
+  cat(
+    paste0(
+    "![](", my_images[i],")"
+    ),
+    "\n"
+  )
+  cat("\\fontsize{11}{11}")
+  cat(
+    paste0(
+    "<p font-size:12pt><strong>**Figure S",i+1,".**</strong> ",figure_legends[[i]],"</p>\n"
+    )
+  )
+}
+```
+
+
+## Alpha diversity model estimates
+
+```{r read_alpha, echo = FALSE}
+alpha_mc <- readRDS(
+  "../mcmc_output/alpha_output/alpha_mcmc.RDS"
+)
+
+alpha_mc <- do.call(
+  "rbind",
+  alpha_mc$mcmc
+)
+
+alpha_mc <- split_mcmc(
+  alpha_mc
+)
+
+amu <- round(
+  t(
+    apply(
+      alpha_mc$alpha_mu,
+      2,
+      quantile,
+      probs = c(0.025,0.05,0.5,0.95,0.975)
+    )
+  ),
+  2
+)
+amu <- data.frame(
+  parameter = 
+    c("intercept", "gent", "imp", "gent X imp"),
+  amu
+)
+colnames(amu) <- c("Parameter", "CI(0.025)", "CI(0.05)", "Estimate",
+                   "CI(0.95)", "CI(0.975)")
+
+amu %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","r", "r","r","r","r"),
+    caption = "The among-city average estimates from the alpha diversity model.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+
+asd <- round(
+  t(
+    apply(
+      alpha_mc$alpha_sd,
+      2,
+      quantile,
+      probs = c(0.025,0.05,0.5,0.95,0.975)
+    )
+  ),
+  2
+)
+asd <- data.frame(
+  parameter = 
+    c("intercept", "gent", "imp", "gent X imp"),
+  asd
+)
+colnames(asd) <- c("Parameter", "CI(0.025)", "CI(0.05)", "Estimate",
+                   "CI(0.95)", "CI(0.975)")
+
+asd %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","r", "r","r","r","r"),
+    caption = "The estimated standard deviation of city-specific estimates from the among-city means from the alpha diversity model.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+
+aa <- round(
+    apply(
+      alpha_mc$alpha,
+      c(2,3),
+      quantile,
+      probs = c(0.025,0.05,0.5,0.95,0.975)
+    ),
+  2
+)
+pretty_names <- c(
+  "Athens, GA",
+  "Bay Area, CA",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Houston, TX",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "Metro LA, CA",
+  "Washington D.C.",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Sanford, FL",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+parm_mat <- vector("list", length = 23)
+for(i in 1:length(parm_mat)){
+  parm_mat[[i]] <- data.frame(
+    City = c(pretty_names[i], rep("", 3)),
+    Parameter = c("intercept", "gent", "imp", "gent X imp"),
+    "CI(0.025)" = aa[1,i,],
+    "CI(0.025)" = aa[2,i,],
+    "Estimate"  = aa[3,i,],
+    "CI(0.025)" = aa[4,i,],
+    "CI(0.025)" = aa[5,i,]
+    
+  )
+}
+parm_mat <- dplyr::bind_rows(parm_mat)
+colnames(parm_mat) <- c("City", "Parameter", "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+
+parm_mat %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "l","r", "r","r","r","r"),
+    caption = "City specific-estimates from the alpha diversity model.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+```
+
+
+## Beta diversity model estimates
+
+```{r read_beta, echo = FALSE}
+beta_mc <- readRDS(
+  "../mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
+)
+
+beta_mc <- do.call(
+  "rbind",
+  beta_mc$mcmc
+)
+
+beta_mc <- split_mcmc(
+  beta_mc
+)
+
+amu <- round(
+  t(
+    apply(
+      beta_mc$beta_mu,
+      2,
+      quantile,
+      probs = c(0.025,0.05,0.5,0.95,0.975)
+    )
+  ),
+  2
+)
+amu <- data.frame(
+  parameter = 
+    c("intercept", "distance", "","",  "imp",  "","","gent"),
+  spline = c("", 1:3, 1:3,""),
+  amu
+)
+colnames(amu) <- c("Parameter", "Spline", "CI(0.025)", "CI(0.05)", "Estimate",
+                   "CI(0.95)", "CI(0.975)")
+
+amu %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","r", "r","r","r","r" ,"r"),
+    caption = "The among-city average estimates from the beta diversity model. Note that the two continous covariates (geographic distance and impervious cover) have been transformed with I-splines, so each covariate has multiple slope terms.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+
+asd <- round(
+  t(
+    apply(
+      beta_mc$beta_sd,
+      2,
+      quantile,
+      probs = c(0.025,0.05,0.5,0.95,0.975)
+    )
+  ),
+  2
+)
+asd <- data.frame(
+  parameter = 
+    c("intercept", "distance", "","",  "imp",  "","","gent"),
+  spline = c("", 1:3, 1:3,""),
+  asd
+)
+colnames(asd) <- c("Parameter", "Spline", "CI(0.025)", "CI(0.05)", "Estimate",
+                   "CI(0.95)", "CI(0.975)")
+
+asd %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","r", "r","r","r","r","r"),
+    caption = "The estimated standard deviation of city-specific estimates from the among-city means from the beta diversity model. Note that the two continous covariates (geographic distance and impervious cover) have been transformed with I-splines, so each covariate has multiple slope terms.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+
+aa <- round(
+    apply(
+      beta_mc$beta_exp,
+      c(2,3),
+      quantile,
+      probs = c(0.025,0.05,0.5,0.95,0.975)
+    ),
+  2
+)
+pretty_names <- c(
+  "Athens, GA",
+  "Bay Area, CA",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Houston, TX",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "Metro LA, CA",
+  "Washington D.C.",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Sanford, FL",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+parm_mat <- vector("list", length = 23)
+for(i in 1:length(parm_mat)){
+  parm_mat[[i]] <- data.frame(
+    City = c(pretty_names[i], rep("", 7)),
+    Parameter = c("intercept", "distance", "", "", "imp", "", "","gent"),
+    Spline = c("",1:3, 1:3,""),
+    "CI(0.025)" = aa[1,i,],
+    "CI(0.025)" = aa[2,i,],
+    "Estimate"  = aa[3,i,],
+    "CI(0.025)" = aa[4,i,],
+    "CI(0.025)" = aa[5,i,]
+    
+  )
+}
+parm_mat <- dplyr::bind_rows(parm_mat)
+colnames(parm_mat) <- c("City", "Spline", "Parameter", "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+
+parm_mat %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "l","r", "r","r","r","r","r"),
+    caption = "City specific-estimates from the beta diversity model. Note that the two continous covariates (geographic distance and impervious cover) have been transformed with I-splines, so each covariate has multiple slope terms.",
+    longtable = TRUE,
+    booktabs = TRUE
+  ) %>% 
+  kableExtra::kable_styling()
+```
+
+## Occupancy model estimates
+```{r read_occupancy, echo = FALSE}
+
+mout <- readRDS(
+  "../results/occupancy_model_fit_simpler2.RDS"
+)
+
+mc <- do.call("rbind", mout$mcmc)
+set.seed(454)
+mc <- mc[sample(1:nrow(mc), 10000),]
+mc <- split_mcmc(mc)
+rm(mout)
+
+# get gent
+g1 <- t(apply(
+  mc$b_species[,2,],
+  2,
+  function(x){
+    round(
+      quantile(
+        x,
+        probs = c(0.025,0.05,0.5,0.95,0.975)
+      ),
+      2
+    )
+  }
+)
+)
 
 ```

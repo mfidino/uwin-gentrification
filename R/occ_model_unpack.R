@@ -9,8 +9,12 @@ mout <- readRDS(
 )
 
 mc <- do.call("rbind", mout$mcmc)
+
+set.seed(454)
+mc <- mc[sample(1:nrow(mc), 10000),]
 mc <- split_mcmc(mc)
 rm(mout)
+gc()
 
 # get gent
 g1 <- t(apply(
