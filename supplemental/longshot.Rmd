@@ -45,27 +45,73 @@ Corresponding author: Mason Fidino, mfidino@lpzoo.org
 
 ## The PDF file includes:
 \begin{itemize}
-  \vspace{-0.2cm}\item[] Methods (Table S1)
-  \vspace{-0.2cm}\item[] Additional gentrification metric details (Tables S2 to S9)
-  \vspace{-0.2cm}\item[] Map of cities (Fig. S1)
-  \vspace{-0.2cm}\item[] City-specific alpha and beta diversity results (Fig. S2 - S24)
-  \vspace{-0.2cm}\item[] Alpha diversity model estimates (Table S10 - S12)
-  \vspace{-0.2cm}\item[] Beta diversity model estimates (Table S13 - S15)
-  \vspace{-0.2cm}\item[] Occupancy model estimates (Tables )
+  \vspace{-0.2cm}\item[] Materials and Methods (Tables S1 - S2)
+  \vspace{-0.2cm}\item[] Additional Gentrification Metric Details (Tables S3 - S10)
+  \vspace{-0.2cm}\item[] Map of Cities (Fig. S1)
+  \vspace{-0.2cm}\item[] City-specific Alpha and Beta Diversity Results (Fig. S2 - S24)
+  \vspace{-0.2cm}\item[] Alpha Diversity Model Estimates (Tables S11 - S13)
+  \vspace{-0.2cm}\item[] Beta Diversity Model Estimates (Tables S14 - S16)
+  \vspace{-0.2cm}\item[] Multi-city Multi-species Occupancy Model Estimates (Tables S17 - S36)
+    \vspace{-0.2cm}\item[] References  (\textit{27-42})
 \end{itemize}
+
 
 \newpage
 
-## Methods
+## Materials and Methods
 
 ### *Biological sampling*
 
 
-We used data from 23 UWIN cities in the United States (U.S.)  for this study. Each city followed the same systematic study design, placing motion-triggered camera traps in urban greenspace along an urbanization gradient (see Magle et al. 2019 for details). Mammal data for this study came from 12 distinct sampling periods between 2019 and 2021. Camera deployments in each sampling period were about 35 days (sd = 13.01) and began on the first of January, April, July, or October of each year. Because UWIN cities joined the network at different times, the number of sampling periods among cities varied (median = 7, minimum = 2, maximum = 12). The median number of unique camera-trapping sites per city was 35 (minimum = 23, maximum = 104). 
+We used data from 23 UWIN cities in the United States (U.S.)  for this study. Each city followed the same systematic study design, placing motion-triggered camera traps in urban greenspace along an urbanization gradient (*14*). Mammal data for this study came from 12 distinct sampling periods between 2019 and 2021. Camera deployments in each sampling period were about 35 days (sd = 13.01) and began on the first of January, April, July, or October of each year. Because UWIN cities joined the network at different times, the number of sampling periods among cities varied (median = 7, minimum = 2, maximum = 12). The median number of unique camera-trapping sites per city was 35 (minimum = 23, maximum = 104). 
 
-Mammals in camera trap images were identified to species by trained experts. However, flying squirrel, gray squirrel, and cottontail rabbit species were summarized to either the subgenus or genus level given challenges in identifying them to the species level from camera trap images (Kays et al. 2022). For each camera deployment we counted the number of days each species was detected and the number of operational camera days, which were then used to estimate species occupancy and detectability within our multi-city multi-species occupancy model (Sutherland et al. 2016, Magle et al. 2021). 
+Mammals in camera trap images were identified to species by trained experts. However, flying squirrel, gray squirrel, and cottontail rabbit species were summarized to either the subgenus or genus level given challenges in identifying them to the species level from camera trap images (*27*). For each camera deployment we counted the number of days each species was detected and the number of operational camera days, which were then used to estimate species occupancy and detectability within our multi-city multi-species occupancy model (*6,28*). 
 
-Overall, 48 mammal species were photographed but our multi-city, multi-species occupancy model converged when limited to the 21 species that were most frequently detected (a minimum of 75 detection days across at least 3 cities). Gray squirrels (Sciurus carolinensis or Sciurus griseus) were detected most often (~41,300 detection days) while flying squirrels (Glaucomys sp.) were detected the least (79 detection days). See Table S1 for a summary of species detected across cities.
+Overall, 48 mammal species were photographed but our multi-city, multi-species occupancy model converged when limited to the 21 species that were most frequently detected (a minimum of 75 detection days across at least 3 cities). Gray squirrels (*Sciurus carolinensis* or *Sciurus griseus*) were detected most often (~41,300 detection days) while flying squirrels (*Glaucomys sp.*) were detected the least (79 detection days). See Table S1 for the names of the species included in our analysis and Table S2 for a summary of all species detected across cities.
+
+```{r species_in_city, echo = FALSE}
+
+sp <- read.csv("../data/species_in_analysis.csv")
+
+
+sp_df <- data.frame(
+  cn = gsub("_", " ", sp$species),
+  sn = c(
+    "Dasypus novemcinctus",
+    "Lynx rufus",
+    "Sylvilagus audubonii, S. floridanus, S. bachmani, S. palustris",
+    "Canis latrans",
+    "Tamias striatus",
+    "Cervus canadensis",
+    "Glaucomys volans, G. sabrinus",
+    "Sciurus niger",
+    "Urocyon cinereoargenteus",
+    "Sciurus carolinensis, S. griseus",
+    "Odocoileus hemionus",
+    "Taxidea taxus",
+    "Castor canadensis",
+    "Neovison vison",
+    "Procyon lotor",
+    "Vulpes vulpes",
+    "Mephitis mephitis",
+    "Tamiasciurus hudsonicus",
+    "Didelphis virginiana",
+    "Odocoileus virginianus",
+    "Marmota monax")
+)
+colnames(sp_df) <- c("Common name", "Scientific name")
+
+sp_df %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r","r"),
+    caption = "The number of sites species were detected and number of detections per city. This table included all species, not only those we could use in our analysis. Table is ordered by city, and within each city species are sorted from fewest to most detections.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
 
 ```{r table s1, echo = FALSE, message = FALSE, warning = FALSE}
 dat <- data.table::fread(
@@ -124,15 +170,17 @@ dat %>%
     align = c("l","l", "r","r"),
     caption = "The number of sites species were detected and number of detections per city. This table included all species, not only those we could use in our analysis. Table is ordered by city, and within each city species are sorted from fewest to most detections.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 ```
 
+
+
 ### *Social-environmental variables*
 
-We calculated two independent variables and included both in all models. First, to represent a gradient of urban intensity we calculated the percent impervious cover within 1 km of each site from the 2019 National Land Cover Database imperviousness dataset (Dewitz and U.S. Geological Survey, 2021). Second, we determined if each site was within 500 m of a gentrifying Census tract. To quantify gentrification across a wide range of cities we modified a two-step process described by Chapple et al. (2017). For the first step, we identified Census tracts that were vulnerable to gentrification in 2010 as tracts with at least 500 residents and two of these three qualities: 1) a median income less than the city’s average income, 2) a proportion of college-educated residents less than the city average, and 3) a proportion of nonwhite residents greater than the city average. To calculate gentrification vulnerability we used the 2010 US decennial Census data via the tidycensus package in R v 4.2.0 (Walker 2022, R Core Team 2022). For the second step, we used the 2019 American Community Survey (U.S. Census Bureau 2012) data to determine if a vulnerable Census tract became gentrified. Here, vulnerable tracts from the first step were identified as gentrified if they experienced a greater increase in median income between 2010 and 2019 than the average change across a city–after correcting for inflation–as well as one of two qualities: a change in college-educated residents or a change in the proportion of non-Hispanic white residents between 2010 and 2019 that exceeded the average change across the city. For additional details and summaries regarding this gentrification metric see the "Additional gentrification metric details" section of the supplemental material.
+We calculated two independent variables and included both in all models. First, to represent a gradient of urban intensity we calculated the percent impervious cover within 1 km of each site from the 2019 National Land Cover Database imperviousness dataset (*29*). Second, we determined if each site was within 500 m of a gentrifying Census tract. To quantify gentrification across a wide range of cities we modified a two-step process described by Chapple et al. (*30*). For the first step, we identified Census tracts that were vulnerable to gentrification in 2010 as tracts with at least 500 residents and two of these three qualities: 1) a median income less than the city’s average income, 2) a proportion of college-educated residents less than the city average, and 3) a proportion of nonwhite residents greater than the city average. To calculate gentrification vulnerability we used the 2010 US decennial Census data via the tidycensus package in R v 4.2.0 (*31,32*). For the second step, we used the 2019 American Community Survey (*33*) data to determine if a vulnerable Census tract became gentrified. Here, vulnerable tracts from the first step were identified as gentrified if they experienced a greater increase in median income between 2010 and 2019 than the average change across a city–after correcting for inflation–as well as one of two qualities: a change in college-educated residents or a change in the proportion of non-Hispanic white residents between 2010 and 2019 that exceeded the average change across the city. For additional details and summaries regarding this gentrification metric see the "Additional gentrification metric details" section.
 
 ### *Associations between gentrification and our social-environmental variables*
 
@@ -140,30 +188,30 @@ Among cities, on average, 25% (sd = 11%) of camera sites were within 500m of a g
 
 With respect to the 2019 distribution of the variables we used to quantify gentrification across cities, the median per capita income of gentrified Census tracts (mean = \$68,785, sd = \$28,193) was roughly \$30,000 less than non-gentrified Census tracts (mean = \$98,678, sd = \$50,777). The proportion of non-Hispanic white residents living in gentrified Census tracts (mean = 0.28, sd = 0.26) was lower than non-gentrified Census tracts (mean = 0.48, sd = 0.30), and the proportion of people with a college degree in gentrified Census tracts (mean = 0.34, sd = 0.18) was slightly lower than non-gentrified Census tracts (mean = 0.48, sd = 0.23). Thus, gentrified Census Tracts still have lower incomes, fewer non-Hispanic white residents, and fewer college educated residents than non-gentrified Census Tracts. However, gentrified Census tracts saw greater than average shifts in these variables over time, such that the residents living there have become whiter, richer, and more educated. 
 
-Gentrification may also be associated with an increase in urban greenspace. As such, we quantified whether gentrified Census tracts had a greater increase in the proportion of greenspace (i.e., developed, open space from NLCD data) over the same time frame we used to quantify gentrification (i.e., 2010 to 2019). We did not find this to be true. After averaging the proportional increase in urban greenspace across gentrified and not-gentrified census tracts in each city, the among-city range in both types of Census tracts was effectively zero (min = -0.01, max = 0.00). 
+Gentrification may also be associated with an increase in urban greenspace. As such, we quantified whether gentrified Census tracts had a greater increase in the proportion of greenspace (i.e., developed, open space from NLCD data) over the same time frame we used to quantify gentrification (i.e., 2010 to 2019). We did not find this to be true. After averaging the proportional increase in urban greenspace across gentrified and not-gentrified Census tracts in each city, the among-city range in both types of Census tracts was effectively zero (min = -0.01, max = 0.00). 
 
 ### *Brief overview of Statistical modeling*
 
-We used a meta-analytic approach to quantify associations between gentrification and impervious cover and patterns of alpha and beta diversity across U.S. cities, using a Bayesian approach for all models (see following sections for more thorough explanation of our three statistical models). However, unlike more-common meta-analyses, which must contend with issues of publication bias that can distort results (Nakagawa et al. 2022), our analysis used all available UWIN data to parameterize both alpha- and beta diversity models, resulting in a more unbiased and data-driven evaluation of our hypothesis. 
+We used a meta-analytic approach to quantify associations between gentrification and impervious cover and patterns of alpha and beta diversity across U.S. cities, using a Bayesian approach for all models (see following sections for more thorough explanation of our three statistical models). However, unlike more-common meta-analyses, which must contend with issues of publication bias that can distort results (*34*), our analysis used all available UWIN data to parameterize both alpha- and beta diversity models, resulting in a more unbiased and data-driven evaluation of our hypothesis. 
 
-To do so, we first fitted a Bayesian multi-city, multi-species occupancy model that included a first-order autoregressive term to account for repeat sampling across primary sampling periods within each city (Sutherland et al. 2016, Royle and Dorazio 2008, Magle et al. 2021). This model had three separate logit-linear predictors: one to indicate a species presence within a city’s species pool, one for site-level occupancy, and one for site-level detection probability. Following Magle et al. (2021), we included the distance of each city to the known margin of a species’ geographic range  in the first linear predictor, with positive and negative numbers respectively indicating cities within and outside a species range. Range data came from IUCN red list data (IUCN 2020). For site-level occupancy and detection, we included impervious cover, gentrification, and the interaction between the two as slope terms in the model. All species-level parameters shared information among species and cities via their random effect structure. Following a 1,000 step adaptation phase and a 125,000 step burn-in, we sampled the posterior 120,000 times across 4 chains. We thinned chains by 3 for a total of 40,000 posterior samples. We assessed model convergence through a visual inspection of traceplots and ensured Gelman-Rubin diagnostics were < 1.10 (Gelman et al., 2013). Following model convergence, we simulated species occupancy at each site across the entire study area from 5000 random samples of the occupancy model’s posterior distribution. 
+To do so, we first fitted a Bayesian multi-city, multi-species occupancy model that included a first-order autoregressive term to account for repeat sampling across primary sampling periods within each city (*6,28*). This model had three separate logit-linear predictors: one to indicate a species presence within a city’s species pool, one for site-level occupancy, and one for site-level detection probability. Following Magle et al. (*6*), we included the distance of each city to the known margin of a species’ geographic range  in the first linear predictor, with positive and negative numbers respectively indicating cities within and outside a species range. Range data came from IUCN red list data (*35*). For site-level occupancy and detection, we included impervious cover, gentrification, and the interaction between the two as slope terms in the model. All species-level parameters shared information among species and cities via their random effect structure. Following a 1,000 step adaptation phase and a 125,000 step burn-in, we sampled the posterior 120,000 times across 4 chains. We thinned chains by 3 for a total of 40,000 posterior samples. We assessed model convergence through a visual inspection of traceplots and ensured Gelman-Rubin diagnostics were < 1.10 (*36*). Following model convergence, we simulated species occupancy at each site across the entire study area from 5000 random samples of the occupancy model’s posterior distribution. 
 
-For the alpha diversity model we calculated 1) the expected species richness at each site and 2) the standard deviation in this estimate across the 5,000 posterior samples. To limit the effect of individual years on these estimates we calculated species richness at a site across all possible sampling periods. This resulted in one estimate per site across cities. We then fitted a varying intercept, varying slope log-linear model to these data, which treated species richness as the response variable but also incorporated the associated uncertainty in this estimate (Kery and Royle citation). Intercept and slope terms were treated as city-level random effects. We included impervious cover, gentrification, and the interaction between the two as covariates. 
+For the alpha diversity model we calculated 1) the expected species richness at each site and 2) the standard deviation in this estimate across the 5,000 posterior samples. To limit the effect of individual years on these estimates we calculated species richness at a site across all possible sampling periods. This resulted in one estimate per site across cities. We then fitted a varying intercept, varying slope log-linear model to these data, which treated species richness as the response variable but also incorporated the associated uncertainty in this estimate (*37*). Intercept and slope terms were treated as city-level random effects. We included impervious cover, gentrification, and the interaction between the two as covariates. 
 
-For the beta diversity model we calculated 1) pairwise community dissimilarity between pairs of sites within each city (i.e., Sørensen’s dissimilarity index) and 2) the standard deviation in this estimate across the 5,000 posterior samples (Legendre & Legendre 2012). Like the alpha diversity model, beta diversity estimates were made across all primary sampling periods. We then fitted a varying intercept, varying slope generalized dissimilarity model to these data, which treated pairwise dissimilarity as the response variable (GDM CITATION). This model used a clog link function and had an inverse link function of $1 - \text{exp}(-\mu)$, where $\mu$ is the linear predictor for one data point. Similar to the alpha diversity model, the beta diversity model incorporated the associated uncertainty in the beta diversity estimate. Intercepts and slopes were treated as city-level random effects. Because community composition may be more similar in nearby sites, we controlled for geographic distance between site pairs by including it as a covariate. We also included differences in impervious cover and gentrification between sites as covariates. However, because this model uses I-spline basis functions to incorporate possible non-linear responses we could not include an interaction between gentrification and impervious cover in this model (GDM CITATION). See the occupancy, alpha and beta diversity models section of the supplemental material.
+For the beta diversity model we calculated 1) pairwise community dissimilarity between pairs of sites within each city (i.e., Sørensen’s dissimilarity index) and 2) the standard deviation in this estimate across the 5,000 posterior samples (*38*). Like the alpha diversity model, beta diversity estimates were made across all primary sampling periods. We then fitted a varying intercept, varying slope generalized dissimilarity model to these data, which treated pairwise dissimilarity as the response variable (*39,40*). This model used a clog link function and had an inverse link function of $1 - \text{exp}(-\mu)$, where $\mu$ is the linear predictor for one data point. Similar to the alpha diversity model, the beta diversity model incorporated the associated uncertainty in the beta diversity estimate. Intercepts and slopes were treated as city-level random effects. Because community composition may be more similar in nearby sites, we controlled for geographic distance between site pairs by including it as a covariate. We also included differences in impervious cover and gentrification between sites as covariates. However, because this model uses I-spline basis functions to incorporate possible non-linear responses we could not include an interaction between gentrification and impervious cover in this model (*39,40*). See the occupancy, alpha and beta diversity models section of the supplemental material.
 
 
 ### *The multi-city multi-species autologistic occupancy model*
 
 
-This model is almost exactly the same model as we had used in Magle et al. (2022). For $s$ in $1,...,S$ species and $c$ in $1,...,C$ cities, $\pi_{sc}$ is the probability species $s$ is within city $c$. Futher, let $x_{sc}$ be a Bernoulli random variable that equals 1 if the species is within that city and is otherwise zero such that $x_{sc} \sim \text{Bernoulli}(\pi_{sc})$. We made $\pi_{sc}$ a function of one covariate--the distance a city is from the known edge of a species extent--using the logit link. This covariate was positive if a city was within a species extent and negative if it was outside. We compiled range information from IUCN red list data (IUCN, 2020). Thus the linear predictor for this level of the model was
+This model is almost exactly the same model as we had used in Magle et al. (*6*). For $s$ in $1,...,S$ species and $c$ in $1,...,C$ cities, $\pi_{sc}$ is the probability species $s$ is within city $c$. Further, let $x_{sc}$ be a Bernoulli random variable that equals 1 if the species is within that city and is otherwise zero such that $x_{sc} \sim \text{Bernoulli}(\pi_{sc})$. We made $\pi_{sc}$ a function of one covariate--the distance a city is from the known edge of a species extent--using the logit link. This covariate was positive if a city was within a species extent and negative if it was outside. We compiled range information from IUCN red list data (*35*). Thus the linear predictor for this level of the model was
 
 $$
 \text{logit}(\pi_{sc}) = \pmb{d}_s\pmb{h}_c
 $$
 where $\pmb{d}_s$ is a vector of species-specific covariates while $\pmb{h}_c$ is a vector of conformable regression coefficients where the leading element is 1 to accomodate the model intercept.
 
-As the first level of the model estimates a species presence at the city-level, the next level estimates species presence within cities conditional on their presence in a city. Given that the number of sites and sampling periods varies across cities, we add a city subscript to define $i_c$ in $1,...,I_c$ sites  and $t_c$ in $1,...,T_c$ sampling periods. However, for simplicity we drop these specific subscripts while we explain the model. Additionally, let $z_{scit}$ be a Bernoulli random variable and $\psi_{scit}$ be the probability of occupancy. As such, $z_{scit} \sim \text{Bernoulli}(\psi_{scit}x_{sc})$. As with the previous level of the model, $\psi_{scit}$ can be made a function of covariates via the logit link. As a depature from the Magle et al. (2022) parameterization, we added a first-order autologistic term to account for any temporal dependence in occupancy status between adjacent sampling periods within a city. Thus, for the first time period in a city, the logit-linear predictor was
+As the first level of the model estimates a species presence at the city-level, the next level estimates species presence within cities conditional on their presence in a city. Given that the number of sites and sampling periods varies across cities, we add a city subscript to define $i_c$ in $1,...,I_c$ sites  and $t_c$ in $1,...,T_c$ sampling periods. However, for simplicity we drop these specific subscripts while we explain the model. Additionally, let $z_{scit}$ be a Bernoulli random variable and $\psi_{scit}$ be the probability of occupancy. As such, $z_{scit} \sim \text{Bernoulli}(\psi_{scit}x_{sc})$. As with the previous level of the model, $\psi_{scit}$ can be made a function of covariates via the logit link. As a depature from the Magle et al. (*6*) parameterization, we added a first-order autologistic term to account for any temporal dependence in occupancy status between adjacent sampling periods within a city. Thus, for the first time period in a city, the logit-linear predictor was
 
 $$
 \text{logit}(\psi_{scit=1}) = \pmb{\beta}_{sc}\pmb{f}_{ci}
@@ -239,7 +287,7 @@ Following this, let $\pmb{\beta}_c$ be a vector of city-specific regression coef
 $$
 \text{log}(\mu_{sci}) = \pmb{\beta}_c\pmb{x_{ci}} + \epsilon_{ci}
 $$
-and following Kery and Royle (YEAR), we accounted for variability in the response variable with an additional level of the model
+and following Kéry and Royle (*37*), we accounted for variability in the response variable with an additional level of the model
 
 $$
 r_{ci} \sim \text{Normal}(\mu_{sci}, \sigma_{ci})
@@ -260,11 +308,11 @@ and the same specification was also applied to the slope terms as well (though n
 
 From our occupancy model, we created a posterior distribution for the latent state of each species at each site across all cities ($z_{scit}$). From this, we derived three quantities:
 
-1. The mean pairwise Sorensen dissimilarity between pairs of sites within each city across all sampling periods ($v_{cik}$, where the subscript k denotes one of the sites in city $c$ that is not the $ith$ site). To do so, we calculated the number of unique species detected in city $c$ and site $i$ across the $t$ sampling seasons. Following this, we calculated the Sorensen dissimilarity metric among all pairs of sites within each city using `vegan` in `R` across 5000 posterior samples. Finally,  we took the median across all posterior samples for each site-pair
+1. The mean pairwise Sørensen dissimilarity between pairs of sites within each city across all sampling periods ($v_{cik}$, where the subscript k denotes one of the sites in city $c$ that is not the $ith$ site). To do so, we calculated the number of unique species detected in city $c$ and site $i$ across the $t$ sampling seasons. Following this, we calculated the Sørensen dissimilarity metric among all pairs of sites within each city using `vegan` in `R` across 5000 posterior samples (*32, 42*). Finally,  we took the median across all posterior samples for each site-pair
 2. The standard deviation of the first quantity across those 5000 posterior samples ($\sigma_{cik}$). This quantifies our level of uncertainty with the first estimate.
 3. The mean expected number of unique species between a site-pair ($w_{cik}$). 
 
-To estimate pairwise dissimilarity as a function of covariates we modified a generalized dissimilarity model to account for parametetric uncertainity of the response variable $v_{cik}$ (GDM citation). To do so, GDMs estimate the relationship between dissimilarity and environmental or spatial differences between pairs of sites with a clog link (Mokany et al. 2022):
+To estimate pairwise dissimilarity as a function of covariates we modified a generalized dissimilarity model to account for parametetric uncertainity of the response variable $v_{cik}$ (*39,40*). To do so, GDMs estimate the relationship between dissimilarity and environmental or spatial differences between pairs of sites with a clog link (*40*):
 
 $$
 d_{cik} = 1 - \text{exp}(-\eta_{cik})
@@ -274,7 +322,7 @@ where $d_{cik}$ is the biological dissimilarity between sites $i$ and $k$ within
 $$
 \eta_{cik} = b_0 + \sum_{p=1}^{P}|f_p(x_{cip}) - f_p(x_{ckp})|
 $$
-where $b_0$ is the model intercept (i.e., the expected pairwise dissimilarity between sites with identical environments). Covariates are further transformed within GDMs which 1) uses I-spline basis functions (Ramsay, 1988) and 2) constrains slope terms to be non-negative. Doing so allows the effect of each covariate to non-linearly vary while also ensuring that beta diversity increases monotonically as sites are more different from one another (a core assumption of this model). More specifically, the I-spline basis function for predictor $p$ with 3 basis functions (the default used for GDMs) is
+where $b_0$ is the model intercept (i.e., the expected pairwise dissimilarity between sites with identical environments). Covariates are further transformed within GDMs which 1) uses I-spline basis functions (*42*) and 2) constrains slope terms to be non-negative. Doing so allows the effect of each covariate to non-linearly vary while also ensuring that beta diversity increases monotonically as sites are more different from one another (a core assumption of this model). More specifically, the I-spline basis function for predictor $p$ with 3 basis functions (the default used for GDMs) is
 
 $$
 fp(x_{cip}) = \sum_{j = 1}^3a_{cpj}I_{pj}(x_{cip})
@@ -289,7 +337,7 @@ d_{cik} &= 1 - \text{exp}(-\eta_{cik}) \\
 \end{aligned}
 \end{equation}
 
-where $\sigma_{cik}$ is the binomial variance function (Mokany et al. 2022) and the half-Normal is constrained to be non-negative. Following this, we account for variation in the measurement of our response variable
+where $\sigma_{cik}$ is the binomial variance function (*40*) and the half-Normal is constrained to be non-negative. Following this, we account for variation in the measurement of our response variable
 
 $$
 v_{cik} \sim \text{Half-Normal}(\mu_{cik}, \sigma_{cik})
@@ -300,20 +348,20 @@ We treated all coefficients in the linear predictor as city-level random effects
 
 ## Additional gentrification metrics
 
-As previously stated we used a slightly modified version of the gentrification metric proposed by Chapple et al. (2017). This metric used a two-step process to identify gentrification. First, for an area to be gentrifying, it must be vulnerable to gentrification at the start of the study (in this case that is 2010). For our version of this metric a census tract to be vulnerable to gentrification it must:
+As previously stated we used a slightly modified version of the gentrification metric proposed by Chapple et al. (*30*). This metric used a two-step process to identify gentrification. First, for an area to be gentrifying, it must be vulnerable to gentrification at the start of the study (in this case that is 2010). For our version of this metric a Census tract to be vulnerable to gentrification it must:
 
 1. Have had at least 500 residents in year 2010.
 2. Have had at least two of these three qualities 
-  a. The median income of residents in the census tract must be lower than the city's average income.
+  a. The median income of residents in the Census tract must be lower than the city's average income.
   b. The proportion of college-educated residents in the census-tract must be lower than the proportion of college-educated residents across the city.
-  c. The proportion of nonwhite residents in the census tract must be greater than the proportion of nonwhite residents across the city.
+  c. The proportion of nonwhite residents in the Census tract must be greater than the proportion of nonwhite residents across the city.
   
 
-After calculating census tract vulnerability, we created a 500m radius buffer around each camera trapping location within a city and intersected that buffer with the census tract level vulnerability index. This buffer was chosen to capture the general area around each site that easily fell within the home range of any species in our analysis. For example, a site could be right on the edge of a non-vulnerable census tract that abuts a vulnerable census tract and we would want to identify that location as 'vulnerable.'
+After calculating Census tract vulnerability, we created a 500m radius buffer around each camera trapping location within a city and intersected that buffer with the Census tract level vulnerability index. This buffer was chosen to capture the general area around each site that easily fell within the home range of any species in our analysis. For example, a site could be right on the edge of a non-vulnerable Census tract that abuts a vulnerable Census tract and we would want to identify that location as 'vulnerable.'
 
 Of 999 UWIN sites across 20 cities, 474 (47.4%) were considered vulnerable to gentrification.
 
-Following this, a census tract was considered gentrifying if at the end of the study (in this case that is 2019) a census tract:
+Following this, a Census tract was considered gentrifying if at the end of the study (in this case that is 2019) a Census tract:
 
 1. Was vulnerable to gentrification in 2010.
 2. The change in median income was greater than the average change across the city, after correcting for inflation.
@@ -322,17 +370,17 @@ Following this, a census tract was considered gentrifying if at the end of the s
   b. The change in the proportion of non-hispanic white residents was greater than the average change across the city.
   
 
-Of the 474 sites that were vulnerable to gentrification, about half of them of them were gentrifying (n = 264, 55.7%). However,there is a substantial amount of variation among cities. For example, Urbana, IL only had one of thirty five sites near a gentrifying census tract while Phoenix, AZ had exactly half of their 96 sites in gentrifying areas.
+Of the 474 sites that were vulnerable to gentrification, about half of them of them were gentrifying (n = 264, 55.7%). However,there is a substantial amount of variation among cities. For example, Urbana, IL only had one of thirty five sites near a gentrifying Census tract while Phoenix, AZ had exactly half of their 96 sites in gentrifying areas.
 
 ### *Retrieving the census data*
 
-We used the `tidycensus` package in `R` to query census data from the year 2010 and 2019 (CITATION). The 2010 data came from the 10-year decennial census whereas the 2019 data came from the 5-year American Community Survey (ACS).
+We used the `tidycensus` package in `R` to query census data from the year 2010 and 2019 (*31*). The 2010 data came from the 10-year decennial census whereas the 2019 data came from the 5-year American Community Survey.
 
-Across these years we compiled data the aforementioned variables for all census tracts that were within the general area of a UWIN transect. To do so we created a bounding box around the camera trap locations for each city, added a 500m buffer, and then cropped the census data.
+Across these years we compiled data the aforementioned variables for all Census tracts that were within the general area of a UWIN transect. To do so we created a bounding box around the camera trap locations for each city, added a 500m buffer, and then cropped the census data.
 
 ### *Step 1. Determine which areas are vulnerable to gentrification*
 
-After cropping the census tracts to an area around a cities sampled location, we calculated the regional median (i.e., median income across census tracts) and identified census tracts that fell below that number in 2010.
+After cropping the Census tracts to an area around a cities sampled location, we calculated the regional median (i.e., median income across Census tracts) and identified Census tracts that fell below that number in 2010.
 
 
 ```{r med_inc, echo = FALSE, include = FALSE, message = FALSE, warning = FALSE}
@@ -375,7 +423,7 @@ city_result <- vector("list", length = length(med))
 
 gvals <- rep(NA, length(med))
 
-# # add the city to each census tract
+# # add the city to each Census tract
 unq_city <- unique(coords$City)
 city_dict <- vector(
   "list",
@@ -559,15 +607,15 @@ aa %>%
   kableExtra::kbl(
     format = "latex",
     align = c("l", "r","r"),
-    caption = "The number of sites that were above (False) and below (True) the median income across census tracts in 2010. This was used to help determine if sites were vulnerable to gentrification.",
+    caption = "The number of sites that were above (False) and below (True) the median income across Census tracts in 2010. This was used to help determine if sites were vulnerable to gentrification.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 ```
 
-Following this, we calculated the median educational attainment in 2010 across census tracts, which was calculated similarly to income. We simplified the census data into two categories for educational attainment: those with a college degree and those without a college degree.
+Following this, we calculated the median educational attainment in 2010 across Census tracts, which was calculated similarly to income. We simplified the census data into two categories for educational attainment: those with a college degree and those without a college degree.
 
 ```{r education_vuln, echo = FALSE, include = FALSE, message = FALSE, warning = FALSE}
 if(!file.exists("../data/census_data/education/gent_vulnerability.rds")){
@@ -702,16 +750,16 @@ aa %>%
   kableExtra::kbl(
     format = "latex",
     align = c("l", "r","r"),
-    caption = "The number of sites that were above (False) and below (True) the median educational attainment (i.e., college degree) across census tracts in 2010. This was used to help determine if sites were vulnerable to gentrification.",
+    caption = "The number of sites that were above (False) and below (True) the median educational attainment (i.e., college degree) across Census tracts in 2010. This was used to help determine if sites were vulnerable to gentrification.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 ```
 
 We then calculated whether Census tracts had at least 500 people in 2010.
-The educational attainment data also had information on the number of people in each census tract, so we used that to create a binary metric for whether or not a census tract in 2010 had at least 500 people living in them. Of the 8133 census tracts across all cities, only 114 of them had fewer than 500 residents.
+The educational attainment data also had information on the number of people in each Census tract, so we used that to create a binary metric for whether or not a Census tract in 2010 had at least 500 people living in them. Of the 8133 Census tracts across all cities, only 114 of them had fewer than 500 residents.
 ```{r mt500, echo = FALSE, include = FALSE}
 
 npeople <- edu_list_vuln
@@ -845,9 +893,9 @@ aa %>%
     align = c("l", "r","r"),
     caption = "The number of sites near Census tracts that had more (False) or less (True) than the regional median of non-hispanic white residents in 2010. This was used to help determine if sites were vulnerable to gentrification.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 ```
 
 Finally, after combining these metrics we can arrive at the number of sites that were vulnerable to gentrification in 2010.
@@ -855,7 +903,7 @@ Finally, after combining these metrics we can arrive at the number of sites that
 ```{r vuln_combo, echo = FALSE}
 # store site-specific info
 vuln_list <- vector("list", length = length(citymed))
-# store census tract data too
+# store Census tract data too
 vuln_list_poly <- vuln_list
 if(
   !file.exists(
@@ -977,18 +1025,18 @@ aa %>%
     align = c("l", "r","r"),
     caption = "The number of sites that were (True) and were not (False) vulnerable to gentrification in 2010.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 
 ```
 
 ### *Step 2. Determine which vulnerable Census tracts gentrified*
 
-This step here required us to compare Census tracts over time (i.e., between 2010 and 2019). However, Census tracts are not constant and are regularly redrawn. As a result, it can be difficult to make a 1 to 1 comparison of Census tracts over time. To address this we used areal interpolation. To do so we first rasterized the 2010 census data at a 500m resolution. Second, we joined the 2019 Census tracts to these data and took the spatial average (i.e., weighted unions by their area). For example, if Census tracts did not change over time, this would technique would provide a close to direct comparison (i.e., a 2019 census tract would mostly intersect the rasterized values of the same 2010 census tract). If a census tract did change, the 2019 census tract would take the spatial average over the 2010 census tracts it intersected with. 
+This step here required us to compare Census tracts over time (i.e., between 2010 and 2019). However, Census tracts are not constant and are regularly redrawn. As a result, it can be difficult to make a 1 to 1 comparison of Census tracts over time. To address this we used areal interpolation. To do so we first rasterized the 2010 census data at a 500m resolution. Second, we joined the 2019 Census tracts to these data and took the spatial average (i.e., weighted unions by their area). For example, if Census tracts did not change over time, this would technique would provide a close to direct comparison (i.e., a 2019 Census tract would mostly intersect the rasterized values of the same 2010 Census tract). If a Census tract did change, the 2019 Census tract would take the spatial average over the 2010 Census tracts it intersected with. 
 
-After doing this we calculated the median change in income and educational attainment. We also calculated if the proportion of non-hispanic white residents in census tracts increased more than the regional median increase (i.e., more non-hispanic white people moved in than average).
+After doing this we calculated the median change in income and educational attainment. We also calculated if the proportion of non-hispanic white residents in Census tracts increased more than the regional median increase (i.e., more non-hispanic white people moved in than average).
 
 
 
@@ -1129,7 +1177,7 @@ names(edu_list) <- names(citymed)
     ymx = st_bbox(edumed[[i]]$start)[4]
   )
   
-  # and turn the 2000 census tract data into a raster
+  # and turn the 2000 Census tract data into a raster
   census_raster <- rasterize(
     edumed[[i]]$start,
     my_rast,
@@ -1137,7 +1185,7 @@ names(edu_list) <- names(citymed)
     fun = "mean"
   )
   
-  # Extract based on the 2019 census tracts
+  # Extract based on the 2019 Census tracts
   start_education <- suppressWarnings(
     raster::extract(
       census_raster,
@@ -1209,9 +1257,9 @@ aa %>%
     align = c("l", "r","r"),
     caption = "The number of sites where the increase in educational attainment (i.e., a college degree) between 2010 and 2019 was (True) and was not (False) greater than the city average.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 row.names(aa) <- NULL
 ```
@@ -1341,7 +1389,7 @@ names(race_list) <- names(citymed)
     ymx = st_bbox(racemed[[i]]$start)[4]
   )
   
-  # and turn the 2000 census tract data into a raster
+  # and turn the 2000 Census tract data into a raster
   census_raster <- rasterize(
     racemed[[i]]$start,
     my_rast,
@@ -1349,7 +1397,7 @@ names(race_list) <- names(citymed)
     fun = "mean"
   )
   
-  # Extract based on the 2019 census tracts
+  # Extract based on the 2019 Census tracts
   start_race <- suppressWarnings(
     raster::extract(
       census_raster,
@@ -1416,9 +1464,9 @@ aa %>%
     align = c("l", "r","r"),
     caption = "The number of sites that where the change in the proportion of non-hispanic white residents was greater than the city average between 2010 and 2019.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 ```
 
 For income, in addition to areal interpolation we adjusted for inflation. To do so we used the [U.S. Bureau of Labor Statistics inflation calculator](https://www.bls.gov/data/inflation_calculator.htm) to determine how much the price of \$1 has changed between January 2010 and January 2019 (it is \$1.17). Thus, we multiplied the dollar values of median housing prices in 2000 by `1.17` before comparing changes in housing prices.
@@ -1507,7 +1555,7 @@ names(price_list) <- names(citymed)
     ymx = st_bbox(pricemed[[i]]$start)[4]
   )
   
-  # and turn the 2000 census tract data into a raster
+  # and turn the 2000 Census tract data into a raster
   census_raster <- rasterize(
     pricemed[[i]]$start,
     my_rast,
@@ -1516,7 +1564,7 @@ names(price_list) <- names(citymed)
     na.rm = TRUE
   )
   
-  # Extract based on the 2019 census tracts, mu
+  # Extract based on the 2019 Census tracts, mu
   start_price <- suppressWarnings(
     raster::extract(
       census_raster,
@@ -1589,9 +1637,9 @@ aa %>%
     align = c("l", "r","r"),
     caption = "The number of sites that do (True) and do not (False) reside in Census tracts where the median income increased more than the regional median.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 row.names(aa) <- pretty_names
 
@@ -1781,9 +1829,9 @@ aa %>%
     align = c("l", "r","r","r"),
     caption = "The number of sites that were vulnerable to gentrification in 2010 but did not gentrify, the number of sites that did gentrify, and the number of sites that were not vulnerable so could not gentrify.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 
 ```
 
@@ -1795,6 +1843,8 @@ aa %>%
 knitr::include_graphics("../plots/gentrification_supp_map.png")
 
 ```
+
+
 
 ## City-specific alpha and beta diversity results
 ```{r, list_files, echo = FALSE}
@@ -1836,7 +1886,7 @@ figure_legends <- vector("list", length = length(pretty_names))
 for(i in 1:length(figure_legends)){
   figure_legends[[i]] <- paste0(
     "The distribution of gentrifying ",
-    "and non-gentrifying census tracts for ",
+    "and non-gentrifying Census tracts for ",
     pretty_names[i], " as well as the camera trap locations ",
     "for this city. Below the map are city specific estimates ",
     "for how alpha diversity (species richness) and beta diversity ",
@@ -1873,7 +1923,7 @@ for(i in 1:length(pretty_names)) {
 
 ## Alpha diversity model estimates
 
-```{r read_alpha, echo = FALSE}
+```{r read_alpha, echo = FALSE, results ='asis'}
 alpha_mc <- readRDS(
   "../mcmc_output/alpha_output/alpha_mcmc.RDS"
 )
@@ -1912,10 +1962,12 @@ amu %>%
     align = c("l","r", "r","r","r","r"),
     caption = "The among-city average estimates from the alpha diversity model.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
 
+```{r alpha_sd, echo = FALSE}
 asd <- round(
   t(
     apply(
@@ -1941,10 +1993,12 @@ asd %>%
     align = c("l","r", "r","r","r","r"),
     caption = "The estimated standard deviation of city-specific estimates from the among-city means from the alpha diversity model.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
 
+```{r alpha_city, echo = FALSE}
 aa <- round(
     apply(
       alpha_mc$alpha,
@@ -2002,15 +2056,15 @@ parm_mat %>%
     align = c("l", "l","r", "r","r","r","r"),
     caption = "City specific-estimates from the alpha diversity model.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 ```
 
 
 ## Beta diversity model estimates
 
-```{r read_beta, echo = FALSE}
+```{r read_beta, echo = FALSE, results ='asis'}
 beta_mc <- readRDS(
   "../mcmc_output/beta_output/beta_results_collapsed_norm_vegan.RDS"
 )
@@ -2050,10 +2104,12 @@ amu %>%
     align = c("l","r", "r","r","r","r" ,"r"),
     caption = "The among-city average estimates from the beta diversity model. Note that the two continous covariates (geographic distance and impervious cover) have been transformed with I-splines, so each covariate has multiple slope terms.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
 
+```{r beta_sd, echo = FALSE}
 asd <- round(
   t(
     apply(
@@ -2080,10 +2136,12 @@ asd %>%
     align = c("l","r", "r","r","r","r","r"),
     caption = "The estimated standard deviation of city-specific estimates from the among-city means from the beta diversity model. Note that the two continous covariates (geographic distance and impervious cover) have been transformed with I-splines, so each covariate has multiple slope terms.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
 
+```{r beta_city, echo = FALSE}
 aa <- round(
     apply(
       beta_mc$beta_exp,
@@ -2142,38 +2200,571 @@ parm_mat %>%
     align = c("l", "l","r", "r","r","r","r","r"),
     caption = "City specific-estimates from the beta diversity model. Note that the two continous covariates (geographic distance and impervious cover) have been transformed with I-splines, so each covariate has multiple slope terms.",
     longtable = TRUE,
-    booktabs = TRUE
+    booktabs = TRUE, linesep = ""
   ) %>% 
-  kableExtra::kable_styling()
+  kableExtra::kable_styling(latex_options="repeat_header")
 ```
 
-## Occupancy model estimates
-```{r read_occupancy, echo = FALSE}
+## Multi-city multi-species occupancy model estimates
+```{r read_occupancyt1, echo = FALSE}
 
-mout <- readRDS(
-  "../results/occupancy_model_fit_simpler2.RDS"
+mc <- readRDS("occupancy_summary.RDS")
+species <- read.csv("../data/species_in_analysis.csv")
+cities <- c(
+  "Athens, GA",
+  "Bay Area, CA",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Houston, TX",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "Metro LA, CA",
+  "Washington D.C.",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Sanford, FL",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+parms <- c("intercept", "gent", "imp", "gent X imp")
+
+# make a million tables now
+
+## a_among
+a1 <- data.frame(
+  Parameter = c("Intercept", "Dist. to edge of range"),
+  mc[[1]]
+)
+colnames(a1) <- c("Parameter", "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+a1 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","r", "r","r","r","r"),
+    caption = "Community average estimates of whether species were available for sampling within a given city. Distance to the edge of a species range was calculated such that cities outside of a species distributional extent were negative values while cities inside of a species distributional extent were positive values.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+```{r read_occupancy_2, echo=FALSE}
+## tau among
+
+a2 <- data.frame(
+  Parameter = c("Intercept", "Dist. to edge of range"),
+  mc[[2]]
+)
+colnames(a2) <- c("Parameter", "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+a2 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","r", "r","r","r","r"),
+    caption = "The estimated standard deviation of species-specific estimates from the community means of whether a species was available for sampling within a city.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+```{r read_occupancy_3, echo=FALSE}
+# b_among
+
+
+
+a3 <- data.frame(
+  Parameter = c("intercept",
+    rep("", nrow(species) - 1),
+    "Dist. to edge of range",
+    rep("", nrow(species) - 1)
+  ),
+  Species = rep( gsub("_"," ", species$species), 2),
+  rbind(
+    t(mc[[3]][,1,]),
+    t(mc[[3]][,2,])
+  )
+)
+colnames(a3) <- c("Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+a3 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "Species-specific estimates for whether they were available for sampling within a given city. Distance to the edge of a species range was calculated such that cities outside of a species distributional extent were negative values while cities inside of a species distributional extent were positive values.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+
+```{r community_mean, echo = FALSE}
+cm <- data.frame(
+  Parameter = parms,
+  mc[[4]]
 )
 
-mc <- do.call("rbind", mout$mcmc)
-set.seed(454)
-mc <- mc[sample(1:nrow(mc), 10000),]
-mc <- split_mcmc(mc)
-rm(mout)
+colnames(cm) <- c("Parameter",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
 
-# get gent
-g1 <- t(apply(
-  mc$b_species[,2,],
-  2,
-  function(x){
-    round(
-      quantile(
-        x,
-        probs = c(0.025,0.05,0.5,0.95,0.975)
-      ),
-      2
+cm %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Community-level occupancy parameters.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+```{r community_sd, echo = FALSE}
+cm <- data.frame(
+  Parameter = parms,
+  mc[[5]]
+)
+
+colnames(cm) <- c("Parameter",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+cm %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Species-level standard deviation of their among-city occupancy parameters from the community-level averages.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+```{r read_occupancy_4, echo=FALSE}
+a4 <- data.frame(
+  Parameter = c(parms[1],
+    rep("", nrow(species) - 1),
+    parms[2],
+    rep("", nrow(species) - 1),
+    parms[3],
+    rep("", nrow(species) - 1),
+    parms[4],
+    rep("", nrow(species) - 1)
+  ),
+  Species = rep( gsub("_"," ", species$species), 4),
+  rbind(
+    t(mc[[8]][,1,]),
+    t(mc[[8]][,2,]),
+    t(mc[[8]][,3,]),
+    t(mc[[8]][,4,])
+  )
+)
+colnames(a4) <- c("Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a4 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "Species-specific but among-city average estimates related to a species latent distribution (occupancy).",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+```{r read_occupancy_5, echo=FALSE}
+tmp <- rbind(
+  mc[[6]],
+  mc[[7]]
+)
+tmp <- tmp[c(1,5,2,6,3,7,4,8),]
+
+a5 <- data.frame(
+  Parameter = c(
+    parms[1],"",parms[2],"",
+    parms[3],"",parms[4], ""
+  ),
+  `Shape or rate` = rep(c("shape", "rate"), 4),
+  tmp
+)
+colnames(a5) <- c("Parameter","Shape or rate",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a5 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "Estimated hyperparameters for the Gamma distributions that informed species and city-specific variability around a species among-city mean with respect to their latent distribution (occupancy).",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+```{r read_occupancy_6, echo=FALSE}
+
+
+
+a6 <- data.frame(
+  Parameter = c(parms[1],
+    rep("", nrow(species) - 1),
+    parms[2],
+    rep("", nrow(species) - 1),
+    parms[3],
+    rep("", nrow(species) - 1),
+    parms[4],
+    rep("", nrow(species) - 1)
+  ),
+  Species = rep( gsub("_"," ", species$species), 4),
+  rbind(
+    t(mc[[9]][,1,]),
+    t(mc[[9]][,2,]),
+    t(mc[[9]][,3,]),
+    t(mc[[9]][,4,])
+  )
+)
+
+colnames(a6) <- c("Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a6 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "The occupancy-level standard deviation for city and species-specific estimate around each species among-city average.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+```{r read_occupancy_7, echo=FALSE}
+
+table_list <- vector("list", length = 23)
+for(i in 1:23){
+  tmp <- data.frame(
+    City = "",
+    Parameter = c(
+      parms[1], rep("", 20),
+      parms[2], rep("", 20),
+      parms[3], rep("", 20),
+      parms[4], rep("", 20)
+    ),
+    species = rep(gsub("_", " ", species$species), 4),
+    rbind(
+      t(mc[[10]][,1,,i]),
+      t(mc[[10]][,2,,i]),
+      t(mc[[10]][,3,,i]),
+      t(mc[[10]][,4,,i])
     )
-  }
-)
+  )
+
+  tmp$City[1] <- cities[i]
+  table_list[[i]] <- tmp
+
+}
+table_list <- dplyr::bind_rows(table_list)
+  colnames(table_list)  <- c("City", "Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+  table_list %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "l","l", "r", "r","r","r","r"),
+    caption = "Species and city-specific occupancy parameters. Note that all of these species do not likely reside in this city (that is controlled by another level of the model).",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+```{r theta_ests, echo = FALSE}
+cm <- data.frame(
+  Species = 
+    gsub("_"," ", species$species),
+    mc[[15]]
+  )
+
+colnames(cm) <- c("Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+cm %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Species-specific estimates for the first-order autologistic term included in the occupancy model to account for repeat sampling at sites. These estimates are among-city averages.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+```{r theta_mu_sd, echo = FALSE}
+cm <- data.frame(
+  Parameter =
+    c("Community average", "Standard deviation"),
+  rbind(
+    mc[[11]],
+    mc[[12]]
+  )
 )
 
+colnames(cm) <- c("Parameter",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+cm %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Community average and the estimated species-level variability (standard deviation) around this average for the autologistic term included in the occupancy model to account for repeat sampling at sites.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+```{r theta_shape_rate, echo=FALSE}
+tmp <- rbind(
+  mc[[13]],
+  mc[[14]]
+)
+
+
+a5 <- data.frame(
+  Parameter = c("Shape", "Rate"),
+  tmp
+)
+colnames(a5) <- c("Parameter",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a5 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Estimated hyperparameters for the Gamma distributions that informed species and city-specific variability around a species among-city mean with respect to their autologistic parameter in the occupancy model.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+
+```{r theta_sd_city, echo=FALSE}
+
+
+a5 <- data.frame(
+  Species = gsub("_", " ", species$species),
+  mc[[16]]
+)
+colnames(a5) <- c("Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a5 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Estimated species level variability (standard deviation) of each species city-level estimate from their among-city averages for their autologistic parameter in the occupancy model.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+```{r theta_species_city, echo=FALSE}
+
+table_list <- vector("list", length = 23)
+for(i in 1:23){
+  tmp <- data.frame(
+    City = "",
+    species = gsub("_", " ", species$species),
+    t(mc[[17]][,,i])
+  )
+
+  tmp$City[1] <- cities[i]
+  table_list[[i]] <- tmp
+
+}
+table_list <- dplyr::bind_rows(table_list)
+  colnames(table_list)  <- c("City","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+  table_list %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "l", "r", "r","r","r","r"),
+    caption = "Species and city-specific autologistic  parameters for the occupancy model. Note that all of these species do not likely reside in this city (that is controlled by another level of the model).",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+```{r community_mean_det, echo = FALSE}
+cm <- data.frame(
+  Parameter = parms,
+  mc[[18]]
+)
+
+colnames(cm) <- c("Parameter",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+cm %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Community-level detection parameters.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+
+```{r community_sd_det, echo = FALSE}
+cm <- data.frame(
+  Parameter = parms,
+  mc[[19]]
+)
+
+colnames(cm) <- c("Parameter",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+
+cm %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "r", "r","r","r","r"),
+    caption = "Species-level standard deviation of their among-city detection parameters from the community-level averages.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+
+```
+
+```{r read_occupancy_5_det, echo=FALSE}
+tmp <- rbind(
+  mc[[20]],
+  mc[[21]]
+)
+tmp <- tmp[c(1,5,2,6,3,7,4,8),]
+
+a5 <- data.frame(
+  Parameter = c(
+    parms[1],"",parms[2],"",
+    parms[3],"",parms[4], ""
+  ),
+  `Shape or rate` = rep(c("shape", "rate"), 4),
+  tmp
+)
+colnames(a5) <- c("Parameter","Shape or rate",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a5 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "Estimated hyperparameters for the Gamma distributions that informed species and city-specific variability around a species among-city mean with respect to their detection probability.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+
+```{r read_occupancy_4_det, echo=FALSE}
+a4 <- data.frame(
+  Parameter = c(parms[1],
+    rep("", nrow(species) - 1),
+    parms[2],
+    rep("", nrow(species) - 1),
+    parms[3],
+    rep("", nrow(species) - 1),
+    parms[4],
+    rep("", nrow(species) - 1)
+  ),
+  Species = rep( gsub("_"," ", species$species), 4),
+  rbind(
+    t(mc[[22]][,1,]),
+    t(mc[[22]][,2,]),
+    t(mc[[22]][,3,]),
+    t(mc[[22]][,4,])
+  )
+)
+colnames(a4) <- c("Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a4 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "Species-specific but among-city average estimates related to a species detection probability.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+
+```{r read_occupancy_6_det, echo=FALSE}
+
+
+
+a6 <- data.frame(
+  Parameter = c(parms[1],
+    rep("", nrow(species) - 1),
+    parms[2],
+    rep("", nrow(species) - 1),
+    parms[3],
+    rep("", nrow(species) - 1),
+    parms[4],
+    rep("", nrow(species) - 1)
+  ),
+  Species = rep( gsub("_"," ", species$species), 4),
+  rbind(
+    t(mc[[23]][,1,]),
+    t(mc[[23]][,2,]),
+    t(mc[[23]][,3,]),
+    t(mc[[23]][,4,])
+  )
+)
+
+colnames(a6) <- c("Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+a6 %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l","l", "r", "r","r","r","r"),
+    caption = "The detection-level standard deviation for city and species-specific estimate around each species among-city average.",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
+```
+
+
+
+```{r read_occupancy_7_det, echo=FALSE}
+
+table_list <- vector("list", length = 23)
+for(i in 1:23){
+  tmp <- data.frame(
+    City = "",
+    Parameter = c(
+      parms[1], rep("", 20),
+      parms[2], rep("", 20),
+      parms[3], rep("", 20),
+      parms[4], rep("", 20)
+    ),
+    species = rep(gsub("_", " ", species$species), 4),
+    rbind(
+      t(mc[[24]][,1,,i]),
+      t(mc[[24]][,2,,i]),
+      t(mc[[24]][,3,,i]),
+      t(mc[[24]][,4,,i])
+    )
+  )
+
+  tmp$City[1] <- cities[i]
+  table_list[[i]] <- tmp
+
+}
+table_list <- dplyr::bind_rows(table_list)
+  colnames(table_list)  <- c("City", "Parameter","Species",  "CI(0.025)", "CI(0.05)", "Estimate", "CI(0.95)", "CI(0.975)")
+  table_list %>% 
+  kableExtra::kbl(
+    format = "latex",
+    align = c("l", "l","l", "r", "r","r","r","r"),
+    caption = "Species and city-specific detection parameters. Note that all of these species do not likely reside in this city (that is controlled by another level of the model).",
+    longtable = TRUE,
+    booktabs = TRUE, linesep = ""
+  ) %>% 
+  kableExtra::kable_styling(latex_options="repeat_header")
 ```

@@ -11,7 +11,7 @@ yrs <- c(2011,2019)
 
 city_result <- vector("list", length = length(cities))
 
-for(i in 12:length(cities)){
+for(i in 1:length(cities)){
   print(
     paste(
       i,"of",length(cities)
@@ -94,78 +94,14 @@ city_result <- readRDS("imp_census_tract.RDS")
 cc <- do.call("rbind", city_result)
 cc <- cc[complete.cases(cc),]
 
-cc <- cc %>% 
-  dplyr::group_by(city) %>% 
-  dplyr::mutate(
-    imp = mean_19 - mean(mean_19)
-)
 
-cc$imp <- cc$imp / 25
-
-
-
-cc$city <- factor(cc$city)
-
-m1 <- glmer(
-  gent ~ imp + (1 + imp| city),
-  data = cc,
-  family = "binomial"
-)
-
-m2 <- brm(
-  gent ~ imp + (1 + imp|city),
-  data = cc,
-  family = "bernoulli"
-)
-
-summary(m1)
-
-imp <- seq(0,100, length.out = 100)
-
-pred_mat <- data.frame(
-  imp = (imp - mean(imp))/25
-)
-
-my_pred <- predict(m1, newdata = pred_mat, re.form=NA, type = "response")
-
-
-
-
-cc$bin <- cut(
-  cc$mean_19,
-  breaks = seq(0,100, 10),
-  include.lowest = TRUE
-)
-
-yo <- cc %>% 
-  dplyr::group_by(bin) %>% 
+tmp <- cc %>% 
+  dplyr::group_by(city, gent, vuln) %>%
   dplyr::summarise(
-    gent_mu = mean(gent),
-    gent_se = sd(gent) / sqrt(length(gent))
-)
-yo$mid <- seq(5,95,10)
-
-plot(
-  my_pred ~ imp, type = "l", ylim = c(0,1),
-  xlab = "Impervious cover within census tract (%)",
-  ylab = "Probability census tract is gentrifying",
-  bty = "l",
-  las = 1,
-  lwd = 3
-)
-for(i in 1:nrow(yo)){
-  lines(
-    x = rep(yo$mid[i],2),
-    y = c(
-      yo$gent_mu[i] + yo$gent_se[i],
-      yo$gent_mu[i] - yo$gent_se[i]
-    ),
-    lwd = 2
-  )
-}
-points(y = yo$gent_mu, x = yo$mid, pch = 21, cex = 1.3,
-       bg = "gray50")
-
+    mu11 = mean(mean_11),
+    mu19 = mean(mean_19)
+  ) %>% 
+  data.frame()
 
 
 

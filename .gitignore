@@ -37,3 +37,4 @@ rsconnect/
 *.RDS
 
 /gent_peek/
+results/occupancy_mcmc.csv

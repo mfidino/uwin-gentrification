@@ -322,7 +322,7 @@ m <- matrix(
 #   nrow = 4,
 #   byrow = TRUE
 # )
-tiff("./plots/draft_fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
+tiff("./plots/fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
      res = 1200, compression = "lzw")
 {
   layout(m)
@@ -334,7 +334,7 @@ tiff("./plots/draft_fig_1_gentrification.tiff", height = 4, width = 6, units = "
   )
   
   plot_titles <- paste0(
-    LETTERS[1:4],")", c(" Shifted", " Enhanced", " Nested", " No change")
+    LETTERS[1:4],")", c(" Full replacement", " Increased", " Nested", " No change")
   )
 
   for(i in 1:4){
@@ -430,7 +430,7 @@ tiff("./plots/draft_fig_1_gentrification.tiff", height = 4, width = 6, units = "
   )
   
   
-  plot_titles2 <- c("Shifted", "Enhanced", "Nested", "No change")
+  plot_titles2 <- c("Full replacement", "Increased", "Nested", "No change")
   for(i in 1:4){
     text(
       LETTERS[i],
