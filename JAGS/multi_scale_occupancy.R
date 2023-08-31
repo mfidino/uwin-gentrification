@@ -47,39 +47,39 @@ model{
   }
   # Setting up within-city seasonal variation now that we have
   #  a structure set up for each species in a city.
-  c_shape_psi ~ dunif(0.001, 10)
-  c_rate_psi ~ dunif(0.001, 10)
-  for(k in 1:ncity){
-    c_tau_psi[k] ~ dgamma(c_shape_psi, c_rate_psi)
-  }
+  # c_shape_psi ~ dunif(0.001, 10)
+  # c_rate_psi ~ dunif(0.001, 10)
+  # for(k in 1:ncity){
+  #   c_tau_psi[k] ~ dgamma(c_shape_psi, c_rate_psi)
+  # }
   # Refererence the correct season_city_tau for the seasonal random effect.
-  for(m in 1:nseason_params){
-    # species, season, and city seasonal variation.
-    ssc_psi[m] ~ dnorm(
-      b_species_city[
-        1,
-        combo_species_idx[m],
-        combo_city_idx[m]
-        ],
-      c_tau_psi[combo_city_idx[m]]
-    )
-  }
+  # for(m in 1:nseason_params){
+  #   # species, season, and city seasonal variation.
+  #   ssc_psi[m] ~ dnorm(
+  #     b_species_city[
+  #       1,
+  #       combo_species_idx[m],
+  #       combo_city_idx[m]
+  #       ],
+  #     c_tau_psi[combo_city_idx[m]]
+  #   )
+  # }
   # within-city regression (latent-state) for 'first' surveys
   for(s in 1:nsamples_one){
     logit(psi[s]) <- inprod(
-      b_species_city[2:ncov_within,species_idx[s],city_idx[s]],
-      psi_covs[s,2:ncov_within]
-    ) + 
-      ssc_psi[combo_idx[s]]
+      b_species_city[1:ncov_within,species_idx[s],city_idx[s]],
+      psi_covs[s,1:ncov_within]
+    ) #+ 
+      #ssc_psi[combo_idx[s]]
     z[s] ~ dbern(psi[s] * x[species_idx[s], city_idx[s]])
   }
   # within-city regression (latent-state) with auto-logistic term
   for(ss in (nsamples_one+1):nsamples_two){
     logit(psi[ss]) <- inprod(
-      b_species_city[2:ncov_within,species_idx[ss],city_idx[ss]],
-      psi_covs[ss,2:ncov_within]
+      b_species_city[1:ncov_within,species_idx[ss],city_idx[ss]],
+      psi_covs[ss,1:ncov_within]
     ) + 
-      ssc_psi[combo_idx[ss]] + 
+      #ssc_psi[combo_idx[ss]] + 
       theta[species_idx[ss], city_idx[ss]] * z[last_sample_vec[ss]]
     z[ss] ~ dbern(psi[ss] * x[species_idx[ss], city_idx[ss]])
     
@@ -101,29 +101,29 @@ model{
   }
   # Setting up within-city seasonal variation now that we have
   #  a structure set up for each species in a city.
-  c_shape_rho ~ dunif(0.001, 10)
-  c_rate_rho ~ dunif(0.001, 10)
-  for(k in 1:ncity){
-    c_tau_rho[k] ~ dgamma(c_shape_rho, c_rate_rho)
-  }
+  # c_shape_rho ~ dunif(0.001, 10)
+  # c_rate_rho ~ dunif(0.001, 10)
+  # for(k in 1:ncity){
+  #   c_tau_rho[k] ~ dgamma(c_shape_rho, c_rate_rho)
+  # }
   # Refererence the correct season_city_tau for the seasonal random effect.
-  for(m in 1:nseason_params){
-    # species, season, and city seasonal variation.
-    ssc_rho[m] ~ dnorm(
-      c_species_city[
-        1,
-        combo_species_idx[m],
-        combo_city_idx[m]
-        ],
-      c_tau_rho[combo_city_idx[m]]
-    )
-  }
+  # for(m in 1:nseason_params){
+  #   # species, season, and city seasonal variation.
+  #   ssc_rho[m] ~ dnorm(
+  #     c_species_city[
+  #       1,
+  #       combo_species_idx[m],
+  #       combo_city_idx[m]
+  #       ],
+  #     c_tau_rho[combo_city_idx[m]]
+  #   )
+  # }
   # within-city regression (observation)
   for(s in 1:nsamples_two){
     logit(rho[s]) <- inprod(
-      c_species_city[2:ncov_det,species_idx[s],city_idx[s]],
-      rho_covs[s,2:ncov_det]
-    ) + ssc_rho[combo_idx[s]]
+      c_species_city[1:ncov_det,species_idx[s],city_idx[s]],
+      rho_covs[s,1:ncov_det]
+    ) #+ ssc_rho[combo_idx[s]]
     y[s] ~ dbinom(rho[s] * z[s], J[s])
   }
 }

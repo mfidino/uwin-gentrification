@@ -1,0 +1,85 @@
+---
+title: "Gentrification maps & city-specific responses"
+output: pdf_document
+fontsize: 30pt
+author: Mason Fidino
+header-includes:
+   - \usepackage{bm}
+editor_options: 
+  chunk_output_type: console
+classoption: a3paper, 15pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+
+```
+
+
+```{r, list_files, echo = FALSE}
+my_images <- list.files(
+  "./supp_plots/supp_1/",
+  pattern = "pdf$",
+  full.names = TRUE
+)
+
+pretty_names <- c(
+  "Athens, GA",
+  "Bay Area, CA",
+  "Boston, MA",
+  "Chicago, IL",
+  "Denver, CO",
+  "Houston, TX",
+  "Indianapolis, IN",
+  "Iowa City, IA",
+  "Jackson, MS",
+  "Little Rock, AR",
+  "Madison, WI",
+  "Metro LA, CA",
+  "Washington D.C.",
+  "Phoenix, AZ",
+  "Portland, Oregon",
+  "Rochester, NY",
+  "Sanford, FL",
+  "Salt Lake City, UT",
+  "Seattle, WA",
+  "Saint Louis, MO",
+  "Tacoma, WA",
+  "Urbana, IL",
+  "Wilmington, DE"
+)
+
+# make the figure legend.
+
+figure_legends <- vector("list", length = length(pretty_names))
+for(i in 1:length(figure_legends)){
+  figure_legends[[i]] <- paste0(
+    "Figure S1.",i,". The distribution of gentrifying ",
+    "and non-gentrifying census tracts for ",
+    pretty_names[i], " as well as the camera trap locations ",
+    "for this city. Below the map are city specific estimates ",
+    "for how alpha diversity (species richness) and beta diversity ",
+    "(Bray-Curtis distance) varies at gentrifying and ",
+    "non-gentrifying sites along a gradient of impervious cover. ",
+    "The lower left histogram shows the proportion of impervious ",
+    "cover at gentrifying and non-gentrifying camera trap locations ",
+    "for ", pretty_names[i],". Finally, the lower right plot shows the ",
+    " estimate for total species richness of medium to large mammals ",
+    "for the city (i.e., gamma diversity)."
+  )
+}
+```
+
+
+```{r, results = "asis", echo = FALSE}
+for(i in 1:length(pretty_names)) {
+  cat("\\fontsize{15}{15}")
+  cat(
+    paste0(
+    "![](", my_images[i],")"
+    ),
+    "\n"
+  )
+  cat("<font size='+12'>",figure_legends[[i]],"</font>\n")
+}

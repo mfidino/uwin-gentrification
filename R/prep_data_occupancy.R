@@ -1,5 +1,4 @@
 
-
 # This script assumes you have ran the following scripts, which write
 #  data into the "./data/cleaned_data" folder:
 #  "./R/cleaning_scripts/data_cleaning_script.R"
@@ -44,9 +43,8 @@ reduce_species <- table(
   city_data$Species,
   city_data$Y > 0
 )
-#reduce_species[order(reduce_species[,2]),]\
 
-min_dets <- 25
+min_dets <- 75
 
 first_species <- reduce_species[which(reduce_species[,2] >= min_dets),]
 
@@ -76,14 +74,14 @@ if(exists("my_species")){
   if(length(my_species)>0){
     first_species <- first_species[
       which(row.names(first_species) %in% my_species),
-      ]
+    ]
   }
 }
 
 # get just these species for now
 tmp <- city_data[
   which(city_data$Species %in% row.names(first_species)),
-  ]
+]
 
 
 # these data.frames will help us connect the model output back to 
@@ -248,7 +246,7 @@ season_has_data <- season_has_data[
     season_has_data[,"season_id"],
     season_has_data[,"city_id"]
   ),
-  ]
+]
 
 # season_has_data is our first step, it's effectively a map that let's us
 #  index what cities and seasons have data. We do model the probability
@@ -262,14 +260,14 @@ season_has_data <- season_has_data[
 combo <- tmp[
   ,
   c("Species_id", "Season_id", "City_id")
-  ]
+]
 # remove duplicates, this will tell us how many parameters we are attempting
 #  to estimate (for the seasonal stuff).
 combo <- combo[
   -which(
     duplicated(combo)
   ),
-  ]
+]
 # make the unique identifier
 combo$Combo_id <- 1:nrow(combo)
 
@@ -402,7 +400,7 @@ for(i in 1:nrow(first_sites)){
       tmp$Season == first_sites$season[i]
   )
 }
-  
+
 new_tmp <- vector("list", length = length(my_rows))
 for(i in 1:length(my_rows)){
   new_tmp[[i]] <- tmp[my_rows[[i]],]
@@ -418,21 +416,21 @@ row.names(tmp) <- NULL
 
 # make a unique identifier for each sample
 tmp$rowID <- 1:nrow(tmp)
-  
+
 sp_recs <- distinct(tmp[,c("Species","Site","City")])
 sp_recs_list <- vector("list", length = nrow(sp_recs))
 tmp$Season <- factor(tmp$Season, order_seasons(tmp$Season))
 # vector that incidates where the previous sample was
 tmp$last_sample_vec <- NA
 sp_recs[sp_recs$Species == "woodchuck" & sp_recs$Site == "MLP1",]
-  
+
 pb <- txtProgressBar(max = nrow(sp_recs))
 for(i in 1:nrow(sp_recs)){
   setTxtProgressBar(pb, i)
   small_dat <- tmp[
     tmp$Species == sp_recs$Species[i] &
-    tmp$Site == sp_recs$Site[i] &
-    tmp$City == sp_recs$City[i],
+      tmp$Site == sp_recs$Site[i] &
+      tmp$City == sp_recs$City[i],
   ]
   small_dat <- small_dat[order(small_dat$Season),]
   if(all(diff(small_dat$Season_id) == 1)){
@@ -458,7 +456,7 @@ for(i in 1:nrow(sp_recs)){
     }
   }
 }
-  # just do a quick check to make sure this was set up correctly.
+# just do a quick check to make sure this was set up correctly.
 my_seas <- levels(tmp$Season)
 for(i in rev(1:nrow(tmp))){
   if(tmp$starter[i]) next
@@ -473,8 +471,8 @@ for(i in rev(1:nrow(tmp))){
 
 # remove a bunch of stuff that is not needed
 rm(list = c("new_tmp", "first_sites", "my_rows", "pb", "small_dat", "sp_recs",
-     "sp_recs_list", "tdat", "tmp2", "to_go", "a1", "a2", "baddies",
-     "my_eval", "my_seas"))
+            "sp_recs_list", "tdat", "tmp2", "to_go", "a1", "a2", "baddies",
+            "my_eval", "my_seas"))
 
 cat("\nReading in site covariates...\n")
 # read in the within-city covariates
@@ -482,7 +480,7 @@ within_covs <- read.csv(
   "./data/cleaned_data/covariates/site_covariates.csv",
   stringsAsFactors = FALSE
 )
-  
+
 # divide mean_19 by 100
 within_covs$mean_19 <- within_covs$mean_19 / 100
 
@@ -512,7 +510,7 @@ tmp_covs$gentrifying <- FALSE
 tmp_covs$mean_19 <- NA
 for(i in 1:nrow(within_covs_centered)){
   my_loc <-    which( tmp_covs$Site == within_covs_centered$Site[i] &
-    tmp_covs$City == within_covs_centered$City[i])
+                        tmp_covs$City == within_covs_centered$City[i])
   if(length(my_loc) > 0){
     tmp_covs$gentrifying[my_loc] <- within_covs_centered$gentrifying[i]
     tmp_covs$mean_19[my_loc] <- within_covs_centered$mean_19[i]
@@ -542,14 +540,14 @@ rho_covs <- matrix(
   ncol = ncol(tmp_covs) - 2,
   nrow = nrow(tmp_covs)
 )
-  
+
 rho_covs[,-1] <- as.matrix(
   tmp_covs[,-which(
     colnames(tmp_covs) %in% c("Site", "Season", "City")
   )]
 )
-  
-  
+
+
 cat("Creating data_list and inits() function...\n")
 data_list <- list(
   # detection data
@@ -578,7 +576,7 @@ data_list <- list(
   #nseason_covs = ncol(season_covs),
   ncov_det = ncol(rho_covs)
 )
-  
+
 inits <- function(chain){
   gen_list <- function(chain = chain){
     list( 

@@ -16,6 +16,8 @@ library(runjags)
 source("./R/prep_data_occupancy.R")
 
 
+
+
 my_start <- Sys.time()
 
 cl <- parallel::makeCluster(4)
@@ -46,7 +48,7 @@ m1 <- runjags::run.jags(
   data = data_list,
   n.chains = 4,
   adapt =  1000,
-  burnin = 100000,
+  burnin = 200000,
   sample = 30000,
   thin = 3,
   modules = "glm",
@@ -59,14 +61,14 @@ parallel::stopCluster(cl)
 
 
 
-saveRDS(m1, "./results/occupancy_model_fit_z.RDS")
+saveRDS(m1, "./results/occupancy_model_fit_simpler3.RDS")
 # and then move it to the cloud
 #googledrive::drive_upload(
 #  "./results/occupancy_model_fit.RDS",
 #  "~/gentrification_analysis/occupancy_model_fit.rds"
 #)
 
-m1 <- readRDS("./results/occupancy_model_fit.RDS")
+#m1 <- readRDS("./results/occupancy_model_fit_simpler.RDS")
 
 my_end <- Sys.time()
 
@@ -89,7 +91,7 @@ for(i in 1:length(my_pars)){
 summary_list <- do.call("rbind", summary_list)
 
 
-saveRDS(summary_list, "./results/occupancy_model_fit_summary.RDS")
+saveRDS(summary_list, "./results/occupancy_model_fit_simpler_summary3.RDS")
 
 # sample z
 

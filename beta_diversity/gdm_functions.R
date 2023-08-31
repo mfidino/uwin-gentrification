@@ -110,7 +110,6 @@ spline_pred <- function(
     mcmc <- t(mcmc)
   }
   # get splines again
-  
   preds <- dospline(dVal = dVal, my_knots = knots) %*% mcmc
   
   to_return <- list(
@@ -123,6 +122,54 @@ spline_pred <- function(
             probs = my_probs
           )
         )
+  )
+  
+  return(to_return)
+}
+
+
+
+spline_pred_gradient <- function(
+    knots,
+    mcmc,
+    #intercept,
+    my_probs = c(0.025,0.5,0.975),
+    predlength = 200
+){
+  
+  dVal <- xVal <- seq(
+    0,
+    knots[2,3],
+    length.out = predlength
+  )
+  if(!is.matrix(mcmc)){
+    mcmc <- as.matrix(mcmc)
+  }
+  # get splines again
+  geo_sp <- dospline(
+    dVal = knots$median[1],
+    my_knots = as.numeric(knots[1,])
+  )
+  geo_sp <- geo_sp[rep(1, predlength *2),]
+  sp <- dospline(dVal = dVal, my_knots =as.numeric(knots[2,]))
+  
+  
+  sp <- cbind(1, geo_sp, rbind(sp, sp), rep(c(0,1), each =predlength))
+  
+  preds <- sp %*% t(mcmc)
+  #preds <- preds + rep(intercept, each = nrow(preds))
+  
+  to_return <- list(
+    x = rep(xVal,2),
+    y = t(
+      apply(
+        1 - exp(-preds),
+        1,
+        quantile,
+        probs = my_probs
+      )
+    ),
+    gent = rep(c(FALSE,TRUE), each = predlength)
   )
   
   return(to_return)
@@ -327,40 +374,82 @@ ed_pred <- function(
   # 1. Come up with the prediction based on all of the
   #  data
   
-  all_preds <- cbind(1, my_splines) %*% t(mcmc_mat)
-  #all_preds <- 1 - exp(-all_preds)
-  
-  median(all_min)
+  all_preds <- my_splines %*% t(mcmc_mat)
   
   # ged median estimate
-  tmp <- apply(
-    all_preds,
-    1,
-    quantile,
-    probs = c(0.025,0.5,0.975)
+  tmp <- t(
+      apply(
+      all_preds,
+      1,
+      quantile,
+      probs = c(0.025,0.5,0.975)
+    )
   )
-  #tmp <- 1 - exp(-tmp)
-    #plogis(tmp)
+  over_x <- apply(
+    all_preds,
+    2,
+    function(x){
+      seq(min(x), max(x), length.out = predlength)
+    }
+  )
+  over_x <- t(
+    apply(
+      over_x,
+      1,
+      quantile,
+      probs = c(0.025,0.5,0.975)
+    )
+  )
   
-  # 2. get min and max of distances and do something like this
-  overlayX <- seq(from = min(tmp[2,]), to = max(tmp[2,]), 
-                  length = predlength)
+  test <- cut(
+    tmp[,2],
+    breaks = 8
+  )
+  test2 <- split(
+    my_data,
+    test
+  )
+  test2 <- sapply(
+    test2,
+    mean
+  )
+  my_points <- levels(test)
+  my_points <- gsub(
+    "\\(|\\]",
+    "",
+    my_points
+  )
+  my_points <- strsplit(
+    my_points,
+    ","
+  )
+  my_points <- sapply(
+    my_points,
+    function(x) mean(as.numeric(x))
+  )
   
-  
-  
-  
-  plot(my_data ~ tmp[2,],
+  plot(my_data ~ tmp[,2],
     #c(my_data[,1]/my_data[,2]) ~ tmp[2,],
-       ylim = c(0,0.7),
+       ylim = c(0,0.8),
        #xlim = c(0,0.7),
        ylab = "Observed dissimilarity",
        xlab = "Predicted ecological distance",
        bty = "l",
-       las = 1
+       las = 1,
+       pch = 19,
+       col = scales::alpha("black", 0.1)
        )
-  abline(a=0, b = 1, col = "red", lwd = 3)
-  overlayY <-  1 - exp(-overlayX) # use logit instead
-  lines(overlayY ~ overlayX, col = "blue", lwd = 8)
+  #abline(a=0, b = 1, col = "red", lwd = 3)
+  overlayY <-  1 - exp(-over_x) # use logit instead
+  
+  bbplot::ribbon(
+    x = over_x[,2],
+    y = overlayY[,-2],
+    col = "purple",
+    alpha  = 0.5
+  )
+  lines(overlayY[,2] ~ over_x[,2], col = "blue", lwd = 1)
+  points(x = my_points, y = test2, pch = 19, col = "cyan")
   
   # 3. Modify the above stuff to allow for 95% CI
   
@@ -380,23 +469,32 @@ zmat_long <- function(x, site_ids){
   } else {
     ids <- site_ids
   }
-  to_return <- matrix(
-    NA,
-    ncol = 2,
-    nrow = nrow(ids)
-  )
+  to_return <- matrix(NA, nrow = nrow(ids), ncol = 2)
   # fill this matrix.
   for(i in 1:nrow(to_return)){
     # get number of dissimilar species in site pair
-    to_return[i,1] <- sum(
-      (1 - x[ids$siteA_id[i],]) *
-           x[ids$siteB_id[i],]
-      )
-    # and then the total number of unique species in site pair
+    if(
+      sum(x[ids$siteA_id[i],]) > 0 &
+      sum(x[ids$siteB_id[i],]) > 0
+    ){
+      
+    
+    to_return[i,1] <- as.numeric(
+      vegan::vegdist(
+      x[
+        c(
+          ids$siteA_id[i],
+          ids$siteB_id[i]
+        ),
+      ],
+      binary = TRUE
+    )
+    )
     to_return[i,2] <- ncol(x) - sum(
       (1 - x[ids$siteA_id[i],]) *
-      (1 - x[ids$siteB_id[i],])
+        (1 - x[ids$siteB_id[i],])
     )
+    }
   }
   return(to_return)
 }
