@@ -36,5 +36,7 @@ vignettes/*.pdf
 rsconnect/
 *.RDS
 
+/mcmc_plots/
+
 /gent_peek/
 results/occupancy_mcmc.csv
