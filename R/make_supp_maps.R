@@ -7,7 +7,7 @@ library(sf)
 library(runjags)
 library(prettymapr)
 source("./R/census_functions.R")
-source("./beta_diversity/gdm_functions.R")
+source("./R/gdm_functions.R")
 source("./R/alpha_beta_functions.R")
 sf::sf_use_s2(FALSE)
 

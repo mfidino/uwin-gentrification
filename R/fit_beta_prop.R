@@ -114,20 +114,6 @@ data_list <- list(
   ndata = nrow(beta_est),
   # log mean for richness, used in log-normal in model.
   total_rich = beta_est$mu_rich,
-  # log_mu = convert_to_logmean(
-  #   beta_est$mu_rich,
-  #   sqrt(beta_est$var_rich)
-  # ),
-  # # log precision for richness, used in log-normal in model.
-  # log_tau = convert_to_logsd(
-  #   beta_est$mu_rich,
-  #   sqrt(beta_est$var_rich)
-  # )^-2,
-  # gentrification design matrix
-  #gent_dm = gent_dm,
-  # vectors to denote the site random effects
-  #siteA_vec = site_ids$siteA_id,
-  #siteB_vec = site_ids$siteB_id,
   # vector to denote city id
   city_vec = site_ids$City_id,
   # design matrix for spline terms
@@ -146,24 +132,6 @@ saveRDS(data_list, "./mcmc_output/beta_output/data_list.RDS")
 inits <- function(chain){
   gen_list <- function(chain = chain){
     list( 
-      # total_rich = abs(
-      #   rlnorm(
-      #     data_list$ndata,
-      #     mean(data_list$log_mu),
-      #     1 / mean(data_list$log_tau)
-      #   )
-      # ),
-      #gamma = matrix(
-      #  rnorm(
-      #    data_list$ncity * data_list$npar_gent,
-      #    -3
-      #  ),
-      #  nrow = data_list$ncity,
-      #  ncol = data_list$npar_gent
-      #),
-      #site_mu = rnorm(1, -5),
-      #site_tau = 1 / rgamma(1,1,1),
-      #site_re = rnorm(data_list$nsite,-5),
       beta_exp = matrix(
         rgamma(
           data_list$ncity * data_list$npar_spline,
@@ -172,8 +140,6 @@ inits <- function(chain){
         nrow = data_list$ncity,
         ncol = data_list$npar_spline
       ),
-      #beta_a = rgamma(data_list$npar_spline,1,1),
-      #beta_b = rgamma(data_list$npar_spline,1,1),
       beta_mu = abs(rnorm(data_list$npar_spline,0,0.5)),
       tau = 1 / rgamma(data_list$npar_spline,1,1),
       .RNG.name = switch(chain,
@@ -235,6 +201,9 @@ round(tail(msum, 50),2)
 my_mc <- mout$mcmc
 
 cnames <- row.names(msum)
+if(!dir.exists("mcmc_plots")){
+  dir.create("./mcmc_plots")
+}
 for( i in 1:200){
   
   my_range <- lapply(

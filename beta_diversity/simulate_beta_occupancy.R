@@ -9,7 +9,7 @@ nsite <- 50
 nspecies <- 30
 nrep <- 4
 
-source("./beta_diversity/gdm_functions.R")
+source("./R/gdm_functions.R")
 
 
 # generate community averages

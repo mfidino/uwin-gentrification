@@ -1849,7 +1849,7 @@ knitr::include_graphics("../plots/gentrification_supp_map.png")
 ## City-specific alpha and beta diversity results
 ```{r, list_files, echo = FALSE}
 my_images <- list.files(
-  "../supp_plots/supp_1/",
+  "./supp_maps/",
   pattern = "pdf$",
   full.names = TRUE
 )
