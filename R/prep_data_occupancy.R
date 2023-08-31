@@ -22,67 +22,14 @@ city_data <- read.csv(
   stringsAsFactors = FALSE
 )
 
-# drop J01-NOR1
+# drop J01-NOR1 as it lacks covariate data
 city_data <- city_data[-which(city_data$Site == "J01-NOR1"),]
 
-# There are A LOT of NA's in this sampling array 
-#  prop.table(table(city_data$J > 0))
-#  FALSE  TRUE 
-#  0.7   0.3
-
-# Because of this we do not want to iterate over the observation's with 
-#  no data as it greatly increases the amount of time it takes to fit
-#  the model. We'll need to be able to index the species, city, and season.
-#  To do this, it's going to be easiest to analyze these data in long-format.
-
-# Additionally, we're going to only analyze a few species that were detected
-#  a minimum of 10 times in the dataset. This will remove a number of rare
-#  species, 
-
-reduce_species <- table(
-  city_data$Species,
-  city_data$Y > 0
+# read in species we are using in the analysis
+species_in_analysis <- read.csv(
+  "./data/species_in_analysis.csv"
 )
-
-min_dets <- 75
-
-first_species <- reduce_species[which(reduce_species[,2] >= min_dets),]
-
-cdet <- city_data %>% group_by(Species, City) %>% 
-  summarise(cdet = any(Y>0), .groups = "drop_last") %>% 
-  ungroup() %>% 
-  group_by(Species) %>% 
-  summarise(n = sum(cdet), .groups = "drop_last") %>% 
-  data.frame()
-
-cdet <- cdet[order(cdet$n),]
-
-to_go <- cdet$Species[cdet$n <= 3]
-
-first_species <- first_species[-which(
-  row.names(first_species) %in% to_go),]
-
-#write.csv(
-#  data.frame(
-#    species = row.names(first_species)
-#  ),
-#  "./data/species_in_analysis.csv",
-#  row.names = FALSE
-#)
-
-if(exists("my_species")){
-  if(length(my_species)>0){
-    first_species <- first_species[
-      which(row.names(first_species) %in% my_species),
-    ]
-  }
-}
-
-# get just these species for now
-tmp <- city_data[
-  which(city_data$Species %in% row.names(first_species)),
-]
-
+tmp <- city_data[city_data$Species %in% species_in_analysis$species,]
 
 # these data.frames will help us connect the model output back to 
 #  the actual species, seasons, or cities they are associated to. These
@@ -122,33 +69,6 @@ city_map <- data.frame(
 city_map$City_id <- make_index(
   city_map$City
 )
-
-# make pretty names for cities (for plotting).
-# pcity <- data.frame(
-#   City = city_map$City,
-#   Pretty = c(
-#     "Atlanta,\nGeorgia",
-#     "Austin,\nTexas",
-#     "Chicago,\nIllinois",
-#     "Denver,\nColorado",
-#     "Edmonton,\nAlberta",
-#     "Fort Collins,\nColorado",
-#     "Iowa City,\nIowa",
-#     "Indianapolis,\nIndiana",
-#     "Jackson,\nMississippi",
-#     "Manhattan,\nKansas",
-#     "Madison,\nWisconsin",
-#     "Metro LA,\nCalifornia",
-#     "Phoenix,\nArizona",
-#     "Rochester,\nNew York",
-#     "Sanford,\nFlorida",
-#     "Salt Lake\nCity, Utah",
-#     "Seattle,\nWashington",
-#     "Saint Louis,\nMissouri",
-#     "Tacoma,\nWashington",
-#     "Wilmington,\nDelaware"
-#   )
-# )
 
 # now that we have these we can make a temporary city_data and join the maps.
 tmp <- dplyr::left_join(
@@ -323,20 +243,7 @@ among_covs <- array(
 #  we are not subtracting the mean because we want the 0 to indicate
 #  that a city is on the edge of a species range.
 among_covs[,,2] <- city_covs / sd(city_covs)
-# and then add the latitude 
-# among_covs[,,3] <- matrix(
-#   scale(city_ll[,"Lat"]),
-#   ncol = ncol(city_covs),
-#   nrow = nrow(city_covs),
-#   byrow = TRUE
-# )
-# # and longitude
-# among_covs[,,4] <- matrix(
-#   scale(city_ll[,"Long"]),
-#   ncol = ncol(city_covs),
-#   nrow = nrow(city_covs),
-#   byrow = TRUE
-# )
+
 
 cat("Creating auto-logistic id for model...\n")
 # set up the model for the autologistic formulation. First off,
@@ -422,7 +329,7 @@ sp_recs_list <- vector("list", length = nrow(sp_recs))
 tmp$Season <- factor(tmp$Season, order_seasons(tmp$Season))
 # vector that incidates where the previous sample was
 tmp$last_sample_vec <- NA
-sp_recs[sp_recs$Species == "woodchuck" & sp_recs$Site == "MLP1",]
+
 
 pb <- txtProgressBar(max = nrow(sp_recs))
 for(i in 1:nrow(sp_recs)){
@@ -533,6 +440,8 @@ psi_covs[,-1] <- as.matrix(
     colnames(tmp_covs) %in% c("Site", "Season", "City")
   )]
 )
+# add interaction
+psi_covs <- cbind(psi_covs, psi_covs[,2] * psi_covs[,3])
 
 # for detection (rho) we are going to use NDVI and population density
 rho_covs <- matrix(
@@ -546,7 +455,8 @@ rho_covs[,-1] <- as.matrix(
     colnames(tmp_covs) %in% c("Site", "Season", "City")
   )]
 )
-
+# add interaction
+rho_covs <- cbind(rho_covs, rho_covs[,2] * rho_covs[,3])
 
 cat("Creating data_list and inits() function...\n")
 data_list <- list(
