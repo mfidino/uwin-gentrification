@@ -40,3 +40,4 @@ rsconnect/
 
 /gent_peek/
 results/occupancy_mcmc.csv
+./R/compile_coordinates.R
