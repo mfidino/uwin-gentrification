@@ -69,10 +69,44 @@ These abbreviations are:
 
 ### The data folder (`./data`)
 
-This folder has 4 files and 2 sub-folders.
+This folder has 3 files and 2 sub-folders.
 
 |**`./data/detection_data.csv`** | The camera trap data used in our analysis.
 This csv file has 576,000 rows and 9 columns. 
+
+| Column  | Date type | Explanation                                                                                                                                                                                                   |
+|---------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Species | `factor`  | The species associated to this data point                                                                                                                                                                     |
+| Season  | `factor`  | A seasonal code for the season the data comes from. It combines the first two letters of the season and the last two digits of the year. Seasonal codes are SP = Spring, SU = Summer, FA = Fall, WI = Winter. |
+| Site    | `factor`  | The site associated to this data point                                                                                                                                                                        |
+| City    | `factor`  | The city abbreviation associated to this data point                                                                                                                                                           |
+| Long    | `numeric` | The longitude of the site associated to this data point (WGS 84)                                                                                                                                              |
+| Lat     | `numeric` | The latitude of the site associated to this data point (WGS 84)                                                                                                                                               |
+| Crs     | `integer` | The coordinate reference system code for the site coordinates                                                                                                                                                 |
+| Y       | `integer` | The number of days the species was detected during a given season                                                                                                                                             |
+| J       | `integer` | The number of days the camera trap was operational during a given season. If `J == 0` then no sampling occurred.                                                                                              |
+
+
+|**`./data/gentri_all_coordinates.csv`** | The coordinates for all sites in our analysis. This dataset has 1000 rows and 4 columns.
+
+| Column | Date type | Explanation                                                      |
+|--------|-----------|------------------------------------------------------------------|
+| Site   | `factor`  | The site associated to this data point                           |
+| City   | `factor`  | The city abbreviation associated to this data point              |
+| Long   | `numeric` | The longitude of the site associated to this data point (WGS 84) |
+| Lat    | `numeric` | The latitude of the site associated to this data point (WGS 84)  |
+
+
+|**`./data/species_in_analysis.csv`** | The common names of the species analyzed in our occupancy model. This dataset has 21 rows and 1 column.
+
+| Column  | Date type | Explanation      |
+|---------|-----------|------------------|
+| species | `factor`  | The species code |
+
+
+|**`./data/census_data`** | This sub-folder contains all of the ancillary files generated to classify gentrification across Census tracts in each city. The files themselves are not, overall, necessary to run the entire analysis. This sub-folder contains one folder for each of the three metrics used to classify gentrification (educational attainment, median income, and race), as well as many `RDS` files that are summaries of the Census data (e.g., `./data/census_data/gent_tracts.rds` is a spatial data.frame of which sites are and are not gentrified). Explanations of each object here are not necessary, but to see how they were all created you can look at `./supplemental/supplemental.Rmd`.
+
+
 
 [Back to table of contents ⤒](#a-repository-for)
 
