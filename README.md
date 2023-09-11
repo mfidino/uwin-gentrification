@@ -160,7 +160,7 @@ This folder contains the `JAGS` scripts used to fit each model.
 [Back to table of contents ⤒](#a-repository-for)
 
 
-### The mcmc_output folder (`./mcmc_output`)
+### The mcmc output folder (`./mcmc_output`)
 
 This contains two folders, one for the alpha diversity analysis results (`./mcmc_output/alpha_output`) and another for the beta diversity analysis results (`./mcmc_output/beta_output`). However, the `RDS` files that contain the posteriors are too large and so are not stored on GitHub. 
 
@@ -213,6 +213,8 @@ This contains two folders, one for the alpha diversity analysis results (`./mcmc
 
 This folder is intentionally left blank, and stored temporary files for the traceplots of model parameters. 
 
+[Back to table of contents ⤒](#a-repository-for)
+
 ### The figures folder (`./figures`)
 
 This folder houses some of the raw figures I generated in `R` (which I cleaned up using Inkscape), as well as other figures that were publication ready. All of the extra "cleaning" I needed to do was related to the maps I had made (there was too much spacing between images).
@@ -249,33 +251,6 @@ This folder houses one script, which is the `JAGS` model that is fit to the data
 
 ### The mcmc output folder (`./mcmc_output`)
 
-This folder houses the posterior distributions from the models we fit to the data of coyote (`./mcmc_output/coyote_model.RDS`), opossum (`./mcmc_output/opossum_model.RDS`), and  raccoon (`./mcmc_output/raccoon_model.RDS`), which are stored as RDS files. I used `run.jags` to fit the models, so they are `runjags` objects. If you want to grab the posterior distribution from the models it can be done as:
-
-```R
-my_model <- readRDS("./mcmc_output/coyote_model.RDS)
-
-my_mcmc <- do.call("rbind", my_model$mcmc)
-```
-
-This folder also has a summary of all the parameters as a pdf (which was the supplemental material for the manuscript). There is an R markdown file (`./mcmc_output/Appendix_S1.Rmd`) and the associated PDF that was knitted from it (`./mcmc_output/Appendix_S1.pdf`).
-
-#### The diagnostic plots sub-folder (`./mcmc_output/diagnostic_plots)
-
-This folder has three sub-folders (one for coyote, one for opossum, and one for raccoon). Inside of each of these are the traceplots for each model parameter. They are generated when `fit_models.R` is run.  See `./JAGS/dynamic_integrated_occupancy_gam.R` for where each parameter fits into the model.
-
-
-#### The validation sub-folder (`./mcmc_output/validation`)
-
-This sub-folder contains the posterior distributions from the models fit to only a portion of the human-wildife conflict data so that we could do some model validation for the coyote (`./mcmc_output/valdiation/coyote_validation_model.RDS`), opossum (`./mcmc_output/valdiation/opossum_validation_model.RDS`), and raccoon (`./mcmc_output/valdiation/raccoon_validation_model.RDS`). There are two other RDS files, which are created via `./R/validate_model.R`, and include `ROC_scores.RDS` and `model_auc.RDS`. The former is a list object of length three (one element for each species) that contains the ROC scores for each potential threshold and sampling period. The latter is also a list object of length three (one element for each species) that summarises the AUC scores. Each element is also a list and contains the global AUC across the whole study (e.g., `model_auc$coyote$auc_global`), for each sampling period (e.g.,`model_auc$coyote$auc_year`), as well as the true positive rate (tpr), false positive rate (fpr), and accuracy (acc) for each threshold and sampling period. We used 41 threshold values, evenly spaced between 0 and 1.
-
-[Back to table of contents ⤒](#a-repository-for)
-
-
-### The parameter summary folder (`./parameter_summary`)
-
-This folder houses three files that contain a summary of of parameters estimated by the model for coyote (`./parameter_summary/coyote_parameter_estimates.csv`), opossum (`./parameter_summary/opossum_parameter_estimates.csv`), and raccoon (`./parameter_summary/raccoon_parameter_estimates.csv`). Each file contains the median estimate of each parameter, 95% credible interval, effective sample size, and Gelman-Rubin diagnostic. The file `./parameter_summary/metadata.csv` contains information to link the parameter names (as specified in the `JAGS` script) to the model explanation in the manuscript.
-
-[Back to table of contents ⤒](#a-repository-for)
 
 ### The R folder (`./R`)
 
