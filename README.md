@@ -104,9 +104,38 @@ This csv file has 576,000 rows and 9 columns.
 | species | `factor`  | The species code |
 
 
-|**`./data/census_data`** | This sub-folder contains all of the ancillary files generated to classify gentrification across Census tracts in each city. The files themselves are not, overall, necessary to run the entire analysis. This sub-folder contains one folder for each of the three metrics used to classify gentrification (educational attainment, median income, and race), as well as many `RDS` files that are summaries of the Census data (e.g., `./data/census_data/gent_tracts.rds` is a spatial data.frame of which sites are and are not gentrified). Explanations of each object here are not necessary, but to see how they were all created you can look at `./supplemental/supplemental.Rmd`.
+|**`./data/census_data/`** | This sub-folder contains all of the ancillary files generated to classify gentrification across Census tracts in each city. The files themselves are not, overall, necessary to run the entire analysis. This sub-folder contains one folder for each of the three metrics used to classify gentrification (educational attainment, median income, and race), as well as many `RDS` files that are summaries of the Census data (e.g., `./data/census_data/gent_tracts.rds` is a spatial data.frame of which sites are and are not gentrified). Explanations of each object here are not necessary, but to see how they were all created you can look at `./supplemental/supplemental.Rmd`.
+
+|**`./data/cleaned_data/covariates`** | This sub-folder contains the covariates used in the occupancy analysis, as well as one file used to make supplemental maps.
+
+|**`./data/cleaned_data/covariates/census_tract_imperv_cover.csv`** | Used to make supplemental maps. This csv has 7816 rows and 5 columns.
+
+| Column  | Date type    | Explanation                                                                         |
+|---------|--------------|-------------------------------------------------------------------------------------|
+| city    | `factor`     | The four letter code for a city                                                     |
+| gent    | `boolean`    | Whether the Census tract was gentrified (1) or not (0)                              |
+| vuln    | `boolean`    | Whether the Census tract was vulnerable to gentfrication (1) or not (0)             |
+| mean_11 | `proportion` | The proportion of impervious cover in a Census tract in 2011. Ranges from 0 to 100. |
+| mean_19 | `proportion` | The proportion of impervious cover in a Census tract in 2019. Ranges from 0 to 100. |
 
 
+|**`./data/cleaned_data/covariates/dist_city_to_species_edge.csv`** | The distance of a city from the edge of a speecies known range, where negative values mean a city is within a species range and positive values mean a city is outside a species range. This dataset contains 21 rows and 24 columns.
+
+| Column     | Date type | Explanation                                                                                                                                                              |
+|------------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| species    | `factor`  | The species used included in the occupancy model                                                                                                                         |
+| City codes | `numeric` | The distance of a respective city, which is represented by the column name (columns 2 through 24 contain city name codes) from the edge of a species known distribution. Distances are in kilometers.|
+
+|**`./data/cleaned_data/covariates/site_covariates.csv`** | The site specific covariates used in our analyses. This dataset contains 999 rows and 5 columns. Note that this dataset has 1 fewer row than `./data/gent_all_coordinates.csv`. This is because one site in Chicago had no one living nearby and so was dropped from the analysis.
+
+
+| Column      | Date type    | Explanation                                                                         |
+|-------------|--------------|-------------------------------------------------------------------------------------|
+| City        | `factor`     | The four letter code for a city                                                     |
+| Site        | `numeric`    | The site associated to this data point                                              |
+| gentrifying | `boolean`    | Whether the site was gentrified (1) or not (0)                                      |
+| vulnerable  | `boolean`    | Whether the site was vulnerable to gentrification (1) or not (0)                    |
+| mean_19     | `proportion` | The proportion of impervious cover in a Census tract in 2019. Ranges from 0 to 100. |
 
 [Back to table of contents ⤒](#a-repository-for)
 
