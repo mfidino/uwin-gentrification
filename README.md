@@ -239,22 +239,54 @@ This folder houses some of the raw figures I generated in `R` (which I cleaned u
 
 ### The R folder (`./R`)
 
-This folder has 12 R scripts, plus an additional sub-folder titled `./R/functions` that contains 2 seperate scripts of different functions for running the analysis or plotting the results.
+This folder has 25 R scripts, plus an additional sub-folder titled `./R/functions` that contains 7 seperate scripts of different functions for running the analysis or plotting the results.
 
-| File                                 | Description                                                                                                                                                                                                                                                                                                                                                            |
-|--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **`./R/Appendix_S2.Rmd`**          | A markdown file to create Appendix S2 for this manuscript. It houses the model validation results. |
-| **`./R/clean_conflicts.R`**          | This script goes through the raw conflict files in `./data/conflict_raw` and uses regular expressions to query nuisance wildlife reports where the species ID may be uncertain. It then loops through the descriptions of each offending report and prints out the description tied to the report (and allows the user to determine if the report should be censored). |
-| **`./R/figure1.R`**                  | The script I wrote to create the first figure in the manuscript.                                                                                                                                                                                                                                                                                                       |
-|**`./R/fit_models_validation.R`**                  | The script used to fit the models to a subset of the data for validation purposes. Similar to `fit_models_validation.R`.                                                                                                                                                                                                                                                                                                     |
-| **`./R/format_data_for_analysis.R`** | The main workhorse of this project. All of the data is pulled in with this script and it gets formatted and made ready to fit into a JAGS model. The main outputs from this are `data_list`, which is the list object supplied to `JAGS`, as well as the `my_inits()` function, which supplies initial values to JAGS. It's commented out as well.                     |
-| **`./R/format_data_for_validation.R`** | Similar to `./R/format_data_for_analysis.R` expect it subsets the data before fitting the model.                     |
-|**`./R/geocode_conflicts.R`**        | Once `./R/clean_conflicts.R` has been ran, this is the script that will take the block-level address and geocode it to latitude and longitude.                                                                                                                                                                                                                         |
-| **`./R/plots_models.R`**             | The script I wrote to make the rest of the figures for this manuscript. `./R/format_data_for_analysis.R` still gets ran as it provides a lot of the spatial data we need for making maps.                                                                                                                                                                              |
-| **`./R/sourcer.R`**                  | A script that just sources all of the functions in `./R/functions`. That way I can just call `source(./R/sourcer.R)` instead of sourcing each file in that folder.                                                                                                                                                                                                     |
-| **`./summarise_high_res_lulc.R`**    | The spatial environmental data we used had sub-meter resolution, which we needed to aggregate up to 500 meters for this analysis. This script does that aggregration and prepares the environmental data layers for statistical analysis.                                                                                                                              |
- |**`./URB_PCA_plot.R`**    | Used to create a rough draft of Appendix S1: Fig S1|
- |**`./validate_model.R`**    | Calculates the AUC from the posterior distributions created via `./R/fit_models_validation.R`|
+Because there are so many scripts in here, I have ordered them here in such a way that if someone was interested in completely running the analysis, they could do so.
+
+
+#### Step 1. Query Census data
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/pull_census.R** | Query the Census data in each city across a few different years. | `dplyr`, `tidycensus`, `sf` |
+|**./R/summarise_census.R**| Summarise the Census data after it has been queried. | `sf`, `dplyr`, `uwinspatialtools`|
+|**./R/census_functions.R**| Helpful functions to be used within `summarise_census.R`. Each function is also explained with `summarise_census.R` | `sf`, `dplyr`, `uwinspatialtools`|
+
+NOTE: `uwinspatialtools` is an R package I deleveloped, which essentially has some wrapper functions for `sf` and `raster`. It can be found at www.github/com/mfidino/uwinspatialtools.
+
+#### Step 2. Pull impervious cover data
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/pull_imperv.R** | Query impervious cover in each city across a few different years. | `dplyr`, `raster`, `sf`, `FedData` |
+
+NOTE: When I wrote these scripts `raster` was still usable. I'm not rewriting them now that it will soon be retired. 
+
+#### Step 3. Pull species range data
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/pull_ranges.R** | Pulls IUCN range data and calculates the distance to the edge of a species range froma given city. The great lakes get filled in as well, or else all Chicago distances would just be to Lake Michigan. | `dplyr`, `sf`, `mapview`, `smoothr`|
+|**.R/functions/common_to_binomial.R** | Converts common name for species to scientific name so that it can be queried.| Only base R used | 
+
+#### Step 4. Quantify gentrification
+
+Since I wanted to have the outputs from this in supplemental material, all data and code to classify locations as gentrified can be found in `./supplemental/supplemental.Rmd` in the `Additional Gentrification Metrics` section.
+
+#### Step 5. Fit the multi-city, multi-species occupancy model
+
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+|**./R/prep_data_occupancy.R**| Get's ran via `./R/fit_occupancy_model.R`, but it pulls in all the necessary data and gets it ready for analysis. | `dplyr`, `runjags`|
+|**./R/fit_occupancy_model.R**| Fits the occupancy model and saves the output| |`dplyr`, `runjags`|
+
+#### Step 6. Estimate alpha and beta diversity with uncertainty
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/simulate_latent.R** | Given an input (`alpha` or `beta`), use the output from the occupancy model to estimate species presence on the landscape and then calculate alpha or beta diversity | `dplyr`, `runjags`|
+| **./R/sample_z.R** | Used in the other script, does all the sampling for the species incidence matrix given the posterior. | `dplyr`, `runjags`|
 
 #### The functions sub-folder (`./R/functions`)
 
