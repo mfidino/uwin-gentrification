@@ -105,7 +105,7 @@ sp_df %>%
   kableExtra::kbl(
     format = "latex",
     align = c("l","l", "r","r"),
-    caption = "The number of sites species were detected and number of detections per city. This table included all species, not only those we could use in our analysis. Table is ordered by city, and within each city species are sorted from fewest to most detections.",
+    caption = "Species used in our analysis.",
     longtable = TRUE,
     booktabs = TRUE, linesep = ""
   ) %>% 
@@ -594,7 +594,8 @@ income_result <- dplyr::bind_rows(income_result)
 ```
 ```{r income_table, echo = FALSE}
 
-
+# NA to FALSE
+income_result$income[is.na(income_result$income)] <- FALSE
 aa <- table(income_result$City, income_result$income)
 aa <- data.frame(
   City = pretty_names,
@@ -738,6 +739,7 @@ edu_result <- dplyr::bind_rows(edu_result)
 
 ```{r edu_vuln_table, echo = FALSE}
 
+edu_result$edu_under[is.na(edu_result$edu_under)] <- FALSE
 aa <- table(edu_result$City, edu_result$edu_under)
 aa <- data.frame(
   City = pretty_names,
@@ -878,6 +880,7 @@ nw_result <- dplyr::bind_rows(nw_result)
 
 
 ```{r nw_vuln_table, echo = FALSE}
+nw_result$nw_over[is.na(nw_result$nw_over)] <- FALSE
 aa <- table(nw_result$City, nw_result$nw_over)
 
 aa <- data.frame(
@@ -1622,6 +1625,7 @@ price_result <- dplyr::bind_rows(price_result)
 
 
 ```{r price_table, echo = FALSE}
+price_result$income_over[is.na(price_result$income_over)] <- FALSE
 aa <- table(price_result$City, price_result$income_over)
 
 aa <- data.frame(
@@ -1813,7 +1817,7 @@ aa <- aa %>%
   dplyr::summarise(
     vulnNotGent = sum(vulnerable * !gentrifying),
     gent = sum(gentrifying),
-    nvulngent = sum(!vulnerable * !gentrifying)
+    nvulngent = sum(!vulnerable)
   )
 aa$City <- pretty_names
 
@@ -1890,7 +1894,7 @@ for(i in 1:length(figure_legends)){
     pretty_names[i], " as well as the camera trap locations ",
     "for this city. Below the map are city specific estimates ",
     "for how alpha diversity (species richness) and beta diversity ",
-    "(Bray-Curtis distance) varies at gentrifying and ",
+    "(Sørensen’s dissimilarity index) varies at gentrifying and ",
     "non-gentrifying sites along a gradient of impervious cover. ",
     "The lower left histogram shows the proportion of impervious ",
     "cover at gentrifying and non-gentrifying camera trap locations ",
