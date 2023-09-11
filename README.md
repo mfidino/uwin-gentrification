@@ -10,9 +10,12 @@ Fidino, M et al.  Gentrification drives patterns of alpha and beta diversity in 
 2. [The working directory](#the-working-directory)
 3. [city codes](#city-codes)
 4. [The data folder (`./data`)](#the-data-folder-data)
+5. [The JAGS folder(`./JAGS`)](#the-jags-folder-jags)
+6. [The mcmc output folder (`./mcmc_output`)](#the-mcmc-output-folder-mcmc_output)
+7. [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc-plots)
 5. [The figures folder (`./figures`)](#the-figures-folder-figures)
-6. [The JAGS folder (`./JAGS`)](#the-jags-folder-jags)
-7. [The mcmc output folder (`./mcmc_output`)](#the-mcmc-output-folder-mcmc_output)
+6. 
+
 8. [The R folder (`./R`)](#the-r-folder-r)
 
 
@@ -66,6 +69,9 @@ These abbreviations are:
 |`wide` | Wilmington, DE     |
 
 [Back to table of contents ⤒](#a-repository-for)
+
+
+
 
 ### The data folder (`./data`)
 
@@ -140,7 +146,72 @@ This csv file has 576,000 rows and 9 columns.
 [Back to table of contents ⤒](#a-repository-for)
 
 
+### The JAGS folder (`./JAGS`)
 
+This folder contains the `JAGS` scripts used to fit each model.
+
+|**`./JAGS/beta_model_collapsed_norm.R`** | The beta diversity generlized dissimilarity model. Uses half-normal priors for positive slope terms.
+
+|**`./JAGS/impute_alpha.R`** | The alpha diversity model.
+
+|**`./JAGS/multi_scale_occupancy.R`** | The multi-species multi-city occupancy model.
+
+
+[Back to table of contents ⤒](#a-repository-for)
+
+
+### The mcmc_output folder (`./mcmc_output`)
+
+This contains two folders, one for the alpha diversity analysis results (`./mcmc_output/alpha_output`) and another for the beta diversity analysis results (`./mcmc_output/beta_output`). However, the `RDS` files that contain the posteriors are too large and so are not stored on GitHub. 
+
+|**`./mcmc_output/alpha_output`** | This sub-folder is blank, but stores the `RDS` file that contains the posterior from the alpha diversity analysis (which is added to the `.gitignore` file because it is large).
+
+
+|**`./mcmc_output/beta_output`** | This sub-folder contains some of the objects needed to fit the generalized dissimilarity model. 
+
+|**`./mcmc_output/beta_output/dmat_site_ids_collapsed.csv`** | This dataset links the sites together that are used to generate the pairwise dissimilarity metric. It contains  27,757 rows and 5 columns.
+
+| Column   | Date type | Explanation                                                                                   |
+|----------|-----------|-----------------------------------------------------------------------------------------------|
+| siteA    | `factor`  | The name of one of the two sites                                                              |
+| siteA_id | `numeric` | A numeric identifier for site A                                                               |
+| siteB    | `factor`  | Whether the site was gentrified (1) or not (0)                                                |
+| siteB_id | `numeric` | A numeric identifier for site B                                                               |
+| City_id  | `numeric` | A numeric identifier for each city, the levels are just the city names sorted alphabetically  | 
+
+|**`./mcmc_output/beta_output/knots.csv`** | This dataset has the knots to used to generate the I-splines for the generalized dissimilarity model. It contains 46 rows and 6 columns.
+
+| Column    | Date type | Explanation                                                                                       |
+|-----------|-----------|---------------------------------------------------------------------------------------------------|
+| covariate | `factor`  | The covariate the knot is associated to. Either geographic distance or mean_19 (impervious cover) |
+| nspline   | `numeric` | The number of splines used                                                                        |
+| min       | `numeric` | The minimum knot                                                                                  |
+| median    | `numeric` | The median knot                                                                                   |
+| max       | `numeric` | The maximum knot                                                                                  |
+| City      | `factor`  | The city code                                                                                     |
+
+
+|**`./mcmc_output/beta_output/site_splines.csv`** | The I-splines used to fit the generalized dissimilarity model. This dataset contains 27,757 rows and 8 columns.
+
+| Column | Date type | Explanation                           |
+|--------|-----------|---------------------------------------|
+| siteA  | `factor`  | The first site                        |
+| siteB  | `factor`  | The second site                       |
+| X      | `numeric` | The first geographic distance spline  |
+| X.1    | `numeric` | The second geographic distance spline |
+| X.2    | `numeric` | The third geographic distance spline  |
+| X.3    | `numeric` | The first impervious cover spline     |
+| X.4    | `numeric` | The second impervious cover spline    |
+| X.5    | `numeric` | The third impervious cover spline     |
+
+
+
+[Back to table of contents ⤒](#a-repository-for)
+
+
+### The mcmc plots folder(`./mcmc_plots`)
+
+This folder is intentionally left blank, and stored temporary files for the traceplots of model parameters. 
 
 ### The figures folder (`./figures`)
 
