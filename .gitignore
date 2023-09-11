@@ -46,4 +46,5 @@ results/occupancy_mcmc.csv
 
 ./data/cleaned_data/species_range_greatlakes_filled.RDS
 
-./plots/species_ranges/
+plots/species_ranges/*
+

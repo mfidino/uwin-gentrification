@@ -13,6 +13,7 @@ Fidino, M et al.  Gentrification drives patterns of alpha and beta diversity in 
 5. [The JAGS folder(`./JAGS`)](#the-jags-folder-jags)
 6. [The mcmc output folder (`./mcmc_output`)](#the-mcmc-output-folder-mcmc_output)
 7. [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc-plots)
+8. [The plots folder](`./plots`)(#the-plots-folder-plots)
 5. [The figures folder (`./figures`)](#the-figures-folder-figures)
 6. 
 
@@ -209,47 +210,31 @@ This contains two folders, one for the alpha diversity analysis results (`./mcmc
 [Back to table of contents ⤒](#a-repository-for)
 
 
-### The mcmc plots folder(`./mcmc_plots`)
+### The mcmc plots folder (`./mcmc_plots`)
 
 This folder is intentionally left blank, and stored temporary files for the traceplots of model parameters. 
 
 [Back to table of contents ⤒](#a-repository-for)
 
-### The figures folder (`./figures`)
+
+
+### The plots folder (`./plots`)
 
 This folder houses some of the raw figures I generated in `R` (which I cleaned up using Inkscape), as well as other figures that were publication ready. All of the extra "cleaning" I needed to do was related to the maps I had made (there was too much spacing between images).
 
 
 |File|Description|
 |---|---|
-|**`./figures/figure_1.pdf`** | Figure 1 in the manuscript, publication ready, which is an example of the modeling framework.|
-|**`./figures/figure_1.png`** | Figure 1 as a png so I could use it in this README.md.|
-|**`./figures/figure_1.svg`** | Figure 1 as a scaleable vector graphic.|
-|**`./figures/figure_2.pdf`** | Figure 2 in the manuscript, publication ready, which shows each species distribution, their conflict potential, and where they are most likely to come in to conflict with humans.|
-|**`./figures/figure_2.svg`** | Figure 2 as a scaleable vector graphic.|
-|**`./figures/figure_3.tiff`** | Figure 3 in the manuscript, publication ready, which shows the slope terms from the model.|
-|**`./figures/figure_4.tiff`** | Figure 4 in the manuscript, publication ready, which shows the conflict potential response for different covariates.|
-|**`./figures/rough_1.svg`** | Output from R that was used to generate figure 1.|
-|**`./figures/spatial_variables.jpeg`** | Plot of the spatial variables used in the model, used in this README.md.|
-|**`./figures/supl_coyote.png`** | Supplemental figure for coyote, which shows their spatiotemporal correlation in occupancy across the 12 seasons of sampling.|
-|**`./figures/supl_coyote.svg`** | Same, but as a scaleable vector graphic (output from R).|
-|**`./figures/supl_opossum.png`** | Supplemental figure for Virginia opossum, which shows their spatiotemporal correlation in occupancy across the 12 seasons of sampling.|
-|**`./figures/supl_opossum.svg`** | Same, but as a scaleable vector graphic (output from R).|
-|**`./figures/supl_raccoon.png`** | Supplemental figure for raccoon, which shows their spatiotemporal correlation in occupancy across the 12 seasons of sampling.|
-|**`./figures/supl_raccoon.svg`** | Same, but as a scaleable vector graphic (output from R).|
-|**`./figures/supl_urb_map.png`** | Supplemental figure for the two urban intensity metrics and the variables that were used to create them.|
-|**`./figures/supl_urb_map.svg`** | Same, but as a scaleable vector graphic (output from R).|
-
+|**`./plots/alpha_beta_expected.tiff`** | Figure 5 in the manuscript.|
+|**`./plots/alpha_beta_results.tiff`** | Figure 3 in the manuscript.|
+|**`./plots/alpha_examples.tiff`** | Variation in alpha diversity as a function of gentrification and impervious cover. Used in presentations as an example.|
+|**`./plots/beta_examples.tiff`** | Variation in beta diversity as a function of gentrification and impervious cover. Used in presentations as an example.|
+|**`./plots/figure_1.tiff`** | Figure 1 in the manuscript.|
+|**`./plots/gentrification_map.tiff`** | Figure 2 in the manuscript.|
+|**`./plots/gentrification_map_supp_finished.svg`** | Figure 2 in the manuscript, but with names added to it (for supplemental material). Stored as an svg file so I could edit it in Inkscape.|
+|**`./plots/occupancy_result.tiff`** | Figure 4 in the manuscript.|
 
 [Back to table of contents ⤒](#a-repository-for)
-
-### The JAGS folder (`./JAGS`)
-
-This folder houses one script, which is the `JAGS` model that is fit to the data, which is titled `dynamic_integrated_occupancy_gam.R`. The code is commented out within the model pretty well (I had to write it in a way that was more difficult to read because it ran far faster that way).
-
-[Back to table of contents ⤒](#a-repository-for)
-
-### The mcmc output folder (`./mcmc_output`)
 
 
 ### The R folder (`./R`)
