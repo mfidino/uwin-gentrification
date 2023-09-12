@@ -137,7 +137,7 @@ if(analysis == "alpha"){
   
   write.csv(
     sp_rich,
-    "./results/alpha_for_stage_two_collapsed_2.csv",
+    "./results/alpha_for_stage_two_collapsed.csv",
     row.names = FALSE
   )
 }
