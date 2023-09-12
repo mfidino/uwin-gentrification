@@ -12,12 +12,9 @@ Fidino, M et al.  Gentrification drives patterns of alpha and beta diversity in 
 4. [The data folder (`./data`)](#the-data-folder-data)
 5. [The JAGS folder(`./JAGS`)](#the-jags-folder-jags)
 6. [The mcmc output folder (`./mcmc_output`)](#the-mcmc-output-folder-mcmc_output)
-7. [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc-plots)
-8. [The plots folder](`./plots`)(#the-plots-folder-plots)
-5. [The figures folder (`./figures`)](#the-figures-folder-figures)
-6. 
-
-8. [The R folder (`./R`)](#the-r-folder-r)
+7. [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc_plots)
+8. [The plots folder(`./plots`)](#the-plots-folder-plots)
+9. [The R folder (`./R`)](#the-r-folder-r)
 
 
 ## What's in this repository?
@@ -296,21 +293,51 @@ Since I wanted to have the outputs from this in supplemental material, all data 
 
 
 #### Step 8. Fit alpha diversity model
+
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
 |**./R/fit_alpha.R** | Fits alpha diversity model and saves output. | `dplyr`, `runjags`|
 
+#### Step 9. Fit beta diversity model
 
-
-#### Step 8. Summarise and plot results
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
-| **./R/alpha_beta_functions.R**| Utility functions for summarizing posteriors and plotting |
-| **./R/plot_alpha.R** | Make some figures related to alpha diversity analysis.
+|**./R/fit_beta.R** | Fits beta diversity model and saves output. | `dplyr`, `runjags`, `gtools`|
+
+#### Step 10. Summarise alpha and beta diversity models and plot results
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/alpha_beta_functions.R**| Utility functions for summarizing posteriors and plotting | Only base R used|
+| **./R/plot_alpha.R** | Make some figures related to alpha diversity analysis. None are used in the manuscript, but I retained the code here as I've used them in presentations. |`runjags`, `bbplot` | **./R/gdm_functions.R** | Utility functions for the beta diversity analysis | `vegan`, `bbplot`, `scales` |
+| **./R/plot_beta.R** |Similar to `./R/plot_alpha.R`, these are some code for some extra figures used in presentations and the like. | `bbplot`, `sf`, `runjags`, `dplyr` |
+| **./R/alpha_beta_plots.R** | The actual script to generate most of the analysis related figures in the manuscript. | `sf`, `runjags`, `dplyr`, `cli`, `MCMCvis`, `pals`, `bbplot`, `scales` |
+| **./R/make_supp_maps.R** | Make city maps for supplemental | `pander`, `dplyr`, `bbplot`, `viridis`, `raster`, `sf`, `runjags`, `prettymapr`|
+
+
+NOTE: `bbplot` is a plotting package developed by Juniper Simonis that I have collaborated on. It can be found at https://github.com/dapperstats/bbplot. 
+
+
+#### Step 11. Summarise occupancy model and plot results
+
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/occ_model_unpack.R**| Summarise the occupancy model. | `dplyr`, `data.table`|
+| **./R/plot_occupancy.R** | Make the occupancy model figure in the manuscript | `runjags`, `dplyr`, `bbplot` |
+
+
+#### Step 12. Some additional descriptive data calculations
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/income_across_gentrification.R**| Calculate differences in income across gentrified and not gentrified sites. | `sf`, `dplyr`, `uwinspatialtools`|
+| **./R/greenspace_by_census_tract.R**| Calculate differences in greenspace across gentrified and not gentrified Census tracts. | `sf`, `dplyr`, `uwinspatialtools`|
+| **./R/imperv_by_census_tract.R**| Calculate differences in income across gentrified and not gentrified Census tracts. | `sf`, `dplyr`, `uwinspatialtools`|
+
 
 #### The functions sub-folder (`./R/functions`)
 
-This sub-folder houses a bunch of custom functions I wrote to streamline this project. I've commented out all of the functions and their arguments in the scripts themselves, so I leave those who are interested in what functions are there to explore the scripts themselves. The two scripts here are`./R/functions/plot_utility.R`, which houses a lot of the functions I used to make the figures for the project, and `./R/functions/utility_script.R`, which was a catchall for non-plot related functions.
+This sub-folder houses some of custom functions I wrote to streamline this project. 
 
 
 [Back to table of contents ⤒](#a-repository-for)
