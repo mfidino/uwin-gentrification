@@ -171,12 +171,12 @@ mout <- run.jags(
   model = "./JAGS/beta_model_collapsed_norm.R",
   monitor = c(
     "beta_mu", "beta_exp",
-    "beta_sd"#,"beta_a","beta_b"
+    "beta_sd"
   ),
   data = data_list,
   inits = inits,
   adapt = 1000,
-  burnin = 2000, #20000,
+  burnin = 2000, 
   sample = 20000,
   n.chains = 4,
   thin = 3,

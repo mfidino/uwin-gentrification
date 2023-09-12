@@ -2,8 +2,6 @@ library(sf)
 sf::sf_use_s2(FALSE)
 library(runjags)
 library(dplyr)
-library(cli)
-library(MCMCvis)
 
 source("./R/gdm_functions.R")
 source("./R/alpha_beta_functions.R")
