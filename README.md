@@ -372,8 +372,12 @@ This folder stores the MCMC output from many of the models. While `./mcmc_output
 | var_rich | `numeric`    | Estimated variation in species richness across a pair of sites.                                                                                                                      |
 | na_count | `numeric`    | The number of MCMC samples for a specific pair that dissimilarity could not be calculated. Note that we were always able to make at least 2500 estimates for each pair of locations. |
 
+|**`./results/city_gamma_samples.csv`** | MCMC samples of gamma diversity estimates for each city (i.e., the total number of the 21 species estimated to be present at the city scale). This csv has 10,000 rows (MCMC samples) and 23 columns (one for each city).
 
 
+| Column         | Date type | Explanation                                                                                                                           |
+|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------|
+| V1 through V23 | `integer` | MCMC samples of gamma diversity across each city. Cities are ordered alphabetically based on their 4 letter abbreviation (see README) |
 
 
-
+[Back to table of contents ⤒](#a-repository-for)
