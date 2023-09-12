@@ -6,16 +6,17 @@ Fidino, M et al.  Gentrification drives patterns of alpha and beta diversity in 
 
 ## Links to different parts of the readme file
 
-1. [What's in this repository?](#whats-in-this-repository)
-2. [The working directory](#the-working-directory)
-3. [city codes](#city-codes)
-4. [The data folder (`./data`)](#the-data-folder-data)
-5. [The JAGS folder(`./JAGS`)](#the-jags-folder-jags)
-6. [The mcmc output folder (`./mcmc_output`)](#the-mcmc-output-folder-mcmc_output)
-7. [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc_plots)
-8. [The plots folder(`./plots`)](#the-plots-folder-plots)
-9. [The R folder (`./R`)](#the-r-folder-r)
+1.  [What's in this repository?](#whats-in-this-repository)
+2.  [The working directory](#the-working-directory)
+3.  [city codes](#city-codes)
+4.  [The data folder (`./data`)](#the-data-folder-data)
+5.  [The JAGS folder(`./JAGS`)](#the-jags-folder-jags)
+6.  [The mcmc output folder (`./mcmc_output`)](#the-mcmc-output-folder-mcmc_output)
+7.  [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc_plots)
+8.  [The plots folder(`./plots`)](#the-plots-folder-plots)
+9.  [The R folder (`./R`)](#the-r-folder-r)
 10. [The results folder (`./results`)](#the-results-folder-results)
+11. [The supplemental folder (`./supplemental`)](#the-supplemental-folder-supplemental)
 
 
 ## What's in this repository?
@@ -378,6 +379,25 @@ This folder stores the MCMC output from many of the models. While `./mcmc_output
 | Column         | Date type | Explanation                                                                                                                           |
 |----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------|
 | V1 through V23 | `integer` | MCMC samples of gamma diversity across each city. Cities are ordered alphabetically based on their 4 letter abbreviation (see README) |
+
+
+[Back to table of contents ⤒](#a-repository-for)
+
+
+### The Supplemental folder (`./supplemental`)
+
+This folder contains most of the necessary data to construct the entire supplemental material for this manuscript within a R markdown file.
+
+|**`./supplemental/supp_maps`** | sub-folder that contains 23 maps, one for each city, that are used in the supplemental material.
+
+
+|**`./supplemental/occupancy_summary.RDS`** | The median estimate of every model parameter in the multi-city, multi-species occupancy model as well as uncertainty (90% and 95% CI).
+
+|**`./supplemental/science_logo.png`** | Used to place at the top of the supplemental material
+
+|**`./supplemental/supplemental.Rmd`** | The R markdown file of the supplemental material.
+
+|**`./supplemental/Fidino_2023_supplemental.pdf`** | A rendered PDF file of the supplemental material.
 
 
 [Back to table of contents ⤒](#a-repository-for)

@@ -266,8 +266,8 @@ Finally, the latent state and data model included one other set of parameters to
 
 \begin{equation}
 \begin{aligned}
-a_{\psi} &\sim \text{Uniform}(0,10) \\
-b_{\psi} &\sim \text{Uniform}(0,10) \\
+a_{\psi} &\sim \text{Uniform}(0,10)\nonumber  \\
+b_{\psi} &\sim \text{Uniform}(0,10)\nonumber  \\
 \sigma_{\psi c} &\sim \text{Inv-Gamma}(a_{\psi}, b_{\psi}) \\
 \beta_{sct} &\sim \text{Normal}(0, \sigma_{\psi c})
 \end{aligned}
@@ -331,7 +331,7 @@ where $a_{cpj}$ is a non-negative coefficient for the $jth$ I-spline and $I_{pj}
 
 \begin{equation}
 \begin{aligned}
-d_{cik} &= 1 - \text{exp}(-\eta_{cik}) \\
+d_{cik} &= 1 - \text{exp}(-\eta_{cik})\nonumber  \\
 \sigma_{cik} &= \sqrt{\frac{d_{cik} - (1 - d_{cik})}{w_{cik}}} \\
 \mu_{cik} &\sim \text{Half-Normal}(d_{cik}, \sigma_{cik})
 \end{aligned}
