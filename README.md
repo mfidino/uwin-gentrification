@@ -15,6 +15,7 @@ Fidino, M et al.  Gentrification drives patterns of alpha and beta diversity in 
 7. [The mcmc plots folder(`./mcmc_plots`)](#the-mcmc-plots-folder-mcmc_plots)
 8. [The plots folder(`./plots`)](#the-plots-folder-plots)
 9. [The R folder (`./R`)](#the-r-folder-r)
+10. [The results folder (`./results`)](#the-results-folder-results)
 
 
 ## What's in this repository?
@@ -341,6 +342,37 @@ This sub-folder houses some of custom functions I wrote to streamline this proje
 
 
 [Back to table of contents ⤒](#a-repository-for)
+
+
+### The results folder (`./results`)
+
+This folder stores the MCMC output from many of the models. While `./mcmc_output` stores the results from the alpha and beta diversity models, the alpha and beta estimates (with associated uncertainty) are stored here. Some other RDS files can also be stored here (e.g., occupancy model output), but have been added to the `.gitignore` because they are way too big.
+
+
+|**`./results/alpha_for_stage_two_collapsed.csv`** | The alpha diversity estimates as well as the associated uncertainty. This csv has 999 rows and 6 columns.
+
+| Column      | Date type    | Explanation                                                                                |
+|-------------|--------------|--------------------------------------------------------------------------------------------|
+| Site        | `factor`     | The site associated to this data point                                                     |
+| City        | `factor`     | The city abbreviation associated to this data point                                        |
+| gentrifying | `boolean`    | Whether the site was gentrified (TRUE) or not (FALSE)                                      |
+| mean_19     | `proportion` | The proportion of impervious cover within 1000 km of a site in 2019. Ranges from 0 to 100. |
+| mu          | `numeric`    | The estimated species richness at a site across all survey periods                         |
+| sd          | `numeric`    | The estimated variation in species richness estimates at a site across all survey periods  |
+
+|**`./results/beta_summary_for_analysis_collapsed_vegan.csv`** | The beta diversity estimates as well as the associated uncertainty. This csv has 27,757 rows and 6 columns.
+
+
+| Column   | Date type    | Explanation                                                                                                                                                                          |
+|----------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| loc      | `factor`     | The row location, used to line up with the covariate data                                                                                                                            |
+| mu_beta  | `proportion` | The estimated pairwise dissimilarity metric between a pair of sites. Ranges between 0 and 1, where 0 is identical communities and 1 is completely different communities.             |
+| var_beta | `numeric`    | The estimate variation in the pairwise dissimilarity metric.                                                                                                                         |
+| mu_rich  | `numeric`    | Estimated species richness across the pair of sites.                                                                                                                                 |
+| var_rich | `numeric`    | Estimated variation in species richness across a pair of sites.                                                                                                                      |
+| na_count | `numeric`    | The number of MCMC samples for a specific pair that dissimilarity could not be calculated. Note that we were always able to make at least 2500 estimates for each pair of locations. |
+
+
 
 
 
