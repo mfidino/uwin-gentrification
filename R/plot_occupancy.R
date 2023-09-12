@@ -1,6 +1,3 @@
-analysis <- "alpha"
-
-
 library(runjags)
 library(dplyr)
 library(bbplot)

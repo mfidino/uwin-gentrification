@@ -1,8 +1,16 @@
 # pull census data at the tract level
 
-# this code could have been abstracted out A LOT to reduce
-#  it's length. But since this was a 'one and done' analysis
-#  I've kept it as is.
+###############
+#### Notes ####
+###############
+
+# 1. This code could have been abstracted out A LOT to reduce
+#      it's length. But since this was a 'one and done' analysis
+#      I've kept it as is. 
+
+# 2. There is some GIS data that is hardcoded in here, as I am
+#      not storing GIS data in the repo. That being said,
+#      the county data is easy to find.
 
 
 library(dplyr)

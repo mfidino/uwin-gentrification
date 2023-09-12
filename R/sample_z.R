@@ -153,13 +153,6 @@ if(analysis == "alpha"){
   for(i in 1:nmcmc){
     setTxtProgressBar(pb, i)
     site_info$z <- z[i,]
-    #to_go <- which(
-    #  data_list$species_idx %in% 
-    #    species_map$Species_id[species_map$Species== species_to_drop
-    #  ]
-    #)
-    #new_si <- site_info[-to_go,]
-    #new_si$species <- tmp$Species[-to_go]
     new_si <- site_info
     new_si$species <- tmp$Species
     tmp_si <- new_si %>% 
@@ -281,7 +274,7 @@ if(analysis == "beta"){
     sp_dat$z <- z[zi,]
     
     
-    new_si <- sp_dat[-which(sp_dat$Species %in% species_to_drop),]
+    new_si <- sp_dat
     
     test <- new_si %>% 
       dplyr::group_by(
@@ -293,22 +286,6 @@ if(analysis == "beta"){
       )
     new_si <- test[order(test$citysite,test$Species),]
     
-    # going wide
-    # need to go wide, but we have to split by city 
-    #  and season first.
-    # sp_dat_list <- split(
-    #  new_si,
-    #  factor(
-    #    paste0(
-    #      new_si$City,"-",new_si$Season
-    #    ),
-    #    levels = unique(
-    #      paste0(
-    #        new_si$City,"-",new_si$Season
-    #      )
-    #    )
-    #  )
-    # )
     sp_dat_list <- split(
       new_si,
       factor(new_si$City)
@@ -317,8 +294,6 @@ if(analysis == "beta"){
     #  modeling
     zlist <- sp_dat_beta <- 
       vector("list", length = length(sp_dat_list))
-
-    
 
     
     # now make a z matrix for each sampling period.

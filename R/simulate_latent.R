@@ -6,14 +6,17 @@
 #
 ####################################################
 
-analysis <- "alpha"
-
-# placeholder for now until I run the model without cougar
-#species_to_drop <- "cougar"
-species_to_drop <- NA
-
 library(runjags)
 library(dplyr)
+
+# either choose "alpha" or "beta", depending on
+#  what you want to simulate
+
+analysis <- "alpha"
+
+if(!analysis %in% c("alpha", "beta")){
+  stop("either choose 'alpha' or 'beta'")
+}
 
 # Prep the data for the model
 source("./R/prep_data_occupancy.R")
@@ -23,7 +26,7 @@ source("./R/alpha_beta_functions.R")
 cat("loading in run.jags file...\n")
 # Load in the occupancy model results
 mout <- readRDS(
-  "./results/occupancy_model_fit_simpler3.RDS"
+  "./results/occupancy_model_fit_simpler2.RDS"
 )
 
 cat("binding posterior simulations...\n")
@@ -35,7 +38,7 @@ mcmc <- do.call(
 
 # take a random sample to iterate through
 set.seed(11556644)
-my_samples <- ifelse(analysis == "beta", 5000, 5000)
+my_samples <- 5000
 mcsamp <- mcmc[sample(1:nrow(mcmc), my_samples),]
 
 rm(mout, mcmc)
@@ -113,17 +116,7 @@ if(analysis == "beta"){
 
 # and now we need to split the mcmc into pieces because we cannot store
 #  all of the results at once. Splitting into pieces of 1K.
-data_list$ncov_within <- 4
-data_list$ncov_det <- 4
 
-data_list$psi_covs <- cbind(
-  data_list$psi_covs,
-  data_list$psi_covs[,2] * data_list$psi_covs[,3]
-)
-data_list$rho_covs <- cbind(
-  data_list$rho_covs,
-  data_list$rho_covs[,2] * data_list$rho_covs[,3]
-)
 for(gr in 1:ngroup){
   cat(
     paste0("\ngroup ", gr, " of ", ngroup,"...\n")
@@ -144,7 +137,7 @@ if(analysis == "alpha"){
   
   write.csv(
     sp_rich,
-    "./results/alpha_for_stage_two_collapsed_2.csv",
+    "./results/alpha_for_stage_two_collapsed.csv",
     row.names = FALSE
   )
 }

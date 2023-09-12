@@ -78,13 +78,7 @@ ctmp <- split(
   coords,
   factor(coords$City)
 )
-pdf("city_hist.pdf")
-for(i in 1:length(ctmp)){
-  hist(ctmp[[i]]$Long, main = paste(names(ctmp)[i], "Long"))
-  hist(ctmp[[i]]$Lat, main = paste(names(ctmp)[i], "Lat"))
-  
-}
-dev.off()
+
 # t1 <- sf::st_as_sf(
 #   data.frame(x = 720932, y = 4270280),
 #   coords = c("x","y"),

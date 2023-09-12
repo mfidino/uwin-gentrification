@@ -7,7 +7,7 @@ library(MCMCvis)
 library(pals)
 
 
-source("./beta_diversity/gdm_functions.R")
+source("./R/gdm_functions.R")
 source("./R/alpha_beta_functions.R")
 
 # read in alpha diversity analysis
