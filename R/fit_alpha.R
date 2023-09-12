@@ -3,17 +3,6 @@ library(runjags)
 
 sp_rich <- read.csv("./results/alpha_for_stage_two_collapsed.csv")
 
-cat("Loading functions...\n")
-# load functions used to clean data
-functions_to_load <- list.files(
-  "./R/functions/",
-  full.names = TRUE
-)
-
-for(fn in functions_to_load){
-  source(fn)
-}
-
 
 my_site <- read.csv("./data/cleaned_data/covariates/site_covariates.csv")
 

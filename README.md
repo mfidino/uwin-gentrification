@@ -244,6 +244,12 @@ This folder has 25 R scripts, plus an additional sub-folder titled `./R/function
 Because there are so many scripts in here, I have ordered them here in such a way that if someone was interested in completely running the analysis, they could do so.
 
 
+#### Step 1. Compile site coordinates
+
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+|**./R/compile_coordinates.R**| Read in detection data and get a unique set of sites for each city. Save output. | `dplyr`|
+
 #### Step 1. Query Census data
 
 | File                  | Description                                                      | Packages required           |
@@ -279,7 +285,7 @@ Since I wanted to have the outputs from this in supplemental material, all data 
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
 |**./R/prep_data_occupancy.R**| Get's ran via `./R/fit_occupancy_model.R`, but it pulls in all the necessary data and gets it ready for analysis. | `dplyr`, `runjags`|
-|**./R/fit_occupancy_model.R**| Fits the occupancy model and saves the output| |`dplyr`, `runjags`|
+|**./R/fit_occupancy_model.R**| Fits the occupancy model and saves the output| `dplyr`, `runjags`|
 
 #### Step 6. Estimate alpha and beta diversity with uncertainty
 
