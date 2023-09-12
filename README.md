@@ -250,7 +250,7 @@ Because there are so many scripts in here, I have ordered them here in such a wa
 |-----------------------|------------------------------------------------------------------|-----------------------------|
 |**./R/compile_coordinates.R**| Read in detection data and get a unique set of sites for each city. Save output. | `dplyr`|
 
-#### Step 1. Query Census data
+#### Step 2. Query Census data
 
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
@@ -260,7 +260,7 @@ Because there are so many scripts in here, I have ordered them here in such a wa
 
 NOTE: `uwinspatialtools` is an R package I deleveloped, which essentially has some wrapper functions for `sf` and `raster`. It can be found at www.github/com/mfidino/uwinspatialtools.
 
-#### Step 2. Pull impervious cover data
+#### Step 3. Pull impervious cover data
 
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
@@ -268,18 +268,18 @@ NOTE: `uwinspatialtools` is an R package I deleveloped, which essentially has so
 
 NOTE: When I wrote these scripts `raster` was still usable. I'm not rewriting them now that it will soon be retired. 
 
-#### Step 3. Pull species range data
+#### Step 4. Pull species range data
 
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
 | **./R/pull_ranges.R** | Pulls IUCN range data and calculates the distance to the edge of a species range froma given city. The great lakes get filled in as well, or else all Chicago distances would just be to Lake Michigan. | `dplyr`, `sf`, `mapview`, `smoothr`|
 |**.R/functions/common_to_binomial.R** | Converts common name for species to scientific name so that it can be queried.| Only base R used | 
 
-#### Step 4. Quantify gentrification
+#### Step 5. Quantify gentrification
 
 Since I wanted to have the outputs from this in supplemental material, all data and code to classify locations as gentrified can be found in `./supplemental/supplemental.Rmd` in the `Additional Gentrification Metrics` section.
 
-#### Step 5. Fit the multi-city, multi-species occupancy model
+#### Step 6. Fit the multi-city, multi-species occupancy model
 
 
 | File                  | Description                                                      | Packages required           |
@@ -287,12 +287,26 @@ Since I wanted to have the outputs from this in supplemental material, all data 
 |**./R/prep_data_occupancy.R**| Get's ran via `./R/fit_occupancy_model.R`, but it pulls in all the necessary data and gets it ready for analysis. | `dplyr`, `runjags`|
 |**./R/fit_occupancy_model.R**| Fits the occupancy model and saves the output| `dplyr`, `runjags`|
 
-#### Step 6. Estimate alpha and beta diversity with uncertainty
+#### Step 7. Estimate alpha and beta diversity with uncertainty
 
 | File                  | Description                                                      | Packages required           |
 |-----------------------|------------------------------------------------------------------|-----------------------------|
 | **./R/simulate_latent.R** | Given an input (`alpha` or `beta`), use the output from the occupancy model to estimate species presence on the landscape and then calculate alpha or beta diversity | `dplyr`, `runjags`|
 | **./R/sample_z.R** | Used in the other script, does all the sampling for the species incidence matrix given the posterior. | `dplyr`, `runjags`|
+
+
+#### Step 8. Fit alpha diversity model
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+|**./R/fit_alpha.R** | Fits alpha diversity model and saves output. | `dplyr`, `runjags`|
+
+
+
+#### Step 8. Summarise and plot results
+| File                  | Description                                                      | Packages required           |
+|-----------------------|------------------------------------------------------------------|-----------------------------|
+| **./R/alpha_beta_functions.R**| Utility functions for summarizing posteriors and plotting |
+| **./R/plot_alpha.R** | Make some figures related to alpha diversity analysis.
 
 #### The functions sub-folder (`./R/functions`)
 
