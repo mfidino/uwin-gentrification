@@ -62,7 +62,7 @@ Email: mfidino@lpzoo.org
   \vspace{-0.2cm}\item[] Alpha Diversity Model Estimates (Tables S11 - S13)
   \vspace{-0.2cm}\item[] Beta Diversity Model Estimates (Tables S14 - S16)
   \vspace{-0.2cm}\item[] Multi-city Multi-species Occupancy Model Estimates (Tables S17 - S36)
-    \vspace{-0.2cm}\item[] SI References  (\textit{1-9})
+    \vspace{-0.2cm}\item[] SI References  (\textit{1-10})
 \end{itemize}
 
 
