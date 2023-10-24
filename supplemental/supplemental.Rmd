@@ -1,12 +1,12 @@
 ---
-title: "Supplementary Materials for"
+title: "Supporting information for"
 output: 
   pdf_document
-sansfont: Arial
+mainfont: SourceSansPro
 date: ""
 header-includes:
 - \usepackage{titling}
-- \pretitle{\LARGE\includegraphics[width=12cm]{pnas_logo.png}\\[\bigskipamount]}
+- \pretitle{\LARGE\includegraphics[width=3cm]{pnas_logo.png}\\[\bigskipamount]}
 - \posttitle{}
 - \setlength\parindent{24pt}
 - \usepackage{indentfirst}
@@ -15,6 +15,8 @@ header-includes:
 - \captionsetup[figure]{labelformat=nospace}
 - \captionsetup[table]{labelformat=nospace}
 - \usepackage{bm}
+- \usepackage[T1]{fontenc}
+- \usepackage[default]{sourcesanspro}
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -36,14 +38,17 @@ sf::sf_use_s2(FALSE)
 
 \vspace{-1truemm}
 
-\textbf{\Large{Supporting Information for}}\\
-\Large{Gentrification drives patterns of alpha and beta diversity in cities}\\
-\vspace{5truemm}
-\large{Mason Fidino*, Heather A. Sander, Jesse S. Lewis, Elizabeth W. Lehrer, Kimberly Rivera, Maureen H. Murray, Henry C. Adams, Anna Kase, Andrea Flores, Theodore Stankowich, Christopher J. Schell, Carmen M. Salsbury, Adam T. Rohnke, Mark J. Jordan, Austin M. Green, Ashley R. Gramza, Amanda J. Zellmer,, Jacque Williamson, Thilina D. Surasinghe, Hunter Storm, Kimberly L. Sparks, Travis J. Ryan, Katie R. Remine, Mary E. Pendergast, Kayleigh Mullen, Darren E. Minier, Christopher R. Middaugh, Amy L. Mertl, Maureen R. McClung, Robert A. Long, Rachel N. Larson, Michel T. Kohl, Lavendar R. Harris, Courtney T. Hall, Jeffrey D. Haight, David Drake, Alyssa M. Davidge, Ann O. Cheek, Christopher P. Bloch, Elizabeth G. Biro, Whitney J. B. Anthonysamy, Julia L. Angstmann, Maximilian L. Allen, Solny A. Adalsteinsson, Anne G. Short Gianotti, Jalene M. LaMontagne, Tiziana A. Gelmi-Candusso, Seth B. Magle}\\
-\vspace{5truemm}
-Corresponding author: Mason Fidino\\
+\begin{flushleft}
+\Large Gentrification drives patterns of alpha and beta diversity in cities \hfill
+
+\large Mason Fidino, Heather A. Sander, Jesse S. Lewis, Elizabeth W. Lehrer, Kimberly Rivera, Maureen H. Murray, Henry C. Adams, Anna Kase, Andrea Flores, Theodore Stankowich, Christopher J. Schell, Carmen M. Salsbury, Adam T. Rohnke, Mark J. Jordan, Austin M. Green, Ashley R. Gramza, Amanda J. Zellmer,, Jacque Williamson, Thilina D. Surasinghe, Hunter Storm, Kimberly L. Sparks, Travis J. Ryan, Katie R. Remine, Mary E. Pendergast, Kayleigh Mullen, Darren E. Minier, Christopher R. Middaugh, Amy L. Mertl, Maureen R. McClung, Robert A. Long, Rachel N. Larson, Michel T. Kohl, Lavendar R. Harris, Courtney T. Hall, Jeffrey D. Haight, David Drake, Alyssa M. Davidge, Ann O. Cheek, Christopher P. Bloch, Elizabeth G. Biro, Whitney J. B. Anthonysamy, Julia L. Angstmann, Maximilian L. Allen, Solny A. Adalsteinsson, Anne G. Short Gianotti, Jalene M. LaMontagne, Tiziana A. Gelmi-Candusso, Seth B. Magle
+\hfill
+\newline
+\newline
+Mason Fidino \newline
 Email: mfidino@lpzoo.org
 
+\end{flushleft}
 
 
 
@@ -57,7 +62,7 @@ Email: mfidino@lpzoo.org
   \vspace{-0.2cm}\item[] Alpha Diversity Model Estimates (Tables S11 - S13)
   \vspace{-0.2cm}\item[] Beta Diversity Model Estimates (Tables S14 - S16)
   \vspace{-0.2cm}\item[] Multi-city Multi-species Occupancy Model Estimates (Tables S17 - S36)
-    \vspace{-0.2cm}\item[] SI References  (\textit{1-9})
+    \vspace{-0.2cm}\item[] SI References  (\textit{1-10})
 \end{itemize}
 
 
@@ -189,13 +194,13 @@ $$
 where $b_0$ is the model intercept (i.e., the expected pairwise dissimilarity between sites with identical environments). Covariates are further transformed within GDMs which 1) uses I-spline basis functions (*8*) and 2) constrains slope terms to be non-negative. Doing so allows the effect of each covariate to non-linearly vary while also ensuring that beta diversity increases monotonically as sites are more different from one another (a core assumption of this model). More specifically, the I-spline basis function for predictor $p$ with 3 basis functions (the default used for GDMs) is
 
 $$
-fp(x_{cip}) = \sum_{j = 1}^3a_{cpj}I_{pj}(x_{cip})
+f_p(x_{cip}) = \sum_{j = 1}^3a_{cpj}I_{pj}(x_{cip})
 $$
 where $a_{cpj}$ is a non-negative coefficient for the $jth$ I-spline and $I_{pj}$ is the $jth$ I-spline of the covariate $x_{cip}$. For our own model, the binary gentrification status of site-pairs was not sent through an I-spline basis function. Instead, we used a dummy variable that took the value of 1 if a pair of sites differed in their gentrification status and was otherwise 0. Regardless, all slope terms were constrained to be non-negative. Thus, given $\eta_{cik}$ and the total number of species between site pairs ($w_{cik}$), the first level of our model is
 
 \begin{equation}
 \begin{aligned}
-d_{cik} &= 1 - \text{exp}(-\eta_{cik})\nonumber  \\
+d_{cik} &= 1 - \text{exp}(-\eta_{cik})\nonumber \\
 \sigma_{cik} &= \sqrt{\frac{d_{cik} - (1 - d_{cik})}{w_{cik}}} \\
 \mu_{cik} &\sim \text{Half-Normal}(d_{cik}, \sigma_{cik})
 \end{aligned}
