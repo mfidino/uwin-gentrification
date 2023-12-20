@@ -40,7 +40,7 @@ cmats <- list(
   )
 )
 
-sp <- rev(21:25)
+sp <- 21:25 
 my_cols <- pals::brewer.seqseq2(9)[c(7,3,8,6,9)]
 
 
@@ -63,13 +63,11 @@ sp_loc <- function(x){
   ind_rich <- as.character(rowSums(x))
   my_res <- vector("list", 2)
   for(i in 1:2){
-    my_res[[i]] <- switch(ind_rich[i],
-                          "1" = data.frame(x = 5, y = 5),
-                          "2" = data.frame(x = c(-1,1), y = c(5,5)),
-                          "3" = data.frame(x = c(-1,0,1), y = c(5,7.5,5)),
-                          "4" = data.frame(x = c(-1,0,1, 0), y = c(6.5,9,6.5,4)),
-                          "5" = data.frame(
-                            x = c(-1,0,1, 0, 0), y = c(6.5,9,6.5,4, 6.5))
+    # anchoring in place now by plotting all
+    #  points, then only coloring some in.
+    my_res[[i]] <- data.frame(
+      x = c(-1,0,1,-0.5, 0.5),
+      y = c(4,4,4,6.65,7.35)
     )
   }
   return(my_res)
@@ -80,7 +78,7 @@ gplot <- function(){
   lines(x = c(5.25, 9.75), y = c(2.25,2.25), lwd = 2)
 }
 
-windows(6,4)
+#windows(6,4)
 m <- matrix(
   c(
     1,5,5,
@@ -92,15 +90,7 @@ m <- matrix(
   nrow = 4,
   byrow = TRUE
 )
-# m <- matrix(
-#   c(1,1,5,
-#     2,2,6,
-#     3,3,7,
-#     4,4,8),
-#   ncol = 3,
-#   nrow = 4,
-#   byrow = TRUE
-# )
+
 tiff("./plots/fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
      res = 1200, compression = "lzw")
 {
@@ -108,12 +98,12 @@ tiff("./plots/fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
   
   par(
     mar = c(0.5,0.5,0.5,0.5),
-    oma = c(0,0,3,0),
+    oma = c(0,0,4,0),
     xpd = NA
   )
   
   plot_titles <- paste0(
-    LETTERS[1:4],")", c(" Full replacement", " Increased", " Nested", " No change")
+    LETTERS[1:4],")", c(" Distinct", " Increased", " Nested", " No difference")
   )
 
   for(i in 1:4){
@@ -123,44 +113,83 @@ tiff("./plots/fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
     g1 <- sp_loc(cmats[[i]])
     g1[[1]][,1] <- g1[[1]][,1] + 2.5 
     g1[[2]][,1] <- g1[[2]][,1] + 7.5
+    # left side
     points(
       g1[[1]], 
-      pch = sp[cmats[[i]][1,] == 1],
-      bg = "black",
-      cex = 3
+      pch = sp,#sp[cmats[[i]][1,] == 1],
+      bg = ifelse(
+        cmats[[i]][1,],
+        "black",
+        "gray70"
+      ),
+      col = ifelse(
+        cmats[[i]][1,],
+        "black",
+        "gray70"
+      ),
+      cex = 3,
+      lwd = 1.1
     )
+    tmp_cols <- my_cols
+    tmp_cols[cmats[[i]][1,] == 0] <- "white"
     points(
       g1[[1]], 
-      pch = sp[cmats[[i]][1,] == 1],
-      bg = my_cols[cmats[[i]][1,] == 1],
+      pch = sp,#sp[cmats[[i]][1,] == 1],
+      bg = tmp_cols,
+      col = ifelse(
+        cmats[[i]][1,],
+        "black",
+        "gray70"
+      ),
       cex = 2.5
     )
+    # right side
     points(
       g1[[2]], 
-      pch = sp[cmats[[i]][2,] == 1],
-      bg = "black",
-      cex = 3
+      pch = sp,#sp[cmats[[i]][1,] == 1],
+      bg = ifelse(
+        cmats[[i]][2,],
+        "black",
+        "gray70"
+      ),
+      col = ifelse(
+        cmats[[i]][2,],
+        "black",
+        "gray70"
+      ),
+      cex = 3,
+      lwd = 1.1
     )
+    tmp_cols <- my_cols
+    tmp_cols[cmats[[i]][2,] == 0] <- "white"
     points(
       g1[[2]], 
-      pch = sp[cmats[[i]][2,] == 1],
-      bg = my_cols[cmats[[i]][2,] == 1],
+      pch = sp,#sp[cmats[[i]][1,] == 1],
+      bg = tmp_cols,
+      col = ifelse(
+        cmats[[i]][2,],
+        "black",
+        "gray70"
+      ),
       cex = 2.5
     )
+   
     if(i ==1){
-      text(2.5, y = 16, "Not gentrified", pos = 1, cex = 1.5)
-      text(7.5, y = 16, "Gentrified", pos = 1, cex = 1.5)
+      text(2.5, y = 18.3-1.3, "Site", pos = 1, cex = 1.4)
+      text(7.5, y = 18.3-1.3, "Site", pos = 1, cex = 1.4)
+      text(2.5, y = 16-1.3, "not gentrified", pos = 1, cex = 1.4)
+      text(7.5, y = 16-1.3, "gentrified", pos = 1, cex = 1.4)
     }
 
   }
   
-  par(mar = c(3.5,5.5,1.5,4))
+  par(mar = c(3.5,5.5,0,4))
   
   bbplot::blank(xlim = c(-0.1, 2), ylim = c(-0.1, 1.2), bty = 'n',
                 xaxs = "i", yaxs= "i")
   u <- par("usr")
   bbplot::axis_text(
-    "E) Changes in alpha and beta diversity",
+    "E) Difference in alpha and beta diversity",
     line = 0.58,
     cex = 0.88,
     at = 0.95
@@ -209,7 +238,7 @@ tiff("./plots/fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
   )
   
   
-  plot_titles2 <- c("Full replacement", "Increased", "Nested", "No change")
+  plot_titles2 <- c("Distinct", "Increased", "Nested", "No difference")
   for(i in 1:4){
     points(
       x = ab_vals[[i]][1], #- 0.01,
@@ -220,7 +249,7 @@ tiff("./plots/fig_1_gentrification.tiff", height = 4, width = 6, units = "in",
       
     )
     text(
-      letters[i],
+      LETTERS[i],
       x = ab_vals[[i]][1],
       y = ab_vals[[i]][2],
       adj = 0.5,

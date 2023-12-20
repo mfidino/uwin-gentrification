@@ -140,9 +140,23 @@ m <- matrix(
   ncol = 1,
   nrow = 2
 )
+
+coords <- read.csv(
+  "./data/gentri_all_coordinates.csv"
+)
+
+coords <- coords %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise(
+    Long = mean(Long),
+    Lat = mean(Lat)
+  )
+# get the ordering for city points
+city_ord <- order(coords$Long)
 layout(m)
 par(mar = c(2,1,1,1), oma = c(2,6,0,0), xpd = NA)
 {
+
 set.seed(2222)
 bbplot::blank( xlim = c(-1, 1), ylim = c(0.25,3.25), xaxs = "i", yaxs = "i")
 bbplot::axis_blank(1, tck = -0.03,
@@ -178,23 +192,17 @@ for(i in 1:3){
   #     length.out = data_list$ncity
   #     )
   # )
-  my_jitter <- runif(data_list$ncity, -0.4,0.4)
+  my_jitter <- seq(-0.4,0.4, length.out = length(city_ord))
+  #my_jitter <- runif(data_list$ncity, -0.4,0.4)
   tmp_vals <- alpha_city[,,i+1]
-  tmp_vals <- tmp_vals[,order(tmp_vals[2,])]
-  for(k in 1:data_list$ncity){
-    # lines(
-    #   x = tmp_vals[c(1,3), k],
-    #   y = rep(j+my_jitter[k], 2),
-    #   col = scales::alpha("black", 0.3)
-    # )
-  }
-  points(
-    x = tmp_vals[2,],
-    y = j + my_jitter,
-    bg = scales::alpha("#00AADE", 0.7),
-    pch = 21
-  )
-  
+  #tmp_vals <- tmp_vals[,order(tmp_vals[2,])]
+  #for(k in 1:data_list$ncity){
+  #   lines(
+  #     x = tmp_vals[c(1,3), k],
+  #     y = rep(j+my_jitter[k], 2),
+  #     col = scales::alpha("black", 0.3)
+  #   )
+  #}
   rect(
     xleft = alpha_mu[1,i+1],
     xright = alpha_mu[3,i+1],
@@ -203,13 +211,21 @@ for(i in 1:3){
     col = scales::alpha("gray40",0.5),
     border = NA
   )
+  points(
+    x = tmp_vals[2,city_ord],
+    y = j + my_jitter,
+    bg = scales::alpha("#00AADE", 0.7),
+    pch = 21
+  )
+  
+
   lines(
     x = rep(alpha_mu[2,i+1],2),
     y = c(j-0.45, j + 0.45),
     lwd = 4,
     lty = 1,
     lend = 1,
-    col = "gray10"
+    col = scales::alpha("gray10", 0.9)
   )
   
   
@@ -224,7 +240,7 @@ bbplot::axis_text(
 
 # and the same for beta diversity
 
-set.seed(2222)
+#set.seed(2222)
 bbplot::blank( xlim = c(0, 0.6), ylim = c(0.25,3.25), xaxs = "i", yaxs = "i")
 bbplot::axis_blank(1, tck = -0.03)
 bbplot::axis_text(side = 1, line = 0.35)
@@ -266,13 +282,7 @@ for(i in 1:3){
       x[po[i]+1,4]
     }
   )
-  points(
-    x = tmp_vals,
-    y = j + my_jitter,
-    bg = scales::alpha("#00AADE", 0.7),
-    pch = 21
-  )
-  
+
   rect(
     xleft = overall_mean[po[i]+1,2],
     xright = overall_mean[po[i]+1,4],
@@ -281,13 +291,20 @@ for(i in 1:3){
     col = scales::alpha("gray40",0.5),
     border = NA
   )
+  points(
+    x = tmp_vals[city_ord],
+    y = j + my_jitter,
+    bg = scales::alpha("#00AADE", 0.7),
+    pch = 21
+  )
+  
   lines(
     x = rep(overall_mean[po[i]+1,3],2),
     y = c(j-0.45, j + 0.45),
     lwd = 4,
     lty = 1,
     lend = 1,
-    col = "gray10"
+    col = scales::alpha("gray10", 0.9)
   )
   
   
@@ -388,7 +405,7 @@ alpha_mean <- do.call(
 
 
 counties <- sf::read_sf(
-  "D:/GIS/counties/cb_2020_us_county_500k.shp"
+  "D:/GIS/counties/cb_2020_us_county_500k/cb_2020_us_county_500k.shp"
 )
 
 # Only keep contiguous US
@@ -555,7 +572,7 @@ bb$y <- coords[,2]
 
 
 {
-  plot(counties, lwd = 2, reset = FALSE)
+  plot(counties, lwd = 1, reset = FALSE)
   u <- par("usr")
   # get aspect ratio (ratio of width to height)
   
@@ -579,7 +596,7 @@ bb$y <- coords[,2]
   text(
     x = mean(my_x),
     y = max(my_y) + 3.75,
-    labels = "Relative strength of gentrification on...",
+    labels = "Relative effect of gentrification on...",
     pos = 1
   )
   text(
@@ -821,5 +838,220 @@ text(
 )
 
 
+}
+dev.off()
+
+
+#### expected alpha beta plots by prop vuln ####
+
+dat <- readRDS(
+  "./data/census_data/gent_sites.rds"
+)
+
+dat <- sapply(
+  dat,
+  function(x) {
+    sum(x$gentrifying) / sum(x$vulnerable)
+  }
+)
+dat <- round(dat,2)
+
+# get mean covariate values for beta diversity
+mu_beta_dm <- split(
+  data.frame(data_list$spline_matrix),
+  factor(data_list$city_vec)
+)
+mu_beta_dm <- lapply(
+  mu_beta_dm,
+  colMeans
+)
+mu_beta_dm <- dplyr::bind_rows(
+  mu_beta_dm
+)
+mu_beta_dm$X8 <- 1
+
+tmp_mcmc <- vector(
+  "list",
+  length = nrow(mu_beta_dm)
+)
+for(i in 1:length(tmp_mcmc)){
+  tmp_mcmc[[i]] <- beta_mc$beta_exp[,i,] %*% t(mu_beta_dm[i,])
+  tmp_mcmc[[i]] <- 1 - exp(-tmp_mcmc[[i]])
+  tmp_mcmc[[i]] <- quantile(
+    tmp_mcmc[[i]],
+    probs = c(0.025,0.05,0.5,0.95,0.975)
+  )
+}
+beta_mean <- do.call(
+  "rbind",
+  tmp_mcmc
+)
+
+
+# do same for alpha diversity
+my_site <- read.csv("./data/cleaned_data/covariates/site_covariates.csv")
+
+
+my_site$imp <- my_site$mean_19 / 100
+
+
+my_site <- my_site %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise(imp = mean(imp))
+
+tmp_mcmc <- vector(
+  "list",
+  length = nrow(mu_beta_dm)
+)
+for(i in 1:length(tmp_mcmc)){
+  gent_rich <- alpha_mc$alpha[,i,] %*% cbind(
+    c(
+      1, 1, my_site$imp[i],my_site$imp[i]
+    )
+  )
+  ngent_rich <- alpha_mc$alpha[,i,] %*% cbind(
+    c(
+      1, 0, my_site$imp[i],0
+    )
+  )
+  tmp_mcmc[[i]] <- quantile(
+    exp(gent_rich) - exp(ngent_rich),
+    probs = c(0.025,0.05,0.5,0.95,0.975)
+  )
+}
+alpha_mean <- do.call(
+  "rbind",
+  tmp_mcmc
+)
+
+# read in site coordinates
+coords <- read.csv(
+  "./data/gentri_all_coordinates.csv"
+)
+
+coords <- coords %>% 
+  dplyr::group_by(City) %>% 
+  dplyr::summarise(
+    Long = mean(Long),
+    Lat = mean(Lat)
+  )
+
+coords$num <- abs(floor(coords$Long))
+coords$num <- coords$num - min(coords$num) + 1
+
+
+
+
+my_pal <- colorRampPalette(
+  c("#f3b300", "#b3b3b3", "#376387")
+)(101)
+
+windows(4,4)
+
+# svg(
+#   "./plots/alpha_beta_expected.svg",
+#   width = 4,
+#   height = 4
+# )
+
+
+
+tiff(
+  "./plots/alpha_beta_expected.tiff",
+  height = 4,
+  width = 4,
+  units = "in",
+  res = 600,
+  compression = "lzw"
+)
+
+{
+  par(mar= c(4, 4, 1, 1) + 0.1)
+  bbplot::blank(xlim = c(-1, 3), ylim = c(0, 1), bty = 'n',
+                xaxs = "i", yaxs= "i")
+  box(which = "plot", bty = "l", lwd = 2)
+  
+  bbplot::axis_blank(
+    side = 1,
+    minor = FALSE,
+    lwd = 2
+  )
+  
+  bbplot::axis_text(
+    text = c(0,3),
+    side = 1,
+    at = c(0,3),
+    line = 0.75
+  )
+  bbplot::axis_text(
+    text = c(0,1),
+    side = 2,
+    at = c(0,1),
+    line = 0.75,
+    las = 1
+  )
+  bbplot::axis_blank(
+    at = c(0,0.5,1),
+    side = 2,
+    lwd = 2,
+    minor = FALSE,
+    tck = -0.03
+  )
+  
+  bbplot::axis_text(
+    text = bquote(Delta ~"alpha"),
+    side = 1,
+    line = 2.25,
+    cex = 1.3
+  )
+  
+  bbplot::axis_text(
+    text ="beta",
+    side = 2,
+    line = 2.25,
+    cex = 1.3
+  )
+  points(
+    x = alpha_mean[,3],
+    y = beta_mean[,3],
+    pch = 21,
+    bg =  "black",
+    cex =2.25
+  )
+  points(
+    x = alpha_mean[,3],
+    y = beta_mean[,3],
+    pch = 21,
+    bg =  my_pal[dat*100],
+    cex =2
+  )
+  
+  
+  legend_image <- as.raster(matrix(rev(my_pal), nrow=1))
+  #par(mar = c(1,2,1,2))
+  #plot(c(0,0.5),c(0,0.5),type = 'n', axes = F,xlab = '', ylab = '', main = 'Longitude')
+  text(
+    y=0.8,
+    x = seq(-1,2,l=3) + 0.5,
+    labels = seq(0,1,length.out = 3),
+    cex = 0.9
+  )
+  rasterImage(legend_image, -0.5, 0.85, 2.5,0.92)
+  rect( -0.5, 0.85, 2.5,0.92, border = "black", lwd = 2)
+  for(i in 1:5){
+    lines(
+      x = rep( seq(-1,2,l=5)[i] + 0.5,2),
+      y = c(0.85, 0.83),
+      lwd = 2
+    )
+  }
+  text(
+    x = 1,
+    y = 0.96,
+    labels = "Proportion vulnerable sites that gentrified",
+    cex = 0.75
+  )
+  
+  
 }
 dev.off()
