@@ -80,7 +80,7 @@ split_mcmc <- function(x){
 }
 
 qwrap <- function(x){
-  quantile(x, probs = c(0.025,0.5,0.975))
+  quantile(x, probs = c(0.04,0.5,0.95))
 }
 
 
