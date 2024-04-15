@@ -2,7 +2,10 @@
 
 # A repository for:
 
-Fidino, M et al.  Gentrification drives patterns of alpha and beta diversity in cities
+Fidino, M et al. 2024.  Gentrification drives patterns of alpha and beta diversity in cities. PNAS.
+
+[Link to study here](https://www.pnas.org/doi/10.1073/pnas.2318596121)
+
 
 ## Links to different parts of the readme file
 
