@@ -45,31 +45,34 @@ Aside from the aforementioned folders, the working directory here stores the `.g
 When there is data specific to a given city we use 4 letter abbreviations.
 These abbreviations are:
 
-| Code  |       City         |
-|-------|--------------------|
-|`ahga` | Athens, GA         |
-|`boma` | Bay Area, CA       |
-|`chil` | Boston, MA         |
-|`deco` | Chicago, IL        |
-|`hote` | Denver, CO         |
-|`inin` | Houston, TX        |
-|`ioio` | Indianapolis, IN   |
-|`jams` | Iowa City, IA      |
-|`lrar` | Jackson, MS        |
-|`mawi` | Little Rock, AR    |
-|`mela` | Madison, WI        |
-|`naca` | Metro LA, CA       |
-|`baca` | Washington D.C.    |
-|`phaz` | Phoenix, AZ        |
-|`poor` | Portland, OR       |
-|`rony` | Rochester, NY      |
-|`safl` | Sanford, FL        |
-|`scut` | Salt Lake City, UT |
-|`sewa` | Seattle, WA        |
-|`slmo` | Saint Louis, MO    |
-|`tawa` | Tacoma, WA         |
-|`uril` | Urbana, IL         |
-|`wide` | Wilmington, DE     |
+|Code | City |
+|-----|------|
+|`ahga`| Athens, GA|
+|`baca`| Bay Area, CA|
+|`boma`| Boston, MA|
+|`chil`| Chicago, IL|
+|`deco`| Denver, CO|
+|`hote`| Houston, TX|
+|`inin`| Indianapolis, IN|
+|`ioio`| Iowa City, IA|
+|`jams`| Jackson, MS|
+|`lrar`| Little Rock, AR|
+|`mawi`| Madison, WI|
+|`mela`| Metro LA, CA|
+|`naca`| Washington D.C.|
+|`phaz`| Phoenix, AZ|
+|`poor`| Portland, OR|
+|`rony`| Rochester, NY|
+|`safl`| Sanford, FL|
+|`scut`| Salt Lake City, UT|
+|`sewa`| Seattle, WA|
+|`slmo`| Saint Louis, MO|
+|`tawa`| Tacoma, WA|
+|`uril`| Urbana, IL|
+|`wide`| Wilmington, DE|
+
+
+
 
 [Back to table of contents ⤒](#a-repository-for)
 
